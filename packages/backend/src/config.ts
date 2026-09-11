@@ -15,12 +15,20 @@ export interface ToolsConfig {
   readonly idempotencyMaxEntries: number;
 }
 
+export interface SandboxConfig {
+  /** Default per-run wall-clock timeout (ms) when the caller omits one. */
+  readonly defaultTimeoutMs: number;
+  /** Cap on serialized per-case actuals kept in run results. */
+  readonly maxActualChars: number;
+}
+
 export interface BackendConfig {
   readonly host: string;
   readonly port: number;
   readonly corsOrigin: string | string[];
   readonly voice: VoiceConfig;
   readonly tools: ToolsConfig;
+  readonly sandbox: SandboxConfig;
 }
 
 function num(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
@@ -60,6 +68,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       // forwarder; the backend documents them but does not enforce them.
       idempotencyTtlMs: num(env, "TOOL_IDEMPOTENCY_TTL_MINUTES", 30) * 60_000,
       idempotencyMaxEntries: 2000,
+    },
+    sandbox: {
+      // S7a local runner (HLD Phase 6): wall-clock kill + output caps.
+      // Local-dev bounds; container isolation is the S8 follow-up.
+      defaultTimeoutMs: num(env, "CODE_RUN_TIMEOUT_MS", 5000),
+      maxActualChars: num(env, "CODE_RUN_MAX_OUTPUT_CHARS", 20000),
     },
   };
 }

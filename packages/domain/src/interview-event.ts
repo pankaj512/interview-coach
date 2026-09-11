@@ -17,6 +17,8 @@ export type InterviewEventType =
   | "problem.activated"
   | "response.recorded"
   | "hint.issued"
+  | "code.submitted"
+  | "code.executed"
   | "evaluation.recorded"
   | "tool.invoked"
   | "tool.failed";

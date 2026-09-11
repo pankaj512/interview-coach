@@ -142,3 +142,53 @@ export const interviewEvents = pgTable(
   },
   (t) => [index("interview_events_interview_id_idx").on(t.interviewId)],
 );
+
+// S7a sandbox tables (HLD 6.1/6.3). Submissions + runs are backend-owned
+// artefacts: cascade with the interview, indexed for per-interview reads.
+// Run results (per-case verdicts) ride as JSONB; hidden cases are already
+// masked at assembly time, so stored rows never leak hidden actuals.
+export const submissions = pgTable(
+  "submissions",
+  {
+    id: text("id").primaryKey(),
+    interviewId: text("interview_id")
+      .notNull()
+      .references(() => interviews.id, { onDelete: "cascade" }),
+    problemId: text("problem_id").references(() => problems.id),
+    language: text("language").notNull(),
+    code: text("code").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("submissions_interview_id_idx").on(t.interviewId)],
+);
+
+export const codeRuns = pgTable(
+  "code_runs",
+  {
+    id: text("id").primaryKey(),
+    submissionId: text("submission_id")
+      .notNull()
+      .references(() => submissions.id, { onDelete: "cascade" }),
+    interviewId: text("interview_id")
+      .notNull()
+      .references(() => interviews.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    results: jsonb("results").notNull().$type<
+      readonly {
+        name: string;
+        hidden: boolean;
+        passed: boolean;
+        actual?: unknown;
+        error?: string;
+      }[]
+    >(),
+    passedCount: integer("passed_count").notNull(),
+    totalCount: integer("total_count").notNull(),
+    durationMs: integer("duration_ms").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("code_runs_interview_id_idx").on(t.interviewId),
+    index("code_runs_submission_id_idx").on(t.submissionId),
+  ],
+);

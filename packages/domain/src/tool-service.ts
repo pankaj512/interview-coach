@@ -1,5 +1,5 @@
 import type { InterviewId, ProblemId } from "./ids.js";
-import { asProblemId } from "./ids.js";
+import { asProblemId, asSubmissionId } from "./ids.js";
 import type { EvaluationRecommendation } from "./evaluation.js";
 import type {
   InterviewService,
@@ -13,6 +13,8 @@ import type {
   EventRepository,
   ResponseRepository,
 } from "./repositories.js";
+import type { RunStatus } from "./submission.js";
+import type { SubmissionService } from "./submission-service.js";
 import type { Clock } from "./interview-service.js";
 import { systemClock } from "./interview-service.js";
 import { buildEvent } from "./interview-event.js";
@@ -32,8 +34,13 @@ import { err, ok } from "./result.js";
 // S5 adds three tools from the frozen "later" list (section 4):
 // get_interview_configuration (structured context), get_problem_hint
 // (controlled 3-tier hints, never the solution), record_candidate_answer
-// (model-observed answers become persisted responses). run_code /
-// submit_solution stay deferred to the Phase 6 sandbox.
+// (model-observed answers become persisted responses).
+//
+// S7a adds the first two Phase 6 sandbox tools: submit_solution (persist
+// candidate code as backend-owned state) and run_code (execute the latest
+// or a named submission against caller-supplied cases). evaluate_solution
+// scoring policy stays open for S7b; runs are persisted and surfaced via
+// get_candidate_performance meanwhile.
 export type ToolName =
   | "get_current_problem"
   | "get_interview_state"
@@ -41,7 +48,9 @@ export type ToolName =
   | "end_interview"
   | "get_interview_configuration"
   | "get_problem_hint"
-  | "record_candidate_answer";
+  | "record_candidate_answer"
+  | "submit_solution"
+  | "run_code";
 
 export const TOOL_NAMES: readonly ToolName[] = [
   "get_current_problem",
@@ -51,6 +60,8 @@ export const TOOL_NAMES: readonly ToolName[] = [
   "get_interview_configuration",
   "get_problem_hint",
   "record_candidate_answer",
+  "submit_solution",
+  "run_code",
 ];
 
 export function isToolName(raw: string): raw is ToolName {
@@ -84,6 +95,9 @@ export interface CandidatePerformanceResult {
   readonly hintsUsed: number;
   readonly hasEvaluation: boolean;
   readonly recommendation: EvaluationRecommendation | null;
+  /** S7a sandbox progress (HLD 6.4): persisted submissions + latest run. */
+  readonly submissionCount: number;
+  readonly lastRunStatus: RunStatus | null;
 }
 
 export interface EndInterviewResult {
@@ -111,6 +125,21 @@ export interface RecordAnswerResult {
   readonly responseCount: number;
 }
 
+export interface SubmitSolutionResult {
+  readonly submissionId: string;
+  readonly language: string;
+  readonly codeLength: number;
+  readonly submissionCount: number;
+}
+
+export interface RunCodeResult {
+  readonly runId: string;
+  readonly submissionId: string;
+  readonly status: RunStatus;
+  readonly passedCount: number;
+  readonly totalCount: number;
+}
+
 export type ToolResult =
   | CurrentProblemResult
   | InterviewStateResult
@@ -118,13 +147,16 @@ export type ToolResult =
   | EndInterviewResult
   | InterviewConfigurationResult
   | ProblemHintResult
-  | RecordAnswerResult;
+  | RecordAnswerResult
+  | SubmitSolutionResult
+  | RunCodeResult;
 
 export interface ToolServiceDeps {
   readonly interviews: InterviewService;
   readonly responses: ResponseRepository;
   readonly evaluations: EvaluationRepository;
   readonly events: EventRepository;
+  readonly submissions: SubmissionService;
   readonly clock?: Clock;
 }
 
@@ -141,6 +173,7 @@ export class ToolService {
   private readonly responses: ResponseRepository;
   private readonly evaluations: EvaluationRepository;
   private readonly events: EventRepository;
+  private readonly submissions: SubmissionService;
   private readonly clock: Clock;
 
   constructor(deps: ToolServiceDeps) {
@@ -148,6 +181,7 @@ export class ToolService {
     this.responses = deps.responses;
     this.evaluations = deps.evaluations;
     this.events = deps.events;
+    this.submissions = deps.submissions;
     this.clock = deps.clock ?? systemClock;
   }
 
@@ -184,6 +218,12 @@ export class ToolService {
         break;
       case "record_candidate_answer":
         result = await this.recordCandidateAnswer(ctx, args);
+        break;
+      case "submit_solution":
+        result = await this.submitSolution(ctx, args);
+        break;
+      case "run_code":
+        result = await this.runCode(ctx, args);
         break;
     }
     if (!result.ok) {
@@ -240,12 +280,19 @@ export class ToolService {
       byKind[response.kind] += 1;
     }
     const evaluation = state.value.evaluation;
+    const submissionCount = await this.submissions.submissionCount(
+      ctx.interviewId,
+    );
+    const latest = await this.submissions.latestSummary(ctx.interviewId);
+    if (!latest.ok) return latest;
     return ok({
       responseCount: responses.length,
       byKind,
       hintsUsed: evaluation?.hintsUsed ?? 0,
       hasEvaluation: evaluation !== null,
       recommendation: evaluation?.recommendation ?? null,
+      submissionCount,
+      lastRunStatus: latest.value?.status ?? null,
     });
   }
 
@@ -382,6 +429,102 @@ export class ToolService {
     if (!recorded.ok) return recorded;
     const responses = await this.responses.listByInterview(ctx.interviewId);
     return ok({ recorded: true, kind, responseCount: responses.length });
+  }
+
+  // Candidate code becomes backend-owned state (HLD 6.1). Args:
+  // { language (required: javascript|python), code (required),
+  //   problemId? }. Returns the persisted submission id for run_code.
+  async submitSolution(
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<SubmitSolutionResult>> {
+    const rawLanguage = args?.["language"];
+    if (typeof rawLanguage !== "string" || rawLanguage.trim() === "") {
+      return err(
+        domainError(
+          "VALIDATION_ERROR",
+          "language must be one of javascript, python",
+        ),
+      );
+    }
+    const rawCode = args?.["code"];
+    if (typeof rawCode !== "string" || rawCode.trim().length === 0) {
+      return err(
+        domainError("VALIDATION_ERROR", "code must be a non-empty string"),
+      );
+    }
+    const rawProblemId = args?.["problemId"];
+    let problemId: string | undefined;
+    if (rawProblemId !== undefined) {
+      if (typeof rawProblemId !== "string" || rawProblemId.trim() === "") {
+        return err(
+          domainError("VALIDATION_ERROR", "problemId must be a non-empty string"),
+        );
+      }
+      problemId = rawProblemId;
+    }
+    const submitted = await this.submissions.submit(ctx.interviewId, {
+      language: rawLanguage,
+      code: rawCode,
+      ...(problemId === undefined ? {} : { problemId }),
+    });
+    if (!submitted.ok) return submitted;
+    const count = await this.submissions.submissionCount(ctx.interviewId);
+    return ok({
+      submissionId: submitted.value.id,
+      language: submitted.value.language,
+      codeLength: submitted.value.code.length,
+      submissionCount: count,
+    });
+  }
+
+  // Execute code against caller-supplied cases (HLD 6.2/6.3). Args:
+  // { submissionId? (defaults to latest), testCases (required),
+  //   timeoutMs? }. Timeout/error outcomes are results, not dispatch
+  // failures, so the model can react to them conversationally.
+  async runCode(
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<RunCodeResult>> {
+    const rawSubmissionId = args?.["submissionId"];
+    let submissionId = "";
+    if (rawSubmissionId !== undefined) {
+      if (typeof rawSubmissionId !== "string" || rawSubmissionId.trim() === "") {
+        return err(
+          domainError(
+            "VALIDATION_ERROR",
+            "submissionId must be a non-empty string",
+          ),
+        );
+      }
+      submissionId = rawSubmissionId;
+    } else {
+      const latest = await this.submissions.latestSubmission(ctx.interviewId);
+      if (!latest.ok) return latest;
+      if (latest.value === null) {
+        return err(
+          domainError(
+            "NOT_FOUND",
+            `Interview ${ctx.interviewId} has no submissions yet`,
+            { interviewId: ctx.interviewId },
+          ),
+        );
+      }
+      submissionId = latest.value.id;
+    }
+    const run = await this.submissions.runTests(
+      asSubmissionId(submissionId),
+      args?.["testCases"],
+      args?.["timeoutMs"],
+    );
+    if (!run.ok) return run;
+    return ok({
+      runId: run.value.id,
+      submissionId: run.value.submissionId,
+      status: run.value.status,
+      passedCount: run.value.passedCount,
+      totalCount: run.value.totalCount,
+    });
   }
 }
 

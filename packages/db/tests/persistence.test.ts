@@ -6,6 +6,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
   InterviewService,
+  SubmissionService,
   asUserId,
   createProblem,
   type Problem,
@@ -140,6 +141,69 @@ describe("postgres persistence", () => {
     }
 
     // Reconnect the shared context handle for subsequent tests/cleanup.
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+  }));
+
+  it("round-trips submissions and runs, surviving restart", withDb(ctx, async (t) => {
+    const service = new InterviewService({ ...t.repos });
+    const submissions = new SubmissionService({
+      interviews: service,
+      submissions: t.repos.submissions,
+      runs: t.repos.runs,
+      events: t.repos.events,
+      executor: {
+        execute: async (_sub, cases) => ({
+          status: "completed",
+          results: cases.map((c) => ({
+            name: c.name,
+            passed: true,
+            actual: c.expected,
+          })),
+          durationMs: 7,
+        }),
+      },
+    });
+    const created = await service.createInterview({
+      candidateId: asUserId("user_sandbox"),
+      configuration: { interviewType: "dsa" },
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    const id = created.value.id;
+    for (const step of [
+      () => service.markReady(id),
+      () => service.start(id),
+    ] as const) {
+      const r = await step();
+      if (!r.ok) throw new Error(r.error.message);
+    }
+    const sub = await submissions.submit(id, {
+      language: "python",
+      code: "def solve(x):\n    return x",
+    });
+    if (!sub.ok) throw new Error(sub.error.message);
+    const run = await submissions.runTests(sub.value.id, [
+      { name: "basic", args: [1], expected: 1 },
+    ]);
+    if (!run.ok) throw new Error(run.error.message);
+    expect(run.value.status).toBe("passed");
+
+    await t.handle.close();
+    const fresh = createDatabase();
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      expect((await repos.submissions.listByInterview(id)).map((s) => s.id)).toEqual([
+        sub.value.id,
+      ]);
+      const runs = await repos.runs.listByInterview(id);
+      expect(runs).toHaveLength(1);
+      expect(runs[0]).toMatchObject({ status: "passed", passedCount: 1 });
+      expect(await repos.runs.listBySubmission(sub.value.id)).toHaveLength(1);
+    } finally {
+      await fresh.close();
+    }
+
     const reconnected = await connectTestDb();
     if (reconnected === null) throw new Error("DB vanished mid-test");
     ctx.current = reconnected;

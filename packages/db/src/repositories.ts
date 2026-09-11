@@ -13,9 +13,13 @@ import type {
   ProblemRepository,
   RepositorySet,
   ResponseRepository,
+  RunRepository,
+  SubmissionRepository,
 } from "@interview-coach/domain";
 import type {
   CandidateResponse,
+  CodeRun,
+  CodeSubmission,
   Evaluation,
   EvaluationRecommendation,
   Interview,
@@ -28,10 +32,13 @@ import type {
   Problem,
   ProblemDifficulty,
   ResponseKind,
+  RunStatus,
 } from "@interview-coach/domain";
 import type {
   InterviewId,
   ProblemId,
+  RunId,
+  SubmissionId,
 } from "@interview-coach/domain";
 import * as schema from "./schema.js";
 
@@ -401,6 +408,138 @@ export class DrizzleEventRepository implements EventRepository {
   }
 }
 
+// S7a sandbox repos: submissions + runs behind the domain interfaces.
+// Upserts keep replay/seed flows safe; reads order oldest-first to match the
+// in-memory implementations.
+export class DrizzleSubmissionRepository implements SubmissionRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(submission: CodeSubmission): Promise<void> {
+    const values = {
+      id: submission.id,
+      interviewId: submission.interviewId,
+      problemId: submission.problemId ?? null,
+      language: submission.language,
+      code: submission.code,
+      createdAt: submission.createdAt,
+    };
+    await this.db
+      .insert(schema.submissions)
+      .values(values)
+      .onConflictDoUpdate({ target: schema.submissions.id, set: values });
+  }
+
+  async findById(id: SubmissionId): Promise<CodeSubmission | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.submissions)
+      .where(eq(schema.submissions.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) return null;
+    return {
+      id: row.id as SubmissionId,
+      interviewId: row.interviewId as InterviewId,
+      language: row.language as CodeSubmission["language"],
+      code: row.code,
+      createdAt: row.createdAt,
+      ...(row.problemId === null ? {} : { problemId: row.problemId as ProblemId }),
+    };
+  }
+
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly CodeSubmission[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.submissions)
+      .where(eq(schema.submissions.interviewId, interviewId))
+      .orderBy(asc(schema.submissions.createdAt));
+    return rows.map(
+      (row): CodeSubmission => ({
+        id: row.id as SubmissionId,
+        interviewId: row.interviewId as InterviewId,
+        language: row.language as CodeSubmission["language"],
+        code: row.code,
+        createdAt: row.createdAt,
+        ...(row.problemId === null
+          ? {}
+          : { problemId: row.problemId as ProblemId }),
+      }),
+    );
+  }
+}
+
+export class DrizzleRunRepository implements RunRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(run: CodeRun): Promise<void> {
+    const values = {
+      id: run.id,
+      submissionId: run.submissionId,
+      interviewId: run.interviewId,
+      status: run.status,
+      results: [...run.results],
+      passedCount: run.passedCount,
+      totalCount: run.totalCount,
+      durationMs: run.durationMs,
+      createdAt: run.createdAt,
+    };
+    await this.db
+      .insert(schema.codeRuns)
+      .values(values)
+      .onConflictDoUpdate({ target: schema.codeRuns.id, set: values });
+  }
+
+  async findById(id: RunId): Promise<CodeRun | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.codeRuns)
+      .where(eq(schema.codeRuns.id, id))
+      .limit(1);
+    const row = rows[0];
+    return row === undefined ? null : toCodeRun(row);
+  }
+
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly CodeRun[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.codeRuns)
+      .where(eq(schema.codeRuns.interviewId, interviewId))
+      .orderBy(asc(schema.codeRuns.createdAt));
+    return rows.map(toCodeRun);
+  }
+
+  async listBySubmission(
+    submissionId: SubmissionId,
+  ): Promise<readonly CodeRun[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.codeRuns)
+      .where(eq(schema.codeRuns.submissionId, submissionId))
+      .orderBy(asc(schema.codeRuns.createdAt));
+    return rows.map(toCodeRun);
+  }
+}
+
+type CodeRunRow = typeof schema.codeRuns.$inferSelect;
+
+function toCodeRun(row: CodeRunRow): CodeRun {
+  return {
+    id: row.id as RunId,
+    submissionId: row.submissionId as SubmissionId,
+    interviewId: row.interviewId as InterviewId,
+    status: row.status as RunStatus,
+    results: row.results,
+    passedCount: row.passedCount,
+    totalCount: row.totalCount,
+    durationMs: row.durationMs,
+    createdAt: row.createdAt,
+  };
+}
+
 // Extra: users table access for future auth (S7). Not part of the S1
 // RepositorySet — interviews reference candidate IDs without a hard FK.
 export class DrizzleUserRepository {
@@ -438,5 +577,7 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     responses: new DrizzleResponseRepository(db),
     evaluations: new DrizzleEvaluationRepository(db),
     events: new DrizzleEventRepository(db),
+    submissions: new DrizzleSubmissionRepository(db),
+    runs: new DrizzleRunRepository(db),
   };
 }

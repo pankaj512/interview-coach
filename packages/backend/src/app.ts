@@ -24,6 +24,11 @@
 //   GET    /api/problems/:id
 //   POST   /api/interviews/:id/responses        (S5: persist candidate answers)
 //   POST   /api/interviews/:id/evaluation       (S5: structured eval pipeline)
+//   POST   /api/interviews/:id/submissions      (S7a: submit candidate code)
+//   GET    /api/interviews/:id/submissions      (S7a: list submissions)
+//   POST   /api/interviews/:id/submissions/:subId/runs (S7a: execute + tests)
+//   GET    /api/interviews/:id/runs             (S7a: list runs)
+//   GET    /api/interviews/:id/runs/:runId      (S7a: fetch one run)
 //   POST   /api/interviews/:id/tool-exec        (call_id idempotency, frozen §5)
 //   GET    /api/interviews/:id/tool-results/:call_id (recovery)
 //   POST   /api/interviews/:id/voice-session
@@ -36,13 +41,17 @@ import { z } from "zod";
 import {
   EVALUATION_DIMENSIONS,
   InterviewService,
+  SubmissionService,
   ToolService,
   asInterviewId,
   asProblemId,
+  asRunId,
+  asSubmissionId,
   asUserId,
   finalizeEvaluation,
   selectProblems,
   TOOL_NAMES,
+  type CodeExecutor,
   type InterviewConfiguration,
   type InterviewId,
   type RepositorySet,
@@ -58,7 +67,9 @@ import { sendApiError, sendDomainError } from "./http-errors.js";
 import {
   serializeEvaluation,
   serializeInterview,
+  serializeRun,
   serializeStateSnapshot,
+  serializeSubmission,
 } from "./serializers.js";
 import {
   FROZEN_VOICE_SESSION_CONFIG,
@@ -68,11 +79,13 @@ import {
   type VoiceSessionProvider,
 } from "./voice-session.js";
 import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
+import { LocalCodeRunner } from "./code-runner.js";
 
 export interface BuildAppDeps {
   readonly repos: RepositorySet;
   readonly config?: BackendConfig;
   readonly voiceProvider?: VoiceSessionProvider;
+  readonly codeRunner?: CodeExecutor;
   readonly logger?: boolean;
 }
 
@@ -164,6 +177,26 @@ const evaluationSchema = z.object({
   overallScore: z.number().int().min(0).max(100).optional(),
 });
 
+// S7a sandbox (HLD 6.1/6.3): candidate code submission + test execution.
+// Caps mirror the domain (50k code chars, 50 cases, 100ms..30s timeout).
+const submitCodeSchema = z.object({
+  language: z.enum(["javascript", "python"]),
+  code: z.string().min(1).max(50_000),
+  problemId: z.string().min(1).max(200).optional(),
+});
+
+const sandboxTestCaseSchema = z.object({
+  name: z.string().min(1).max(120),
+  args: z.array(z.unknown()),
+  expected: z.unknown(),
+  hidden: z.boolean().optional(),
+});
+
+const runCodeSchema = z.object({
+  testCases: z.array(sandboxTestCaseSchema).min(1).max(50),
+  timeoutMs: z.number().int().min(100).max(30_000).optional(),
+});
+
 const TOOL_NAMES_TUPLE = TOOL_NAMES as unknown as [
   ToolName,
   ...ToolName[],
@@ -216,11 +249,24 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const activeVoiceSessions = new Map<string, ActiveVoiceSession>();
 
   const interviews = new InterviewService({ ...deps.repos });
+  // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
+  // a fake via deps.codeRunner; container isolation lands in S8.
+  const codeRunner =
+    deps.codeRunner ??
+    new LocalCodeRunner({ maxActualChars: config.sandbox.maxActualChars });
+  const submissions = new SubmissionService({
+    interviews,
+    submissions: deps.repos.submissions,
+    runs: deps.repos.runs,
+    events: deps.repos.events,
+    executor: codeRunner,
+  });
   const tools = new ToolService({
     interviews,
     responses: deps.repos.responses,
     evaluations: deps.repos.evaluations,
     events: deps.repos.events,
+    submissions,
   });
 
   void app.register(cors, { origin: config.corsOrigin });
@@ -629,6 +675,139 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.status(201).send({ ok: true, evaluation: serializeEvaluation(recorded.value) });
   });
 
+  // S7a sandbox routes (HLD 6.1–6.3). Submissions are backend-owned state;
+  // runs execute in the local-dev runner with a wall-clock kill. Timeout and
+  // harness failures persist as `timeout`/`error` runs (201 with a status
+  // field), never 5xx — the model and UI react to the verdict.
+  app.post("/api/interviews/:id/submissions", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = submitCodeSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const submitted = await submissions.submit(id, {
+      language: parsed.data.language,
+      code: parsed.data.code,
+      ...(parsed.data.problemId === undefined
+        ? {}
+        : { problemId: parsed.data.problemId }),
+    });
+    if (!submitted.ok) return sendDomainError(reply, submitted.error);
+    request.log.info(
+      { interviewId: params.data.id, submissionId: submitted.value.id },
+      "code.submitted",
+    );
+    return reply
+      .status(201)
+      .send({ ok: true, submission: serializeSubmission(submitted.value) });
+  });
+
+  app.get("/api/interviews/:id/submissions", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const listed = await submissions.listSubmissions(asInterviewId(params.data.id));
+    if (!listed.ok) return sendDomainError(reply, listed.error);
+    return reply.send({
+      ok: true,
+      submissions: listed.value.map(serializeSubmission),
+    });
+  });
+
+  app.post(
+    "/api/interviews/:id/submissions/:subId/runs",
+    async (request, reply) => {
+      const params = z
+        .object({
+          id: z.string().min(1).max(200),
+          subId: z.string().min(1).max(200),
+        })
+        .safeParse(request.params);
+      if (!params.success) {
+        return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+      }
+      const parsed = runCodeSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+      }
+      const id = asInterviewId(params.data.id);
+      const submissionId = asSubmissionId(params.data.subId);
+      const submission = await deps.repos.submissions.findById(submissionId);
+      if (submission === null || submission.interviewId !== id) {
+        return sendApiError(
+          reply,
+          404,
+          "NOT_FOUND",
+          `Submission ${params.data.subId} does not exist for interview ${params.data.id}`,
+          false,
+        );
+      }
+      const run = await submissions.runTests(
+        submissionId,
+        parsed.data.testCases.map((t) => ({
+          name: t.name,
+          args: t.args,
+          expected: t.expected,
+          ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
+        })),
+        parsed.data.timeoutMs,
+      );
+      if (!run.ok) return sendDomainError(reply, run.error);
+      request.log.info(
+        {
+          interviewId: params.data.id,
+          submissionId: params.data.subId,
+          runId: run.value.id,
+          status: run.value.status,
+          durationMs: run.value.durationMs,
+        },
+        "code.executed",
+      );
+      return reply
+        .status(201)
+        .send({ ok: true, run: serializeRun(run.value) });
+    },
+  );
+
+  app.get("/api/interviews/:id/runs", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const listed = await submissions.listRuns(asInterviewId(params.data.id));
+    if (!listed.ok) return sendDomainError(reply, listed.error);
+    return reply.send({ ok: true, runs: listed.value.map(serializeRun) });
+  });
+
+  app.get("/api/interviews/:id/runs/:runId", async (request, reply) => {
+    const params = z
+      .object({
+        id: z.string().min(1).max(200),
+        runId: z.string().min(1).max(200),
+      })
+      .safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const run = await deps.repos.runs.findById(asRunId(params.data.runId));
+    if (run === null || run.interviewId !== id) {
+      return sendApiError(
+        reply,
+        404,
+        "NOT_FOUND",
+        `Run ${params.data.runId} does not exist for interview ${params.data.id}`,
+        false,
+      );
+    }
+    return reply.send({ ok: true, run: serializeRun(run) });
+  });
+
   app.post("/api/interviews/:id/tool-exec", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -766,6 +945,16 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       { interviewId: params.data.id, mode: mint.mode },
       "voice_session.created",
     );
+    // S7a sandbox summary (HLD 6.4): code progress travels with the mint so
+    // the model starts aware of submissions and latest run verdicts.
+    const submissionCount = await submissions.submissionCount(id);
+    const latestRun = await submissions.latestSummary(id);
+    const sandboxSummary =
+      submissionCount === 0
+        ? "no code submitted yet"
+        : latestRun.ok && latestRun.value !== null
+          ? `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, latest run ${latestRun.value.status} (${latestRun.value.passedCount}/${latestRun.value.totalCount})`
+          : `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, not run yet`;
     return reply.status(201).send({
       ok: true,
       session: {
@@ -790,6 +979,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
             : { problemSummary: describeProblem(state.value.currentProblem) }),
           responseCount: state.value.responseCount,
           hintsUsed: state.value.evaluation?.hintsUsed ?? 0,
+          sandboxSummary,
         }),
       },
     });

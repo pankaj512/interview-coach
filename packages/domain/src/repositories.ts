@@ -3,8 +3,11 @@ import type {
   InterviewId,
   ProblemId,
   ResponseId,
+  RunId,
+  SubmissionId,
 } from "./ids.js";
 import type { CandidateResponse } from "./candidate-response.js";
+import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
 import type { Interview } from "./interview.js";
 import type { InterviewEvent } from "./interview-event.js";
@@ -38,6 +41,22 @@ export interface EvaluationRepository {
 export interface EventRepository {
   append(event: InterviewEvent): Promise<void>;
   listByInterview(interviewId: InterviewId): Promise<readonly InterviewEvent[]>;
+}
+
+// S7a sandbox persistence (HLD 6.1/6.3): submissions + runs are
+// backend-owned artefacts like responses — persisted separately from raw
+// conversation, restart-safe, readable by evaluation (HLD 6.4).
+export interface SubmissionRepository {
+  save(submission: CodeSubmission): Promise<void>;
+  findById(id: SubmissionId): Promise<CodeSubmission | null>;
+  listByInterview(interviewId: InterviewId): Promise<readonly CodeSubmission[]>;
+}
+
+export interface RunRepository {
+  save(run: CodeRun): Promise<void>;
+  findById(id: RunId): Promise<CodeRun | null>;
+  listByInterview(interviewId: InterviewId): Promise<readonly CodeRun[]>;
+  listBySubmission(submissionId: SubmissionId): Promise<readonly CodeRun[]>;
 }
 
 export class InMemoryInterviewRepository implements InterviewRepository {
@@ -120,12 +139,62 @@ export class InMemoryEventRepository implements EventRepository {
   }
 }
 
+export class InMemorySubmissionRepository implements SubmissionRepository {
+  private readonly store = new Map<SubmissionId, CodeSubmission>();
+
+  async save(submission: CodeSubmission): Promise<void> {
+    this.store.set(submission.id, submission);
+  }
+
+  async findById(id: SubmissionId): Promise<CodeSubmission | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly CodeSubmission[]> {
+    return [...this.store.values()]
+      .filter((s) => s.interviewId === interviewId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+}
+
+export class InMemoryRunRepository implements RunRepository {
+  private readonly store = new Map<RunId, CodeRun>();
+
+  async save(run: CodeRun): Promise<void> {
+    this.store.set(run.id, run);
+  }
+
+  async findById(id: RunId): Promise<CodeRun | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly CodeRun[]> {
+    return [...this.store.values()]
+      .filter((r) => r.interviewId === interviewId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+
+  async listBySubmission(
+    submissionId: SubmissionId,
+  ): Promise<readonly CodeRun[]> {
+    return [...this.store.values()]
+      .filter((r) => r.submissionId === submissionId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+}
+
 export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
   readonly responses: ResponseRepository;
   readonly evaluations: EvaluationRepository;
   readonly events: EventRepository;
+  readonly submissions: SubmissionRepository;
+  readonly runs: RunRepository;
 }
 
 export function createInMemoryRepositories(): RepositorySet & {
@@ -134,6 +203,8 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly responses: InMemoryResponseRepository;
   readonly evaluations: InMemoryEvaluationRepository;
   readonly events: InMemoryEventRepository;
+  readonly submissions: InMemorySubmissionRepository;
+  readonly runs: InMemoryRunRepository;
 } {
   return {
     interviews: new InMemoryInterviewRepository(),
@@ -141,5 +212,7 @@ export function createInMemoryRepositories(): RepositorySet & {
     responses: new InMemoryResponseRepository(),
     evaluations: new InMemoryEvaluationRepository(),
     events: new InMemoryEventRepository(),
+    submissions: new InMemorySubmissionRepository(),
+    runs: new InMemoryRunRepository(),
   };
 }

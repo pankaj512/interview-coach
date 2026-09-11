@@ -209,3 +209,25 @@ Verified 2026-09-11: install ok, typecheck ok, test 172 passed (167 prior + 5 ne
 Tag: `session-6-1` after commit.
 
 ## S7 — Code execution sandbox (HLD Phase 6, open)
+
+## S7a — Sandbox backend half: domain + persistence + local runner (2026-09-11)
+Status: done (verified below). Scope per user choice: local-runner MVP + backend half; web UI (submit editor, run panel, eval scoring over runs) deferred to S7b. Voice tools are live so the model path works end-to-end already.
+
+Done:
+* Domain (`packages/domain/src/submission.ts` + `submission-service.ts`): `CodeSubmission`/`CodeRun` entities (`sub_`/`run_` ids), `createSubmission` (javascript|python, ≤50k chars), `parseTestCases` (1..50, unique names, JSON-only, hidden flag), `parseRunLimits` (100ms..30s, 5s default), `CodeExecutor` port, `assembleRun` (hidden actuals masked, timeout/error passthrough), `summarizeRun` (passRate). `SubmissionService` (submit/list/latest/run/listRuns/summary, live-status gating, runner crashes → persisted `error` runs). Events `code.submitted`/`code.executed`. Repos + in-memory impls added to `RepositorySet`.
+* `ToolService`: + `submit_solution` / `run_code` (latest-or-named submission; timeout/error are results, not dispatch failures); `get_candidate_performance` += `submissionCount`/`lastRunStatus`. Constructor takes `submissions` (existing domain tests updated).
+* DB: `submissions` + `code_runs` tables (`drizzle/0001_short_meteorite.sql`, migrated), Drizzle repos + factory, persistence test (submit→run→restart survival).
+* Backend: `LocalCodeRunner` (`src/code-runner.ts` — fresh temp dir per run, node/python3 `solve(*args)` harness, canonical compare, wall-clock kill → `timeout`, output caps; documented local-dev-only, containers in S8). Routes `POST/GET .../submissions`, `POST .../submissions/:subId/runs`, `GET .../runs[/:runId]` (cross-interview → 404, verdicts always 201-never-5xx). Config `CODE_RUN_TIMEOUT_MS`/`CODE_RUN_MAX_OUTPUT_CHARS` (+ `.env.example`). Voice instructions advertise submit/run tools + `Code:` progress line on the mint.
+* Tests: domain `sandbox` (7), `submission-service` (5), `tool-service-s7` (3); backend `sandbox` (12: real JS+Python pass, wrong-code fail + hidden masking, load-error, 500ms-timeout kill, cross-interview 404, runs list/fetch, tool-exec submit/run/perf, instructions); db +1 persistence.
+
+Decisions locked:
+* Hidden cases report pass/fail only end-to-end (masked at assembly, never stored).
+* Scoring policy over runs stays open for S7b; S7a persists + surfaces summaries (performance tool, mint context).
+* `submit`/`run` allowed in ready/in_progress/paused/completing (cancelled/failed/completed/created rejected).
+
+Open for S7b (web client):
+* Submit editor + run panel against the S7a routes above; extend `BackendClient` + advertise 9 tools in `voice/session.ts`; evaluation scoring over execution summaries.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && vite build` (no-DB warn-and-pass 214 + live-DB vs postgres:16 port 5433 214) plus live server smoke.
+Verified 2026-09-11: install ok, typecheck ok, test 214 passed (172 prior + 42 new), `tsc -b` ok, `vite build` ok (303.97kB JS / 93.61kB gzip). Live smoke vs postgres:16 ok: create→ready→start→submit(python)→run passed 2/2 hidden-masked→runs list→performance(submissions 1, lastRun passed).
+Tag: `session-7a` after commit.

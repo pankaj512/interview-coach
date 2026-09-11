@@ -5,6 +5,8 @@ export type UserId = string & { readonly __brand: "UserId" };
 export type InterviewId = string & { readonly __brand: "InterviewId" };
 export type ProblemId = string & { readonly __brand: "ProblemId" };
 export type ResponseId = string & { readonly __brand: "ResponseId" };
+export type SubmissionId = string & { readonly __brand: "SubmissionId" };
+export type RunId = string & { readonly __brand: "RunId" };
 export type EvaluationId = string & { readonly __brand: "EvaluationId" };
 export type EventId = string & { readonly __brand: "EventId" };
 
@@ -22,6 +24,14 @@ export function newProblemId(): ProblemId {
 
 export function newResponseId(): ResponseId {
   return `resp_${randomUUID()}` as ResponseId;
+}
+
+export function newSubmissionId(): SubmissionId {
+  return `sub_${randomUUID()}` as SubmissionId;
+}
+
+export function newRunId(): RunId {
+  return `run_${randomUUID()}` as RunId;
 }
 
 export function newEvaluationId(): EvaluationId {
@@ -47,6 +57,14 @@ export function asProblemId(raw: string): ProblemId {
 
 export function asResponseId(raw: string): ResponseId {
   return raw as ResponseId;
+}
+
+export function asSubmissionId(raw: string): SubmissionId {
+  return raw as SubmissionId;
+}
+
+export function asRunId(raw: string): RunId {
+  return raw as RunId;
 }
 
 export function asEvaluationId(raw: string): EvaluationId {

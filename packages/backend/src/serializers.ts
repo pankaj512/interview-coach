@@ -2,6 +2,8 @@
 // JSON-serializable (ISO timestamps) for Voice Live function_call_output.
 
 import type {
+  CodeRun,
+  CodeSubmission,
   Evaluation,
   Interview,
   InterviewProblem,
@@ -91,5 +93,71 @@ export function serializeStateSnapshot(
     responseCount: snapshot.responseCount,
     evaluation:
       snapshot.evaluation === null ? null : serializeEvaluation(snapshot.evaluation),
+  };
+}
+
+// S7a sandbox serializers: ISO timestamps like the rest; hidden cases are
+// already masked at assembly time so stored rows are safe to return.
+export interface SerializedSubmission {
+  readonly id: string;
+  readonly interviewId: string;
+  readonly problemId?: string;
+  readonly language: string;
+  readonly code: string;
+  readonly createdAt: string;
+}
+
+export interface SerializedTestResult {
+  readonly name: string;
+  readonly hidden: boolean;
+  readonly passed: boolean;
+  readonly actual?: unknown;
+  readonly error?: string;
+}
+
+export interface SerializedRun {
+  readonly id: string;
+  readonly submissionId: string;
+  readonly interviewId: string;
+  readonly status: string;
+  readonly results: readonly SerializedTestResult[];
+  readonly passedCount: number;
+  readonly totalCount: number;
+  readonly durationMs: number;
+  readonly createdAt: string;
+}
+
+export function serializeSubmission(
+  submission: CodeSubmission,
+): SerializedSubmission {
+  return {
+    id: submission.id,
+    interviewId: submission.interviewId,
+    language: submission.language,
+    code: submission.code,
+    createdAt: submission.createdAt.toISOString(),
+    ...(submission.problemId === undefined
+      ? {}
+      : { problemId: submission.problemId }),
+  };
+}
+
+export function serializeRun(run: CodeRun): SerializedRun {
+  return {
+    id: run.id,
+    submissionId: run.submissionId,
+    interviewId: run.interviewId,
+    status: run.status,
+    results: run.results.map((r) => ({
+      name: r.name,
+      hidden: r.hidden,
+      passed: r.passed,
+      ...(r.actual === undefined ? {} : { actual: r.actual }),
+      ...(r.error === undefined ? {} : { error: r.error }),
+    })),
+    passedCount: run.passedCount,
+    totalCount: run.totalCount,
+    durationMs: run.durationMs,
+    createdAt: run.createdAt.toISOString(),
   };
 }

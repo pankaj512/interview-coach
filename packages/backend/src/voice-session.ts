@@ -168,6 +168,8 @@ export interface SessionInstructionContext {
   readonly problemSummary?: string;
   readonly responseCount?: number;
   readonly hintsUsed?: number;
+  /** S7a sandbox progress: e.g. "2 submissions, latest run failed (1/3)". */
+  readonly sandboxSummary?: string;
 }
 
 export function buildSessionInstructions(input: {
@@ -177,6 +179,7 @@ export function buildSessionInstructions(input: {
   problemSummary?: string;
   responseCount?: number;
   hintsUsed?: number;
+  sandboxSummary?: string;
 }): string {
   const context: SessionInstructionContext = input;
   const lines = [
@@ -186,6 +189,7 @@ export function buildSessionInstructions(input: {
     "- Ask one question at a time; probe reasoning before giving hints.",
     "- Hint policy: at most 3 escalating tiers via get_problem_hint (1 concept nudge, 2 approach scaffold, 3 detailed plan). Never reveal or dictate the final code.",
     "- Record what the candidate says with record_candidate_answer (kind: answer/approach/code/question/note) so the backend persists it.",
+    "- Code sandbox (HLD Phase 6): persist candidate code with submit_solution (language javascript|python, code, problemId?), then execute it with run_code (submissionId defaults to latest, testCases required, timeoutMs optional). Timeout/error outcomes are results — discuss them, don't treat them as tool failures. Hidden cases report pass/fail only; never invent their contents.",
     "- Read interview rules with get_interview_configuration; read progress with get_candidate_performance.",
     "- Signal done with end_interview only when the candidate has finished; the app finalizes state.",
     "",
@@ -204,6 +208,9 @@ export function buildSessionInstructions(input: {
     lines.push(
       `Progress: ${context.responseCount ?? 0} recorded responses, ${context.hintsUsed ?? 0} hints used.`,
     );
+  }
+  if (context.sandboxSummary !== undefined && context.sandboxSummary !== "") {
+    lines.push(`Code: ${context.sandboxSummary}.`);
   }
   return lines.join("\n");
 }

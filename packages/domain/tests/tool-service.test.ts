@@ -4,19 +4,35 @@ import type { InterviewId } from "../src/ids.js";
 import { createProblem } from "../src/problem.js";
 import { createInMemoryRepositories } from "../src/repositories.js";
 import { InterviewService } from "../src/interview-service.js";
+import { SubmissionService } from "../src/submission-service.js";
 import { ToolService } from "../src/tool-service.js";
 import { must, mustErr } from "./helpers.js";
+
+export const throwingExecutor = {
+  execute: async (): Promise<never> => {
+    throw new Error("no executor in unit test");
+  },
+};
 
 function setup() {
   const repos = createInMemoryRepositories();
   const now = new Date("2026-09-11T10:00:00.000Z");
   const clock = { now: () => now };
   const interviews = new InterviewService({ ...repos, clock });
+  const submissions = new SubmissionService({
+    interviews,
+    submissions: repos.submissions,
+    runs: repos.runs,
+    events: repos.events,
+    executor: throwingExecutor,
+    clock,
+  });
   const tools = new ToolService({
     interviews,
     responses: repos.responses,
     evaluations: repos.evaluations,
     events: repos.events,
+    submissions,
     clock,
   });
   return { repos, interviews, tools };
