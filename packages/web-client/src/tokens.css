@@ -1,0 +1,67 @@
+/* S6 — Design tokens as CSS custom properties (ux-spec §3, normative).
+ *
+ * Source: Penpot page `02 — Hi-Fi Dark`, theme `mode/dark` (44 tokens:
+ * 19 color.dark + 7 space + 4 radius + 2 borderWidth + 9 fontSizes +
+ * 3 fontWeights). Mapping rule: `--<token-name with . → ->`.
+ * `generateStyle` spot-checks (H-Setup bg #0e1116, title 20px/700,
+ * btn-primary label 600) match the values below.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* 3.1 Color (color.dark) */
+  --bg-base: #0e1116;
+  --bg-sunken: #0a0d12;
+  --surface-base: #161b22;
+  --surface-raised: #1f2630;
+  --surface-overlay: #262e39;
+  --line-base: #2a313b;
+  --line-strong: #3d4653;
+  --ink-base: #e8eaed;
+  --ink-muted: #9aa3af;
+  --ink-faint: #6b7480;
+  --voice-solid: #34d399;
+  --voice-wash: #14322a;
+  --success: #34d399;
+  --warning-solid: #f5b544;
+  --warning-wash: #3a2e1a;
+  --danger-solid: #f26d6d;
+  --danger-wash: #3a2226;
+  --info-solid: #6ea8fe;
+  --info-wash: #1e2a3f;
+
+  /* Primary CTA is near-white, NOT voice green — voice.solid is reserved
+   * for voice activity only (Phase D principle 2). */
+  --cta-base: #e8eaed;
+  --cta-ink: #0e1116;
+
+  /* 3.2 Space / radius / border */
+  --s-4: 4px;
+  --s-8: 8px;
+  --s-12: 12px;
+  --s-16: 16px;
+  --s-24: 24px;
+  --s-32: 32px;
+  --s-48: 48px;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-pill: 999px;
+  --bw-1: 1px;
+  --bw-2: 2px;
+
+  /* 3.3 Type */
+  --fs-micro: 11px;
+  --fs-caption: 12px;
+  --fs-small: 13px;
+  --fs-body: 14px;
+  --fs-lead: 15px;
+  --fs-heading: 16px;
+  --fs-big: 18px;
+  --fs-title: 20px;
+  --fs-display: 28px;
+  --fw-regular: 400;
+  --fw-medium: 600;
+  --fw-bold: 700;
+}

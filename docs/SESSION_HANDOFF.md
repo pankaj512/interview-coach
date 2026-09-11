@@ -163,3 +163,29 @@ Open for S6:
 Verify: `pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB UI-flow smoke over real HTTP (same calls `BackendClient` makes).
 Verified 2026-09-11: typecheck ok, test 153 passed (143 prior + 10 new; live-DB run vs postgres:16 port 5433 also 153), `tsc -b` ok, `vite build` ok (268.69kB JS / 83.08kB gzip). Live HTTP smoke vs local server + postgres:16 ok: create→select→ready→browse/search→mint(`api-key-local-dev`, instructions-ok)→state(`in_progress`)→ui-hint(L1)→answer(1)→answer-tool(args)→eval(70/`lean_hire`, hints 1)→end(`completed`)→final→delete-session (SMOKE-OK).
 Tag: `session-5b` after commit.
+
+## S6 — Web client build per SD3 handoff (2026-09-11)
+Status: done (pending verification below). Builds the ux-spec contract (`design/sd3-ux-handoff`, docs-only — no code ported, no merge) on top of the S4/S5b voice+api layer, which is reused unchanged.
+
+Done:
+* `src/tokens.css`: all 44 Penpot tokens as CSS vars (`--<name with . → ->`): 19 `color.dark` (voice `#34D399` voice-activity-only, CTA near-white), 13 space/radius/border, 12 type (9 sizes + 3 weights).
+* `src/ds/`: 9 components per spec §4 — `PrimaryButton/DangerButton/GhostButton` (`buttons.tsx`), `StatusChip/VoiceState/Timer/Caption/DiffPill/ScoreBar` (`status.tsx`) over pure `model.ts` mappings (icon + label everywhere, timer Low < 5 min). Existing S4 panels (`ProblemPanel/CodeEditor/HintPanel/AnswerForm/EvaluationForm`) reused inside the new layout.
+* `src/screens/`: `SetupScreen` (H-Setup: format cards, Easy default, count/topic/auto-select + browser, STEP 1 OF 2) → `DevicesScreen` (H-Devices: mic gate with live level meter blocks Continue, speaker test tone, guided fix on denial, STEP 2 OF 2) → `LobbyScreen` (H-Lobby: config recap + Join) → `LiveScreen` (H-Live hero: topbar brand + chip + timer + guarded End; voice rail with VoiceState + animated wave + captions; H-Live-states inline — reconnect queue note, tab-hidden treated as MicBlocked, barge-in hint; problem → editor locked order; Submit disabled + Phase-6 copy) → `ResultsScreen` (H-Results: per-key ScoreBars, strengths/weaknesses, hints header, timeline, transcript highlights, next-practice curriculum link, finalize form) + `HistoryScreen` (H-History: local top-20 index → backend detail, empty-state + CTA).
+* `src/history.ts` (localStorage top-20 index, corrupt/full-storage safe) + `src/curriculum.ts` (bundles `dsa-interview-curriculum.json` read-only, weakness/topic-focus → module suggestion + samples).
+* `src/styles.css` rewritten token-only + responsive: `<1100px` rail collapses to a top strip and problem/editor stack (spec §6, rail never unmounts), `<760px` single-column (S6 call). `App.tsx` ritual router (setup→devices→lobby→live→results + history, no dead ends).
+* Tests: `ds-model` (10: chip/voice/timer rules), `s6-helpers` (4: history cap/dedup/corrupt, curriculum default + Arrays match).
+
+Decisions locked (spec §9 resolved + §8 trace):
+* Q1 focus/keyboard: DOM order rail→problem→editor is the tab order; primary CTAs autofocus; guarded-end dialog focuses safe "Keep going".
+* Q2 breakpoints: spec's `<1100px` rail rule + S6's `<760px` single-column stop.
+* Q3 guarded-end copy: "closes the voice session and moves the interview to Completing… cannot be undone" (danger End / ghost Keep going).
+* Q4 transcript highlights: manual — latest 6 turns verbatim; auto-summaries deferred.
+* 6-vs-8 dimensions: render all backend-returned keys (HLD 5.8 = 8 normative; spec's 6 is the subset case) — no client change either way.
+* History stays client-indexed (no new backend route in S6); detail always re-fetches canonical `GET .../state`, load failures surface as history errors, never invented state.
+
+Open for S7+:
+* `GET /api/interviews` server-side listing (replaces the local history index); transcript persistence for cross-session highlights; sub-760px polish.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus preview serve smoke.
+Verified 2026-09-11: install ok (no new deps — React/Vite already present), typecheck ok, test 167 passed (153 prior + 14 new), `tsc -b` ok, `vite build` ok (303.43kB JS / 93.52kB gzip — curriculum JSON bundled; 12.35kB CSS with tokens), preview serves `Interview Coach` shell. No `VITE_AZURE_*` in client (one pre-existing comment reference only).
+Tag: `session-6` after commit.
