@@ -4,7 +4,9 @@ import { useState } from "react";
 import { BackendClient } from "../api/backend-client.js";
 import type { SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { useLiveInterview } from "../state/use-interview.js";
+import { AnswerForm } from "./AnswerForm.js";
 import { CodeEditor } from "./CodeEditor.js";
+import { HintPanel } from "./HintPanel.js";
 import { ProblemPanel } from "./ProblemPanel.js";
 import { ResultsPanel } from "./ResultsPanel.js";
 import { StatusBar } from "./StatusBar.js";
@@ -41,7 +43,7 @@ export function InterviewRoom({
           <h2>Interview complete</h2>
           <p className="hint">Interview {interview.id} · candidate {interview.candidateId}</p>
         </header>
-        <ResultsPanel snapshot={finalSnapshot ?? live.snapshot} />
+        <ResultsPanel backend={backend} snapshot={finalSnapshot ?? live.snapshot} />
         <button type="button" onClick={onExit}>
           Back to setup
         </button>
@@ -96,6 +98,17 @@ export function InterviewRoom({
             <ProblemPanel snapshot={live.snapshot} />
             <CodeEditor />
           </div>
+          <HintPanel
+            backend={backend}
+            interviewId={interview.id}
+            initialHintsUsed={live.snapshot?.evaluation?.hintsUsed ?? 0}
+            onHint={() => void live.refresh()}
+          />
+          <AnswerForm
+            backend={backend}
+            interviewId={interview.id}
+            onRecorded={() => void live.refresh()}
+          />
           <section className="card">
             <h3>Session activity</h3>
             {live.events.length === 0 ? (

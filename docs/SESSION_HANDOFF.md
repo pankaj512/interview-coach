@@ -140,3 +140,26 @@ Open for S5b (web client):
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build` plus live-DB intelligence smoke (create→select→ready→mint→hint-tool→responses→config-tool→evaluation→end→evaluation-after-complete).
 Verified 2026-09-11: install ok (no new deps), typecheck ok, test 143 passed (110 prior + 33 new: 19 domain + 14 backend; no-DB run warn-and-pass, live-DB run vs postgres:16 port 5433 also 143 with persistence live), `tsc -b` ok. Live smoke full flow ok: 201s, auto-select assigned, mint `test` with hint-aware instructions, hint L1/hintsUsed 1, response recorded, eval computed 80/`lean_hire` (hints preserved), end `completed`, post-complete eval 95/`hire` kept explicit.
 Tag: `session-5a` after commit.
+
+## S5b — Interview intelligence, web client (2026-09-11)
+Status: done (pending verification below). Takes the design handoff (`design/sd3-ux-handoff`, docs-only — no code to port) where applicable: H-Live hints-left indicator, Results hints header, suggested focus from persisted weaknesses + topic focus. Dimensions render per-key so the spec's "6 bars" vs HLD's 8 needs no client change. Next-practice curriculum link deferred (needs data plumbing; open for S6).
+
+Done:
+* Transport (`api/types.ts`, `api/backend-client.ts`): `ToolName` + 3 S5 tools, `ToolArgs`, `toolExec(..., signal?, args?)` → `arguments`; new `listProblems` (query-encoding), `selectProblems`, `recordResponse`, `submitEvaluation`. Fixed `SerializedEvaluation.dimensions` shape (`{score,notes}` objects — was `Record<string,number>`).
+* Voice path (`voice/`): `ToolExecutor`/`forwardToolCall` accept `args` (same call_id ⇒ same args every attempt); `voice-client.ts` parses model `arguments` JSON at all four function-call event shapes (`parseToolArgs`, never throws, backend defaults on garbage) and threads them through `pendingCall` → `executeTool` → executor; `use-interview.ts` forwards args to `toolExec`; `session.ts` advertises 7 tools with schemas (hint `level` enum, answer `kind` enum + required `content`).
+* Setup (`SetupForm.tsx` + `useInterviewSetup`): problem count + topic-focus fields, auto-select toggle (default on: create → select → ready), manual mode with problem browser (search + difficulty filter over `GET /api/problems`, up to 20 picks) or raw ids.
+* Live room (`InterviewRoom.tsx` + new `HintPanel.tsx` + `AnswerForm.tsx`): hint button via `tool-exec` with UI-generated `call_id` (same S5a accounting/idempotency as the model path) + hints-left/tier display; typed answer/note capture via `POST .../responses`; both refresh the snapshot. Exposed `refresh` from `useLiveInterview`.
+* Results (`ResultsPanel.tsx` + new `EvaluationForm.tsx`): hints-used header line, per-key dimension rendering, suggested focus; finalize form (8 HLD dims 0–5 optional, strengths/weaknesses) → `POST .../evaluation`, backend computes score/recommendation.
+* Tests: `backend-client-s5` (5: query encoding, select/record, eval, args present/absent), `voice-args` (7: parse + forward passthrough); updated `session` (7 tools + schemas) and `voice-client` (7 tools) assertions.
+
+Decisions locked:
+* UI hints reuse `tool-exec` (no dedicated hint endpoint); each click is a new `call_id` ⇒ a new counted hint.
+* Client renders backend-returned dimension keys verbatim (6-vs-8 question needs no code change either way).
+
+Open for S6:
+* Next-practice link into `dsa-interview-curriculum.json` (needs data plumbing to the client).
+* Restyle per `docs/ux-spec.md` tokens/components (targets a rebuild, not this package).
+
+Verify: `pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB UI-flow smoke over real HTTP (same calls `BackendClient` makes).
+Verified 2026-09-11: typecheck ok, test 153 passed (143 prior + 10 new; live-DB run vs postgres:16 port 5433 also 153), `tsc -b` ok, `vite build` ok (268.69kB JS / 83.08kB gzip). Live HTTP smoke vs local server + postgres:16 ok: create→select→ready→browse/search→mint(`api-key-local-dev`, instructions-ok)→state(`in_progress`)→ui-hint(L1)→answer(1)→answer-tool(args)→eval(70/`lean_hire`, hints 1)→end(`completed`)→final→delete-session (SMOKE-OK).
+Tag: `session-5b` after commit.

@@ -19,7 +19,7 @@
 // policy without timers or the network.
 
 import { BackendApiError } from "../api/backend-client.js";
-import type { ToolExecOutcome, ToolName } from "../api/types.js";
+import type { ToolArgs, ToolExecOutcome, ToolName } from "../api/types.js";
 
 export const TOOL_TIMEOUT_MS = 8000;
 export const TOOL_MAX_RETRIES = 2;
@@ -31,6 +31,7 @@ export type ToolExecutor = (
   callId: string,
   tool: ToolName,
   signal: AbortSignal,
+  args?: ToolArgs,
 ) => Promise<ToolExecOutcome>;
 
 export interface ForwarderClocks {
@@ -89,7 +90,8 @@ export function toFunctionCallOutput(callId: string, outcome: ToolExecOutcome): 
 
 // Executes one tool call with the frozen retry policy and returns the exact
 // string to submit as `function_call_output`. The same `callId` is used for
-// every attempt so backend idempotency dedups server-side.
+// every attempt so backend idempotency dedups server-side. S5: model- or
+// UI-supplied `args` travel with every attempt (same call_id => same args).
 export async function forwardToolCall(
   exec: ToolExecutor,
   callId: string,
@@ -98,11 +100,13 @@ export async function forwardToolCall(
     readonly timeoutMs?: number;
     readonly maxRetries?: number;
     readonly clocks?: ForwarderClocks;
+    readonly args?: ToolArgs;
   },
 ): Promise<ForwardResult> {
   const timeoutMs = options?.timeoutMs ?? TOOL_TIMEOUT_MS;
   const maxRetries = options?.maxRetries ?? TOOL_MAX_RETRIES;
   const clocks = options?.clocks ?? defaultClocks;
+  const args = options?.args;
   let attempts = 0;
   // eslint-disable-next-line no-constant-condition
   while (true) {
@@ -110,7 +114,7 @@ export async function forwardToolCall(
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const outcome = await exec(callId, tool, controller.signal);
+      const outcome = await exec(callId, tool, controller.signal, args);
       clearTimeout(timer);
       if (!outcome.ok) {
         return { output: toFunctionCallOutput(callId, outcome), replayed: outcome.replayed, attempts, retried: attempts > 1 };

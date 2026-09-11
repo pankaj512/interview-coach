@@ -25,9 +25,10 @@ export interface RealtimeToolDefinition {
   };
 }
 
-// CLI-identical tool surface plus `end_interview` (S1/S3 domain tool). The
-// model signals done via end_interview; the app finalizes (completing ->
-// completed) via POST /end — the model never transitions state itself.
+// CLI-identical tool surface plus `end_interview` (S1/S3 domain tool) and
+// the S5 intelligence tools. The model signals done via end_interview; the
+// app finalizes (completing -> completed) via POST /end — the model never
+// transitions state itself.
 export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
   {
     type: "function",
@@ -49,6 +50,40 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
     description:
       "Get candidate performance including response counts and evaluation status. Call when asked about past performance or how the candidate did before.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+  },
+  {
+    type: "function",
+    name: "get_interview_configuration",
+    description:
+      "Get the backend-owned interview configuration (type, difficulty, duration, problem count, topic focus). Call when you need the interview rules instead of guessing them.",
+    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+  },
+  {
+    type: "function",
+    name: "get_problem_hint",
+    description:
+      "Get a tiered hint for the current problem (level 1: concept nudge, 2: approach scaffold, 3: detailed plan). Omit level for the next appropriate tier. Hints never contain the solution — relay the hint conversationally without revealing final code. Every hint is counted and visible in evaluation.",
+    parameters: {
+      type: "object",
+      properties: { level: { type: "integer", enum: [1, 2, 3] } },
+      required: [],
+      additionalProperties: false,
+    },
+  },
+  {
+    type: "function",
+    name: "record_candidate_answer",
+    description:
+      "Persist what the candidate just said as a backend-owned response (kind: answer, approach, code, question, or note). Call after substantive candidate turns so progress and evaluation stay accurate.",
+    parameters: {
+      type: "object",
+      properties: {
+        kind: { type: "string", enum: ["answer", "approach", "code", "question", "note"] },
+        content: { type: "string" },
+      },
+      required: ["content"],
+      additionalProperties: false,
+    },
   },
   {
     type: "function",

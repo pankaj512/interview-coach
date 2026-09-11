@@ -16,7 +16,7 @@
 // deltas and PCM chunks are never logged.
 
 import { BackendApiError, BackendClient } from "../api/backend-client.js";
-import type { ToolName, VoiceSessionPayload } from "../api/types.js";
+import type { ToolArgs, ToolName, VoiceSessionPayload } from "../api/types.js";
 import { base64ToPcm16 } from "./audio.js";
 import {
   addPendingCallId,
@@ -109,6 +109,7 @@ interface PendingCall {
   readonly callId: string;
   readonly name: ToolName;
   readonly previousItemId?: string;
+  readonly args?: ToolArgs;
 }
 
 const VALID_TOOL_NAMES: readonly string[] = [
@@ -116,7 +117,28 @@ const VALID_TOOL_NAMES: readonly string[] = [
   "get_interview_state",
   "get_candidate_performance",
   "end_interview",
+  "get_interview_configuration",
+  "get_problem_hint",
+  "record_candidate_answer",
 ];
+
+// Model-supplied function arguments arrive as a JSON string on the protocol
+// events. Parse defensively: anything non-object (or unparseable) means "no
+// args" — the backend applies defaults (hint tier, answer kind). Never throw.
+export function parseToolArgs(raw: unknown): ToolArgs | undefined {
+  if (typeof raw !== "string") return undefined;
+  const trimmed = raw.trim();
+  if (trimmed === "" || trimmed === "{}") return undefined;
+  try {
+    const parsed: unknown = JSON.parse(trimmed);
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+      return undefined;
+    }
+    return parsed as ToolArgs;
+  } catch {
+    return undefined;
+  }
+}
 
 function defaultSleep(ms: number): Promise<void> {
   return new Promise((resolve) => {
@@ -358,14 +380,16 @@ export class VoiceInterviewClient {
           const callId = String(item["call_id"] ?? "");
           const name = String(item["name"] ?? "");
           if (callId !== "" && this.isToolName(name)) {
+            const args = parseToolArgs(item["arguments"]);
             this.pendingCall = {
               callId,
               name,
               ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
+              ...(args === undefined ? {} : { args }),
             };
-            const args = String(item["arguments"] ?? "");
-            if (args.trim().length > 2) {
-              void this.executeTool(name, callId, this.pendingCall.previousItemId);
+            const rawArgs = String(item["arguments"] ?? "");
+            if (rawArgs.trim().length > 2) {
+              void this.executeTool(name, callId, this.pendingCall.previousItemId, args);
             }
           }
         }
@@ -418,8 +442,13 @@ export class VoiceInterviewClient {
         const effectiveCallId = callId !== "" ? callId : (this.pendingCall?.callId ?? "");
         if (effectiveCallId !== "" && this.isToolName(effectiveName)) {
           const previous = this.pendingCall?.previousItemId;
-          this.pendingCall = { callId: effectiveCallId, name: effectiveName as ToolName };
-          void this.executeTool(effectiveName as ToolName, effectiveCallId, previous);
+          const args = parseToolArgs(event.arguments) ?? this.pendingCall?.args;
+          this.pendingCall = {
+            callId: effectiveCallId,
+            name: effectiveName as ToolName,
+            ...(args === undefined ? {} : { args }),
+          };
+          void this.executeTool(effectiveName as ToolName, effectiveCallId, previous, args);
         }
         break;
       }
@@ -429,10 +458,12 @@ export class VoiceInterviewClient {
           const callId = String(item["call_id"] ?? "");
           const name = String(item["name"] ?? "");
           if (callId !== "" && this.isToolName(name)) {
+            const args = parseToolArgs(item["arguments"]);
             this.pendingCall = {
               callId,
               name: name as ToolName,
               ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
+              ...(args === undefined ? {} : { args }),
             };
             this.metric("tool.requested", { interviewId, callId, tool: name });
           }
@@ -445,7 +476,8 @@ export class VoiceInterviewClient {
           const callId = String(item["call_id"] ?? "") || this.pendingCall?.callId || "";
           const name = String(item["name"] ?? "") || this.pendingCall?.name || "";
           if (callId !== "" && this.isToolName(name)) {
-            void this.executeTool(name as ToolName, callId, previousItemIdOf(item) ?? this.pendingCall?.previousItemId);
+            const args = parseToolArgs(item["arguments"]) ?? this.pendingCall?.args;
+            void this.executeTool(name as ToolName, callId, previousItemIdOf(item) ?? this.pendingCall?.previousItemId, args);
           }
         }
         break;
@@ -471,10 +503,12 @@ export class VoiceInterviewClient {
                 String(entry["call_id"] ?? "") === this.pendingCall.callId &&
                 String(entry["name"] ?? "") === this.pendingCall.name
               ) {
+                const args = parseToolArgs(entry["arguments"]) ?? this.pendingCall.args;
                 void this.executeTool(
                   this.pendingCall.name,
                   this.pendingCall.callId,
                   previousItemIdOf(entry) ?? this.pendingCall.previousItemId,
+                  args,
                 );
                 return;
               }
@@ -496,7 +530,7 @@ export class VoiceInterviewClient {
     }
   }
 
-  private async executeTool(tool: ToolName, callId: string, previousItemId?: string): Promise<void> {
+  private async executeTool(tool: ToolName, callId: string, previousItemId?: string, args?: ToolArgs): Promise<void> {
     if (this.handledCallIds.has(callId)) {
       // Duplicate protocol event for an in-session call: already submitted
       // (ledger) — skip. The one exception is a reload-recovered result for
@@ -523,7 +557,9 @@ export class VoiceInterviewClient {
     let output: string;
     let replayed = false;
     try {
-      const forwarded = await forwardToolCall(this.deps.toolExecutor, callId, tool);
+      const forwarded = await forwardToolCall(this.deps.toolExecutor, callId, tool, {
+        ...(args === undefined ? {} : { args }),
+      });
       output = forwarded.output;
       replayed = forwarded.replayed;
     } catch (error) {

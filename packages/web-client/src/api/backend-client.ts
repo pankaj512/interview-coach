@@ -9,8 +9,15 @@
 import type {
   InterviewConfiguration,
   Problem,
+  ProblemList,
+  ProblemListQuery,
+  ProblemSelectInput,
+  RecordResponseInput,
+  EvaluationInput,
+  SerializedEvaluation,
   SerializedInterview,
   SerializedStateSnapshot,
+  ToolArgs,
   ToolExecOutcome,
   ToolName,
   VoiceSessionPayload,
@@ -153,12 +160,14 @@ export class BackendClient {
 
   // Tool path (frozen section 5). Returns permanent 4xx failures as data;
   // throws BackendApiError only for transport errors, 5xx, or malformed
-  // bodies so the forwarder can apply the retry policy.
+  // bodies so the forwarder can retry them. S5: optional `args` travel as
+  // `arguments` (hint level, recorded answers); same call_id => same args.
   async toolExec(
     interviewId: string,
     callId: string,
     tool: ToolName,
     signal?: AbortSignal,
+    args?: ToolArgs,
   ): Promise<ToolExecOutcome> {
     let response;
     try {
@@ -167,7 +176,11 @@ export class BackendClient {
         {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ call_id: callId, tool }),
+          body: JSON.stringify({
+            call_id: callId,
+            tool,
+            ...(args === undefined ? {} : { arguments: args }),
+          }),
           ...(signal === undefined ? {} : { signal }),
         },
       );
@@ -251,6 +264,48 @@ export class BackendClient {
       `/api/interviews/${encodeURIComponent(interviewId)}/voice-session`,
     );
     return body.session;
+  }
+
+  // S5 intelligence endpoints (HLD Phase 5).
+  async listProblems(query: ProblemListQuery = {}): Promise<ProblemList> {
+    const params = new URLSearchParams();
+    if (query.difficulty !== undefined) params.set("difficulty", query.difficulty);
+    if (query.topic !== undefined && query.topic !== "") params.set("topic", query.topic);
+    if (query.q !== undefined && query.q !== "") params.set("q", query.q);
+    if (query.limit !== undefined) params.set("limit", String(query.limit));
+    if (query.offset !== undefined) params.set("offset", String(query.offset));
+    const suffix = params.size > 0 ? `?${params.toString()}` : "";
+    return this.request<ProblemList>("GET", `/api/problems${suffix}`);
+  }
+
+  async selectProblems(id: string, input: ProblemSelectInput = {}): Promise<SerializedInterview> {
+    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/problems/select`,
+      { ...input },
+    );
+    return body.interview;
+  }
+
+  async recordResponse(
+    id: string,
+    input: RecordResponseInput,
+  ): Promise<{ interview: SerializedInterview; responseCount: number }> {
+    const body = await this.request<{
+      ok: true;
+      interview: SerializedInterview;
+      responseCount: number;
+    }>("POST", `/api/interviews/${encodeURIComponent(id)}/responses`, { ...input });
+    return { interview: body.interview, responseCount: body.responseCount };
+  }
+
+  async submitEvaluation(id: string, input: EvaluationInput): Promise<SerializedEvaluation> {
+    const body = await this.request<{ ok: true; evaluation: SerializedEvaluation }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/evaluation`,
+      { ...input },
+    );
+    return body.evaluation;
   }
 
   async deleteVoiceSession(interviewId: string): Promise<void> {

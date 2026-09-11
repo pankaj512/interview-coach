@@ -39,17 +39,26 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
 }
 
 describe("session wire format", () => {
-  it("advertises the four narrow domain tools", () => {
+  it("advertises the seven narrow domain tools (S4 + S5 intelligence)", () => {
     expect(REALTIME_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([
       "get_current_problem",
       "get_interview_state",
       "get_candidate_performance",
+      "get_interview_configuration",
+      "get_problem_hint",
+      "record_candidate_answer",
       "end_interview",
     ]);
     for (const tool of REALTIME_TOOL_DEFINITIONS) {
       expect(tool.type).toBe("function");
       expect(tool.parameters.additionalProperties).toBe(false);
     }
+  });
+
+  it("declares argument schemas for the S5 tools", () => {
+    const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
+    expect(byName.get("get_problem_hint")?.parameters.properties).toHaveProperty("level");
+    expect(byName.get("record_candidate_answer")?.parameters.required).toEqual(["content"]);
   });
 
   it("builds a CLI-compatible session.update from the mint", () => {
@@ -71,7 +80,7 @@ describe("session wire format", () => {
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
     expect(update.session["tool_choice"]).toBe("auto");
-    expect((update.session["tools"] as unknown[]).length).toBe(4);
+    expect((update.session["tools"] as unknown[]).length).toBe(7);
   });
 
   it("transports api-key credentials as a query parameter (no header support in browsers)", () => {

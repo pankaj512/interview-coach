@@ -33,10 +33,13 @@ export interface SetupInput {
   readonly candidateId: string;
   readonly configuration: InterviewConfiguration;
   readonly problemIds: readonly string[];
+  /** S5: deterministic backend auto-select instead of manual ids. */
+  readonly autoSelect: boolean;
 }
 
-// HLD 4.1: interview setup — create -> attach problems -> ready. The voice
-// session mint (start) happens on the live screen, which auto-starts a ready
+// HLD 4.1: interview setup — create -> attach problems (manual ids or S5
+// backend auto-select from the configuration) -> ready. The voice session
+// mint (start) happens on the live screen, which auto-starts a ready
 // interview server-side (S3).
 export function useInterviewSetup(backend: BackendClient) {
   const [busy, setBusy] = useState(false);
@@ -47,15 +50,20 @@ export function useInterviewSetup(backend: BackendClient) {
       setBusy(true);
       setError(null);
       try {
-        let interview = await backend.createInterview({
+        const interview = await backend.createInterview({
           candidateId: input.candidateId,
           configuration: input.configuration,
         });
-        if (input.problemIds.length > 0) {
-          interview = await backend.assignProblems(interview.id, input.problemIds);
+        if (input.autoSelect) {
+          const selected = await backend.selectProblems(interview.id, {});
+          return await backend.markReady(selected.id);
         }
-        interview = await backend.markReady(interview.id);
-        return interview;
+        if (input.problemIds.length > 0) {
+          return await backend.markReady(
+            (await backend.assignProblems(interview.id, input.problemIds)).id,
+          );
+        }
+        return await backend.markReady(interview.id);
       } catch (e) {
         setError(formatApiError(e));
         throw e;
@@ -119,7 +127,8 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
           wsFactory: (url) => new WebSocket(url) as unknown as VoiceWebSocket,
           mic,
           playback: createBrowserPlayback(),
-          toolExecutor: (callId, tool: ToolName, signal) => backend.toolExec(interview.id, callId, tool, signal),
+          toolExecutor: (callId, tool: ToolName, signal, args) =>
+            backend.toolExec(interview.id, callId, tool, signal, args),
           storage: sessionStorage,
         },
         {
@@ -229,6 +238,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     start,
     hangup,
     finish,
+    refresh: refreshSnapshot,
     clearError: () => setError(null),
   };
 }

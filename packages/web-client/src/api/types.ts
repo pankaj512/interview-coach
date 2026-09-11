@@ -19,7 +19,13 @@ export type ToolName =
   | "get_current_problem"
   | "get_interview_state"
   | "get_candidate_performance"
-  | "end_interview";
+  | "end_interview"
+  | "get_interview_configuration"
+  | "get_problem_hint"
+  | "record_candidate_answer";
+
+// Raw model- or UI-supplied tool arguments (sent as `arguments` to tool-exec).
+export type ToolArgs = Record<string, unknown>;
 
 export interface InterviewConfiguration {
   readonly interviewType: "dsa";
@@ -60,7 +66,7 @@ export interface Problem {
 export interface SerializedEvaluation {
   readonly id: string;
   readonly interviewId: string;
-  readonly dimensions: Record<string, number>;
+  readonly dimensions: Record<string, { readonly score: number; readonly notes?: string } | number>;
   readonly hintsUsed: number;
   readonly strengths: readonly string[];
   readonly weaknesses: readonly string[];
@@ -127,7 +133,6 @@ export interface ToolExecSuccess {
   readonly result: unknown;
   readonly replayed: boolean;
 }
-
 // POST .../tool-exec permanent failure: deterministic domain error. This IS a
 // model-facing result (forwarded as function_call_output), never retried
 // as-is (frozen section 5: never retry 4xx / retryable:false).
@@ -143,3 +148,52 @@ export interface ToolExecFailure {
 }
 
 export type ToolExecOutcome = ToolExecSuccess | ToolExecFailure;
+
+// S5: problem browser (GET /api/problems).
+export interface ProblemListQuery {
+  readonly difficulty?: "Easy" | "Medium" | "Hard";
+  readonly topic?: string;
+  readonly q?: string;
+  readonly limit?: number;
+  readonly offset?: number;
+}
+
+export interface ProblemList {
+  readonly problems: readonly Problem[];
+  readonly total: number;
+  readonly limit: number;
+  readonly offset: number;
+}
+
+// S5: deterministic auto-select (POST .../problems/select).
+export interface ProblemSelectInput {
+  readonly count?: number;
+  readonly difficulty?: "Easy" | "Medium" | "Hard" | "Mixed";
+  readonly topicFocus?: readonly string[];
+}
+
+// S5: candidate answers (POST .../responses).
+export type ResponseKind = "answer" | "approach" | "code" | "question" | "note";
+
+export interface RecordResponseInput {
+  readonly kind?: ResponseKind;
+  readonly content: string;
+  readonly problemId?: string;
+}
+
+// S5: structured evaluation (POST .../evaluation). Dimensions use the HLD
+// 5.8 set; the client renders whatever keys the backend returns so the
+// 6-vs-8 bar question (design spec §8 vs HLD) needs no client change.
+export interface DimensionScoreInput {
+  readonly score: number;
+  readonly notes?: string;
+}
+
+export interface EvaluationInput {
+  readonly dimensions?: Record<string, DimensionScoreInput>;
+  readonly hintsUsed?: number;
+  readonly strengths?: readonly string[];
+  readonly weaknesses?: readonly string[];
+  readonly recommendation?: string;
+  readonly overallScore?: number;
+}
