@@ -19,6 +19,11 @@ import type { Problem } from "./problem.js";
 export interface InterviewRepository {
   save(interview: Interview): Promise<void>;
   findById(id: InterviewId): Promise<Interview | null>;
+  // S8b retention (HLD 7.4): hard delete. Postgres cascades every
+  // interview-scoped row (assignments, responses, evaluations, events,
+  // submissions, runs) via onDelete cascade; the catalog is untouched.
+  // Returns false when the interview does not exist.
+  deleteById(id: InterviewId): Promise<boolean>;
 }
 
 export interface ProblemRepository {
@@ -68,6 +73,10 @@ export class InMemoryInterviewRepository implements InterviewRepository {
 
   async findById(id: InterviewId): Promise<Interview | null> {
     return this.store.get(id) ?? null;
+  }
+
+  async deleteById(id: InterviewId): Promise<boolean> {
+    return this.store.delete(id);
   }
 }
 

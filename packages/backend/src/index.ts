@@ -8,5 +8,6 @@ export * from "./serializers.js";
 export * from "./voice-session.js";
 export * from "./auth.js";
 export * from "./metrics.js";
+export * from "./prometheus.js";
 export * from "./rate-limit.js";
 export { buildApp, type ActiveVoiceSession, type BuildAppDeps, type BuiltBackend } from "./app.js";

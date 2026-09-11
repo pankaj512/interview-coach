@@ -14,12 +14,12 @@
   "dependencies": {
     "@interview-coach/domain": "workspace:*",
     "drizzle-orm": "^0.44.0",
-    "postgres": "^3.4.5"
+    "postgres": "^3.4.5",
+    "tsx": "^4.19.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "drizzle-kit": "^0.31.0",
-    "tsx": "^4.19.0",
     "typescript": "^5.7.3",
     "vitest": "^3.0.0"
   }

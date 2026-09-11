@@ -17,6 +17,7 @@
 //   POST   /api/interviews/:id/resume           (S6.1: expose domain resume)
 //   POST   /api/interviews/:id/cancel           (S6.1: app-only cancel + reason)
 //   POST   /api/interviews/:id/fail             (S6.1: app-only fail + reason)
+//   DELETE /api/interviews/:id                  (S8b: hard erase, retention)
 //   POST   /api/interviews/:id/end
 //   POST   /api/interviews/:id/problems         (extension: attach problems)
 //   POST   /api/interviews/:id/problems/select  (S5: deterministic auto-select)
@@ -61,6 +62,7 @@ import {
 import { loadConfig, type BackendConfig } from "./config.js";
 import { registerAuthHook } from "./auth.js";
 import { BackendMetrics } from "./metrics.js";
+import { renderPrometheusMetrics } from "./prometheus.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
@@ -371,6 +373,14 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
+  // S8b: Prometheus scrape target (HLD 8.4) over the same snapshot.
+  // Auth-gated by the same hook (it lives under /api/).
+  app.get("/api/metrics/prometheus", (_request, reply) => {
+    return reply
+      .header("content-type", "text/plain; version=0.0.4; charset=utf-8")
+      .send(renderPrometheusMetrics(metrics.snapshot(activeVoiceSessions.size, toolIdempotency.size)));
+  });
+
   app.post("/api/interviews", async (request, reply) => {
     const parsed = createInterviewSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -544,6 +554,26 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     if (!next.ok) return sendDomainError(reply, next.error);
     request.log.info({ interviewId: next.value.id, to: "failed" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
+  });
+
+  // S8b retention (HLD 7.4): hard erase. App-only (the model never calls
+  // this); live interviews are refused so a running voice session is never
+  // pulled out from under the model. Clears the session record and audit-logs
+  // the erasure (the interview's own event log is cascade-deleted with it).
+  app.delete("/api/interviews/:id", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const deleted = await interviews.deleteInterview(asInterviewId(params.data.id));
+    if (!deleted.ok) return sendDomainError(reply, deleted.error);
+    activeVoiceSessions.delete(params.data.id);
+    request.log.info(
+      { interviewId: params.data.id, status: deleted.value.status },
+      "interview.deleted",
+    );
+    metrics.countInterviewDeleted();
+    return reply.send({ ok: true, deleted: { id: params.data.id, status: deleted.value.status } });
   });
 
   app.post("/api/interviews/:id/problems", async (request, reply) => {

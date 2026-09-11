@@ -242,6 +242,75 @@ describe("s8a quotas", () => {
   });
 });
 
+describe("s8b retention delete", () => {
+  it("hard-deletes a finished interview and all its reads go 404", async () => {
+    backend = buildTestBackend();
+    const tb = backend as TestBackend;
+    const { id } = await createStartedInterview(tb);
+    await tb.app.inject({ method: "POST", url: `/api/interviews/${id}/end` });
+
+    const deleted = await tb.app.inject({ method: "DELETE", url: `/api/interviews/${id}` });
+    expect(deleted.statusCode).toBe(200);
+    expect(deleted.json()).toMatchObject({ ok: true, deleted: { id, status: "completed" } });
+
+    expect((await tb.app.inject({ method: "GET", url: `/api/interviews/${id}` })).statusCode).toBe(404);
+    expect((await tb.app.inject({ method: "GET", url: `/api/interviews/${id}/state` })).statusCode).toBe(404);
+    const again = await tb.app.inject({ method: "DELETE", url: `/api/interviews/${id}` });
+    expect(again.statusCode).toBe(404);
+
+    const metrics = await tb.app.inject({ method: "GET", url: "/api/metrics" });
+    expect(metrics.json()).toMatchObject({ ok: true, metrics: { interviewsDeleted: 1 } });
+  });
+
+  it("refuses to delete a live interview and clears the voice session record on delete", async () => {
+    backend = buildTestBackend();
+    const tb = backend as TestBackend;
+    const { id } = await createStartedInterview(tb);
+    const live = await tb.app.inject({ method: "DELETE", url: `/api/interviews/${id}` });
+    expect(live.statusCode).toBe(409);
+    expect(live.json()).toMatchObject({ ok: false, error: { code: "ILLEGAL_TRANSITION" } });
+
+    await tb.app.inject({ method: "POST", url: `/api/interviews/${id}/voice-session` });
+    expect(tb.activeVoiceSessions.has(id)).toBe(true);
+    await tb.app.inject({ method: "POST", url: `/api/interviews/${id}/end` });
+    const deleted = await tb.app.inject({ method: "DELETE", url: `/api/interviews/${id}` });
+    expect(deleted.statusCode).toBe(200);
+    expect(tb.activeVoiceSessions.has(id)).toBe(false);
+  });
+});
+
+describe("s8b prometheus exporter", () => {
+  it("renders counters in text exposition format", async () => {
+    backend = buildTestBackend();
+    const tb = backend as TestBackend;
+    const { id } = await createStartedInterview(tb);
+    await tb.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/tool-exec`,
+      payload: { call_id: "s8b-prom-1", tool: "get_interview_state" },
+    });
+
+    const res = await tb.app.inject({ method: "GET", url: "/api/metrics/prometheus" });
+    expect(res.statusCode).toBe(200);
+    expect(res.headers["content-type"]).toContain("text/plain");
+    expect(res.body).toContain("interview_coach_interviews_created_total 1");
+    expect(res.body).toContain("interview_coach_tool_executions_total 1");
+    expect(res.body).toContain('interview_coach_code_runs_total{status="passed"} 0');
+    expect(res.body).toContain("interview_coach_active_voice_sessions");
+  });
+
+  it("is gated by the service token like the rest of /api", async () => {
+    const app = authedBackend({ API_AUTH_TOKEN: AUTH });
+    expect((await app.app.inject({ method: "GET", url: "/api/metrics/prometheus" })).statusCode).toBe(401);
+    const allowed = await app.app.inject({
+      method: "GET",
+      url: "/api/metrics/prometheus",
+      headers: { authorization: `Bearer ${AUTH}` },
+    });
+    expect(allowed.statusCode).toBe(200);
+  });
+});
+
 describe("s8a headers and secret hygiene", () => {
   it("sets security headers on responses", async () => {
     backend = buildTestBackend();

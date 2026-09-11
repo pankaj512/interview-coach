@@ -120,6 +120,30 @@ export class InterviewService {
     );
   }
 
+  // S8b retention (HLD 7.4): hard erase. Removes the interview row; every
+  // repo cascades interview-scoped artefacts (assignments, responses,
+  // evaluations, events, submissions, runs). Live interviews are refused —
+  // end, cancel, or fail first — so a running voice session is never pulled
+  // out from under the model. Returns the pre-delete status for audit logs.
+  async deleteInterview(
+    id: InterviewId,
+  ): Promise<Result<{ id: InterviewId; status: InterviewStatus }>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    if (interview.status === "in_progress" || interview.status === "paused") {
+      return err(
+        domainError(
+          "ILLEGAL_TRANSITION",
+          `Cannot delete interview ${id} while ${interview.status}; end, cancel, or fail it first`,
+          { status: interview.status },
+        ),
+      );
+    }
+    const deleted = await this.repos.interviews.deleteById(id);
+    if (!deleted) return err(this.notFound(id));
+    return ok({ id, status: interview.status });
+  }
+
   // Assign the ordered problem set. Allowed in created/ready so the
   // interview is fully configured before it starts. Replaces any prior
   // assignment; the first problem becomes active.

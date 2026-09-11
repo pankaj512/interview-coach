@@ -10,6 +10,51 @@ services:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-coach} -d $${POSTGRES_DB:-interview_coach}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Product API (HLD Phase 8, S8b). Boot migrates, then serves.
+  # Seed once explicitly: docker compose run --rm backend pnpm --filter @interview-coach/db db:seed
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      HOST: 0.0.0.0
+      PORT: 3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-coach}:${POSTGRES_PASSWORD:-coach_dev_only}@db:5432/${POSTGRES_DB:-interview_coach}
+      API_AUTH_TOKEN: ${API_AUTH_TOKEN:-}
+      AZURE_VOICE_ENDPOINT: ${AZURE_VOICE_ENDPOINT:-https://interview-coach-voice.services.ai.azure.com}
+      AZURE_VOICE_API_KEY: ${AZURE_VOICE_API_KEY:-}
+      AZURE_VOICE_MODEL: ${AZURE_VOICE_MODEL:-gpt-realtime-mini}
+      AZURE_VOICE_API_VERSION: ${AZURE_VOICE_API_VERSION:-2026-04-10}
+      AZURE_VOICE_VOICE: ${AZURE_VOICE_VOICE:-en-US-Andrew:DragonHDLatestNeural}
+    ports:
+      - "${BACKEND_PORT:-3000}:3000"
+
+  # Static web client (nginx). The browser calls the backend directly at
+  # VITE_BACKEND_URL (frozen §2); edit it when the backend is not on
+  # localhost:3000 from the browser's perspective.
+  web:
+    build:
+      context: .
+      dockerfile: packages/web-client/Dockerfile
+      args:
+        VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
+        VITE_API_TOKEN: ${VITE_API_TOKEN:-}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${WEB_PORT:-8080}:80"
 
 volumes:
   pgdata:

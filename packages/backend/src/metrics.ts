@@ -11,6 +11,7 @@ export type CodeRunStatus = "passed" | "failed" | "timeout" | "error";
 export interface MetricsSnapshot {
   readonly uptimeSeconds: number;
   readonly interviewsCreated: number;
+  readonly interviewsDeleted: number;
   readonly toolExecuted: number;
   readonly toolReplayed: number;
   readonly toolFailed: number;
@@ -25,6 +26,7 @@ export interface MetricsSnapshot {
 export class BackendMetrics {
   private readonly startedAt = Date.now();
   private interviewsCreated = 0;
+  private interviewsDeleted = 0;
   private toolExecuted = 0;
   private toolReplayed = 0;
   private toolFailed = 0;
@@ -40,6 +42,10 @@ export class BackendMetrics {
 
   countInterviewCreated(): void {
     this.interviewsCreated += 1;
+  }
+
+  countInterviewDeleted(): void {
+    this.interviewsDeleted += 1;
   }
 
   countTool(replayed: boolean, ok: boolean): void {
@@ -68,6 +74,7 @@ export class BackendMetrics {
     return {
       uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
       interviewsCreated: this.interviewsCreated,
+      interviewsDeleted: this.interviewsDeleted,
       toolExecuted: this.toolExecuted,
       toolReplayed: this.toolReplayed,
       toolFailed: this.toolFailed,

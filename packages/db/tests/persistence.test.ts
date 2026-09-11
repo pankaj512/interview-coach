@@ -208,4 +208,43 @@ describe("postgres persistence", () => {
     if (reconnected === null) throw new Error("DB vanished mid-test");
     ctx.current = reconnected;
   }));
+
+  it("hard-deletes an interview with all scoped artefacts cascading", withDb(ctx, async (t) => {
+    const service = new InterviewService({ ...t.repos });
+    const p = mustProblem("Delete Cascade Problem");
+    await t.repos.problems.save(p);
+
+    const created = await service.createInterview({
+      candidateId: asUserId("user_delete"),
+      configuration: { interviewType: "dsa" },
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    const id = created.value.id;
+    for (const step of [
+      () => service.markReady(id),
+      () => service.assignProblems(id, [p.id]),
+      () => service.start(id),
+      () => service.recordResponse(id, { kind: "answer", content: "gone" }),
+      () => service.recordEvaluation(id, { hintsUsed: 0, strengths: ["s"] }),
+      () => service.beginCompleting(id),
+      () => service.complete(id),
+    ] as const) {
+      const r = await step();
+      if (!r.ok) throw new Error(r.error.message);
+    }
+    const deleted = await service.deleteInterview(id);
+    if (!deleted.ok) throw new Error(deleted.error.message);
+    expect(deleted.value).toMatchObject({ id, status: "completed" });
+
+    expect(await t.repos.interviews.findById(id)).toBeNull();
+    expect(await t.repos.responses.listByInterview(id)).toHaveLength(0);
+    expect(await t.repos.evaluations.findByInterview(id)).toBeNull();
+    expect(await t.repos.events.listByInterview(id)).toHaveLength(0);
+    expect(await t.repos.submissions.listByInterview(id)).toHaveLength(0);
+    expect(await t.repos.runs.listByInterview(id)).toHaveLength(0);
+    // Shared catalog rows survive the cascade.
+    expect(await t.repos.problems.findById(p.id)).not.toBeNull();
+    // Second delete reports missing.
+    expect(await t.repos.interviews.deleteById(id)).toBe(false);
+  }));
 });

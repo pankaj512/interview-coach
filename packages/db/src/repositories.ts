@@ -196,6 +196,16 @@ export class DrizzleInterviewRepository implements InterviewRepository {
       ...(row.endedAt === null ? {} : { endedAt: row.endedAt }),
     };
   }
+
+  async deleteById(id: InterviewId): Promise<boolean> {
+    // Interview-scoped rows cascade via onDelete (assignments, responses,
+    // evaluations, events, submissions, runs); the problem catalog is shared.
+    const removed = await this.db
+      .delete(schema.interviews)
+      .where(eq(schema.interviews.id, id))
+      .returning({ id: schema.interviews.id });
+    return removed.length > 0;
+  }
 }
 
 export class DrizzleProblemRepository implements ProblemRepository {

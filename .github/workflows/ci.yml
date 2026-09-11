@@ -1,0 +1,105 @@
+# CI: test -> build -> security checks -> container builds (HLD Phase 8, S8b).
+#
+# Push and pull-request validation. The integration suite needs Postgres, so
+# the workflow runs a postgres:16 service (same image as compose) and the
+# tests detect it via DATABASE_URL; without a DB they warn-and-pass, but in
+# CI the DB must be live so persistence is genuinely exercised.
+
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  DATABASE_URL: postgresql://coach:coach_dev_only@localhost:5432/interview_coach
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: interview_coach
+          POSTGRES_USER: coach
+          POSTGRES_PASSWORD: coach_dev_only
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U coach -d interview_coach"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Migrate test database
+        run: pnpm --filter @interview-coach/db db:migrate
+
+      - name: Typecheck (lint gate)
+        run: pnpm typecheck
+
+      - name: Test (live Postgres)
+        run: pnpm test
+
+      - name: Build (tsc -b)
+        run: pnpm build
+
+      - name: Build web client
+        run: pnpm --filter @interview-coach/web-client build
+
+      - name: Security — no secret values in the client bundle
+        # The bundle may mention VITE_AZURE_* in the pre-existing guard
+        # comment (src/config.ts), but must never contain assigned secret
+        # values or the server-side voice key.
+        run: |
+          test -z "$(grep -r -o 'VITE_AZURE_[A-Z_]*=[^"'"'"' ]*' packages/web-client/dist/assets/*.js || true)"
+          test -z "$(grep -r 'AZURE_VOICE_API_KEY' packages/web-client/dist/assets/*.js || true)"
+          test -z "$(grep -r -o 'sk-[A-Za-z0-9]\{10,\}' packages/web-client/dist/assets/*.js || true)"
+
+      - name: Security — backend has no client-leaked secrets
+        run: |
+          if grep -rn 'VITE_AZURE_' packages/backend/src/; then
+            echo "backend must never reference client VITE_ secrets" >&2
+            exit 1
+          fi
+
+  containers:
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build backend image
+        run: docker build -f packages/backend/Dockerfile -t interview-coach-backend:ci .
+
+      - name: Build web image
+        run: docker build -f packages/web-client/Dockerfile -t interview-coach-web:ci .
+
+      - name: Boot stack and probe health
+        run: |
+          docker compose up -d db backend
+          for i in $(seq 1 24); do
+            if curl -sf http://127.0.0.1:3000/api/ready > /dev/null; then break; fi
+            sleep 5
+          done
+          curl -sf http://127.0.0.1:3000/api/ready
+          curl -sf http://127.0.0.1:3000/api/metrics/prometheus | grep interview_coach_uptime_seconds
+
+      - name: Tear down stack
+        if: always()
+        run: docker compose down -v

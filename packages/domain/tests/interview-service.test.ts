@@ -175,4 +175,30 @@ describe("InterviewService", () => {
       ),
     ).toBe("VALIDATION_ERROR");
   });
+
+  it("deletes finished interviews and reports the pre-delete status", async () => {
+    const { repos, service } = setup();
+    const created = must(
+      await service.createInterview({
+        candidateId: asUserId("user_candidate"),
+        configuration: { interviewType: "dsa" },
+      }),
+    );
+    must(await service.markReady(created.id));
+    must(await service.start(created.id));
+    must(await service.cancel(created.id, "no show"));
+    const deleted = must(await service.deleteInterview(created.id));
+    expect(deleted).toMatchObject({ id: created.id, status: "cancelled" });
+    expect(await repos.interviews.findById(created.id)).toBeNull();
+    expect(mustErr(await service.deleteInterview(created.id))).toBe("NOT_FOUND");
+  });
+
+  it("refuses to delete live interviews", async () => {
+    const { repos, service } = setup();
+    await seedProblems(service, repos);
+    const id = await runningInterview(service);
+    expect(mustErr(await service.deleteInterview(id))).toBe("ILLEGAL_TRANSITION");
+    must(await service.pause(id));
+    expect(mustErr(await service.deleteInterview(id))).toBe("ILLEGAL_TRANSITION");
+  });
 });
