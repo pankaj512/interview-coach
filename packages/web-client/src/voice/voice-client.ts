@@ -120,6 +120,8 @@ const VALID_TOOL_NAMES: readonly string[] = [
   "get_interview_configuration",
   "get_problem_hint",
   "record_candidate_answer",
+  "submit_solution",
+  "run_code",
 ];
 
 // Model-supplied function arguments arrive as a JSON string on the protocol

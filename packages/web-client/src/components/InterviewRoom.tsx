@@ -5,7 +5,7 @@ import { BackendClient } from "../api/backend-client.js";
 import type { SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { useLiveInterview } from "../state/use-interview.js";
 import { AnswerForm } from "./AnswerForm.js";
-import { CodeEditor } from "./CodeEditor.js";
+import { CodePanel } from "./CodePanel.js";
 import { HintPanel } from "./HintPanel.js";
 import { ProblemPanel } from "./ProblemPanel.js";
 import { ResultsPanel } from "./ResultsPanel.js";
@@ -96,7 +96,17 @@ export function InterviewRoom({
         <>
           <div className="grid">
             <ProblemPanel snapshot={live.snapshot} />
-            <CodeEditor />
+            <CodePanel
+              backend={backend}
+              interviewId={interview.id}
+              {...(live.snapshot?.currentProblem == null
+                ? {}
+                : { problemId: live.snapshot.currentProblem.id })}
+              onActivity={(detail) => {
+                live.log("code", detail);
+                void live.refresh();
+              }}
+            />
           </div>
           <HintPanel
             backend={backend}

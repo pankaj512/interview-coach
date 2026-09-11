@@ -25,10 +25,10 @@ export interface RealtimeToolDefinition {
   };
 }
 
-// CLI-identical tool surface plus `end_interview` (S1/S3 domain tool) and
-// the S5 intelligence tools. The model signals done via end_interview; the
-// app finalizes (completing -> completed) via POST /end — the model never
-// transitions state itself.
+// CLI-identical tool surface plus `end_interview` (S1/S3 domain tool), the
+// S5 intelligence tools, and the S7a sandbox tools. The model signals done
+// via end_interview; the app finalizes (completing -> completed) via POST
+// /end — the model never transitions state itself.
 export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
   {
     type: "function",
@@ -82,6 +82,50 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
         content: { type: "string" },
       },
       required: ["content"],
+      additionalProperties: false,
+    },
+  },
+  {
+    type: "function",
+    name: "submit_solution",
+    description:
+      "Persist the candidate's code as backend-owned state (language: javascript or python, code: source text, problemId optional). Call when the candidate finishes or updates an implementation. Returns a submissionId for run_code.",
+    parameters: {
+      type: "object",
+      properties: {
+        language: { type: "string", enum: ["javascript", "python"] },
+        code: { type: "string" },
+        problemId: { type: "string" },
+      },
+      required: ["language", "code"],
+      additionalProperties: false,
+    },
+  },
+  {
+    type: "function",
+    name: "run_code",
+    description:
+      "Execute a submitted solution against test cases (submissionId defaults to the latest submission; testCases: [{name, args, expected, hidden?}]; timeoutMs optional). Timeout and error outcomes are results — discuss them conversationally. Hidden cases report pass/fail only; never invent their contents.",
+    parameters: {
+      type: "object",
+      properties: {
+        submissionId: { type: "string" },
+        testCases: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              args: { type: "array" },
+              expected: {},
+              hidden: { type: "boolean" },
+            },
+            required: ["name", "args", "expected"],
+          },
+        },
+        timeoutMs: { type: "integer" },
+      },
+      required: ["testCases"],
       additionalProperties: false,
     },
   },

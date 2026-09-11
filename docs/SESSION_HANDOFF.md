@@ -231,3 +231,24 @@ Open for S7b (web client):
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && vite build` (no-DB warn-and-pass 214 + live-DB vs postgres:16 port 5433 214) plus live server smoke.
 Verified 2026-09-11: install ok, typecheck ok, test 214 passed (172 prior + 42 new), `tsc -b` ok, `vite build` ok (303.97kB JS / 93.61kB gzip). Live smoke vs postgres:16 ok: create→ready→start→submit(python)→run passed 2/2 hidden-masked→runs list→performance(submissions 1, lastRun passed).
 Tag: `session-7a` after commit.
+
+## S7b — Sandbox web client: submit editor, run panel, execution debrief (2026-09-11)
+Status: done (verified below). Closes the S7a open items: `BackendClient` covers all five sandbox routes, `session.ts` advertises 9 tools, the live room runs the real sandbox, and Results shows execution evidence for scoring.
+
+Done:
+* Transport (`api/types.ts`, `api/backend-client.ts`): `submit_solution`/`run_code` added to `ToolName`; `CodeLanguage`/`SubmitCodeInput`/`SerializedSubmission`/`TestCaseInput`/`RunCodeInput`/`SerializedTestResult`/`RunStatus`/`SerializedRun` mirrors; `submitCode/listSubmissions/runSubmission/listRuns/getRun` methods.
+* Voice path (`voice/session.ts`, `voice/voice-client.ts`): `submit_solution` (required language+code) + `run_code` (required testCases) definitions with schemas; `VALID_TOOL_NAMES` accepts both. No forwarder/client logic change needed — `parseToolArgs` threading from S5b carries the new args untouched.
+* Live room (`components/CodePanel.tsx`, `screens/LiveScreen.tsx`): language-restricted editor (python/javascript only — the only executed languages) with `solve(...)` contract hint; submit → backend-owned state with activity-log + snapshot refresh; editable case table (name/args-JSON/expected-JSON/hidden, add/remove) with pure `parseEditableCase` validation; timeout override (blank = 5s default); run verdicts with per-case pass/fail. Legacy `InterviewRoom` swapped to the same panel (its `ResultsPanel` path untouched); stale "Phase 6" placeholder copy gone.
+* Results (`components/ExecutionPanel.tsx`, `screens/ResultsScreen.tsx`): read-only execution card (submission count, latest run status/counts/duration, per-case verdicts, hidden-masked) mounted above the finalize form so evaluators score with execution evidence in view. Scoring itself stays human/backend-owned — no client-side grading.
+* Tests: `backend-client-s7` (2: submit/list, run/list/get incl. URL shapes), `code-panel` (5: case parsing, name defaulting, JSON/array errors, run summary); updated `session` (9 tools + S7a schemas) and `voice-client` (9 tools) assertions.
+
+Decisions locked:
+* UI submits only javascript/python (backend rejects the rest anyway; the old 5-language scratchpad picker overstated support).
+* Blank case names default to `case_N` client-side; backend uniqueness still enforced server-side.
+* `ExecutionPanel` fetches on mount (submissions + runs in parallel); load failures surface as panel errors, never invented state.
+
+Verify: `pnpm typecheck && pnpm test && pnpm build && vite build` (no-DB warn-and-pass 222 + live-DB vs postgres:16 port 5433 222) plus live server smoke.
+Verified 2026-09-11: install ok, typecheck ok, test 222 passed (214 prior + 8 new), `tsc -b` ok, `vite build` ok (310.86kB JS / 95.45kB gzip). Live smoke vs postgres:16 ok: submit(JS)→run passed 2/2 hidden-masked→runs list/get→submissions list→mint(`api-key-local-dev`, tools-in-instructions, `Code: 1 submission, not run yet`, correct wss URL, no secret leak)→tool-exec submit(python)→run latest(passed 1/1). Voice-session 503 without credential confirmed correct (`VOICE_NOT_CONFIGURED`, retryable false).
+Tag: `session-7b` after commit.
+
+## S8 — Hardening + deploy (HLD Phases 7–8, open)

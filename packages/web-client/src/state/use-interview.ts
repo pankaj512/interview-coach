@@ -239,6 +239,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     hangup,
     finish,
     refresh: refreshSnapshot,
+    log,
     clearError: () => setError(null),
   };
 }

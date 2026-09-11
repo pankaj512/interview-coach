@@ -22,7 +22,9 @@ export type ToolName =
   | "end_interview"
   | "get_interview_configuration"
   | "get_problem_hint"
-  | "record_candidate_answer";
+  | "record_candidate_answer"
+  | "submit_solution"
+  | "run_code";
 
 // Raw model- or UI-supplied tool arguments (sent as `arguments` to tool-exec).
 export type ToolArgs = Record<string, unknown>;
@@ -181,7 +183,7 @@ export interface RecordResponseInput {
   readonly problemId?: string;
 }
 
-// S5: structured evaluation (POST .../evaluation). Dimensions use the HLD
+// S7: structured evaluation (POST .../evaluation). Dimensions use the HLD
 // 5.8 set; the client renders whatever keys the backend returns so the
 // 6-vs-8 bar question (design spec §8 vs HLD) needs no client change.
 export interface DimensionScoreInput {
@@ -196,4 +198,58 @@ export interface EvaluationInput {
   readonly weaknesses?: readonly string[];
   readonly recommendation?: string;
   readonly overallScore?: number;
+}
+
+// S7a sandbox (HLD Phase 6): code submissions + test runs. Structural
+// mirrors of the backend serializers; hidden cases arrive masked
+// (pass/fail only — the backend never stores hidden actuals).
+export type CodeLanguage = "javascript" | "python";
+
+export interface SubmitCodeInput {
+  readonly language: CodeLanguage;
+  readonly code: string;
+  readonly problemId?: string;
+}
+
+export interface SerializedSubmission {
+  readonly id: string;
+  readonly interviewId: string;
+  readonly problemId?: string;
+  readonly language: string;
+  readonly code: string;
+  readonly createdAt: string;
+}
+
+export interface TestCaseInput {
+  readonly name: string;
+  readonly args: readonly unknown[];
+  readonly expected: unknown;
+  readonly hidden?: boolean;
+}
+
+export interface RunCodeInput {
+  readonly testCases: readonly TestCaseInput[];
+  readonly timeoutMs?: number;
+}
+
+export interface SerializedTestResult {
+  readonly name: string;
+  readonly hidden: boolean;
+  readonly passed: boolean;
+  readonly actual?: unknown;
+  readonly error?: string;
+}
+
+export type RunStatus = "passed" | "failed" | "timeout" | "error";
+
+export interface SerializedRun {
+  readonly id: string;
+  readonly submissionId: string;
+  readonly interviewId: string;
+  readonly status: RunStatus;
+  readonly results: readonly SerializedTestResult[];
+  readonly passedCount: number;
+  readonly totalCount: number;
+  readonly durationMs: number;
+  readonly createdAt: string;
 }

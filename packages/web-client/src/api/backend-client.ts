@@ -14,9 +14,13 @@ import type {
   ProblemSelectInput,
   RecordResponseInput,
   EvaluationInput,
+  RunCodeInput,
   SerializedEvaluation,
   SerializedInterview,
+  SerializedRun,
   SerializedStateSnapshot,
+  SerializedSubmission,
+  SubmitCodeInput,
   ToolArgs,
   ToolExecOutcome,
   ToolName,
@@ -349,6 +353,54 @@ export class BackendClient {
       "DELETE",
       `/api/interviews/${encodeURIComponent(interviewId)}/voice-session`,
     );
+  }
+
+  // S7a sandbox endpoints (HLD Phase 6): submit code, list submissions,
+  // execute a submission against caller-supplied cases, list/fetch runs.
+  async submitCode(id: string, input: SubmitCodeInput): Promise<SerializedSubmission> {
+    const body = await this.request<{ ok: true; submission: SerializedSubmission }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/submissions`,
+      { ...input },
+    );
+    return body.submission;
+  }
+
+  async listSubmissions(id: string): Promise<readonly SerializedSubmission[]> {
+    const body = await this.request<{ ok: true; submissions: SerializedSubmission[] }>(
+      "GET",
+      `/api/interviews/${encodeURIComponent(id)}/submissions`,
+    );
+    return body.submissions;
+  }
+
+  async runSubmission(
+    id: string,
+    submissionId: string,
+    input: RunCodeInput,
+  ): Promise<SerializedRun> {
+    const body = await this.request<{ ok: true; run: SerializedRun }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/submissions/${encodeURIComponent(submissionId)}/runs`,
+      { ...input, testCases: [...input.testCases] },
+    );
+    return body.run;
+  }
+
+  async listRuns(id: string): Promise<readonly SerializedRun[]> {
+    const body = await this.request<{ ok: true; runs: SerializedRun[] }>(
+      "GET",
+      `/api/interviews/${encodeURIComponent(id)}/runs`,
+    );
+    return body.runs;
+  }
+
+  async getRun(id: string, runId: string): Promise<SerializedRun> {
+    const body = await this.request<{ ok: true; run: SerializedRun }>(
+      "GET",
+      `/api/interviews/${encodeURIComponent(id)}/runs/${encodeURIComponent(runId)}`,
+    );
+    return body.run;
   }
 
   private async request<T>(method: string, path: string, body?: unknown): Promise<T> {

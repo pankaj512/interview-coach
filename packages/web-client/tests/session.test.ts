@@ -39,7 +39,7 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
 }
 
 describe("session wire format", () => {
-  it("advertises the seven narrow domain tools (S4 + S5 intelligence)", () => {
+  it("advertises the nine narrow domain tools (S4 + S5 intelligence + S7a sandbox)", () => {
     expect(REALTIME_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([
       "get_current_problem",
       "get_interview_state",
@@ -47,6 +47,8 @@ describe("session wire format", () => {
       "get_interview_configuration",
       "get_problem_hint",
       "record_candidate_answer",
+      "submit_solution",
+      "run_code",
       "end_interview",
     ]);
     for (const tool of REALTIME_TOOL_DEFINITIONS) {
@@ -59,6 +61,12 @@ describe("session wire format", () => {
     const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
     expect(byName.get("get_problem_hint")?.parameters.properties).toHaveProperty("level");
     expect(byName.get("record_candidate_answer")?.parameters.required).toEqual(["content"]);
+  });
+
+  it("declares argument schemas for the S7a sandbox tools", () => {
+    const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
+    expect(byName.get("submit_solution")?.parameters.required).toEqual(["language", "code"]);
+    expect(byName.get("run_code")?.parameters.required).toEqual(["testCases"]);
   });
 
   it("builds a CLI-compatible session.update from the mint", () => {
@@ -80,7 +88,7 @@ describe("session wire format", () => {
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
     expect(update.session["tool_choice"]).toBe("auto");
-    expect((update.session["tools"] as unknown[]).length).toBe(7);
+    expect((update.session["tools"] as unknown[]).length).toBe(9);
   });
 
   it("transports api-key credentials as a query parameter (no header support in browsers)", () => {

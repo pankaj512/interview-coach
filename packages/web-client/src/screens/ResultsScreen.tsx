@@ -12,6 +12,7 @@ import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedEvaluation, SerializedStateSnapshot } from "../api/types.js";
 import { EvaluationForm } from "../components/EvaluationForm.js";
+import { ExecutionPanel } from "../components/ExecutionPanel.js";
 import { nextPractice } from "../curriculum.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
 import { ScoreBar } from "../ds/status.js";
@@ -193,6 +194,8 @@ export function ResultsScreen({
         {practice.sampleProblems.length > 0 && <p className="hint">Try next: {practice.sampleProblems.join(" · ")}</p>}
         <p className="hint">From dsa-interview-curriculum.json (Learn → Practice → Interview Ready → Mastered).</p>
       </section>
+
+      <ExecutionPanel backend={backend} interviewId={snapshot.interview.id} />
 
       {shown === null && (
         <EvaluationForm backend={backend} interviewId={snapshot.interview.id} onEvaluated={setEvaluation} />

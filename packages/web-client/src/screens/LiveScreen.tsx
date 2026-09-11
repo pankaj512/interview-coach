@@ -1,4 +1,4 @@
-// H-Live — the room, hero screen (HLD 4.2/4.3/4.4, ux-spec §1/§2/§4/§5).
+// H-Live — the room, hero screen (HLD 4.2/4.3/4.4/6.x, ux-spec §1/§2/§4/§5).
 //
 // Locked hierarchy: voice rail → problem panel → editor. The rail wires to
 // Voice Live events via useLiveInterview (speech_started/stopped,
@@ -6,13 +6,14 @@
 // Recovery states (H-Live-states) render inline: reconnecting queues tool
 // outputs; tab-hidden is treated as MicBlocked; barge-in is always allowed.
 // Guarded end: DangerButton opens the confirm dialog before Completing.
-// Editor Submit stays disabled until the Phase 6 sandbox exists.
+// Editor Submit runs the S7a sandbox (submit + run); verdicts persist
+// backend-side and surface in Results.
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { AnswerForm } from "../components/AnswerForm.js";
-import { CodeEditor } from "../components/CodeEditor.js";
+import { CodePanel } from "../components/CodePanel.js";
 import { HintPanel } from "../components/HintPanel.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
@@ -169,19 +170,21 @@ export function LiveScreen({
             </section>
           )}
 
-          {/* Problem → editor (locked order). DOM order = keyboard/focus order (spec §9 Q1). */}
+          {/* Problem → sandbox (locked order). DOM order = keyboard/focus order (spec §9 Q1). */}
           <div className="live-grid">
             <ProblemPanel snapshot={live.snapshot} />
             <div className="editor-stack">
-              <CodeEditor />
-              <div className="submit-row">
-                <button type="button" className="btn-primary" disabled aria-describedby="submit-note">
-                  Submit
-                </button>
-                <p className="hint" id="submit-note">
-                  Submit enables with the Phase 6 sandbox. Today: discuss approach, narrate trade-offs.
-                </p>
-              </div>
+              <CodePanel
+                backend={backend}
+                interviewId={interview.id}
+                {...(live.snapshot?.currentProblem == null
+                  ? {}
+                  : { problemId: live.snapshot.currentProblem.id })}
+                onActivity={(detail) => {
+                  live.log("code", detail);
+                  void live.refresh();
+                }}
+              />
             </div>
           </div>
 
