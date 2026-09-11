@@ -8,6 +8,8 @@ export interface VoiceConfig {
   readonly apiVersion: string;
   readonly voiceName: string;
   readonly ephemeralTtlSeconds: number;
+  /** Max live entries in the in-memory activeVoiceSessions map (S8a quota). */
+  readonly maxActiveSessions: number;
 }
 
 export interface ToolsConfig {
@@ -15,19 +17,34 @@ export interface ToolsConfig {
   readonly idempotencyMaxEntries: number;
 }
 
+export interface RateLimitConfig {
+  /** Per-minute caps on the expensive paths (S8a abuse protection). */
+  readonly globalPerMin: number;
+  readonly toolExecPerMin: number;
+  readonly voiceMintPerMin: number;
+  readonly codeRunPerMin: number;
+}
+
 export interface SandboxConfig {
   /** Default per-run wall-clock timeout (ms) when the caller omits one. */
   readonly defaultTimeoutMs: number;
   /** Cap on serialized per-case actuals kept in run results. */
   readonly maxActualChars: number;
+  /** Max concurrent LocalCodeRunner executions (S8a quota; 429 past it). */
+  readonly maxConcurrentRuns: number;
+  /** Max stored submissions per interview (S8a quota; 429 past it). */
+  readonly maxSubmissionsPerInterview: number;
 }
 
 export interface BackendConfig {
   readonly host: string;
   readonly port: number;
   readonly corsOrigin: string | string[];
+  /** Shared-service bearer token (S8a). Undefined = open local-dev mode. */
+  readonly authToken: string | undefined;
   readonly voice: VoiceConfig;
   readonly tools: ToolsConfig;
+  readonly rateLimits: RateLimitConfig;
   readonly sandbox: SandboxConfig;
 }
 
@@ -46,11 +63,20 @@ function str(env: NodeJS.ProcessEnv, name: string, fallback: string): string {
   return raw === undefined || raw.trim() === "" ? fallback : raw.trim();
 }
 
+// Optional shared secret: empty/absent keeps the historical open local-dev
+// mode (S8a). Production user identity (Entra/OIDC) stays on the S8b track.
+function optSecret(env: NodeJS.ProcessEnv, name: string): string | undefined {
+  const raw = env[name];
+  if (raw === undefined || raw.trim() === "") return undefined;
+  return raw.trim();
+}
+
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig {
   return {
     host: str(env, "HOST", "127.0.0.1"),
     port: num(env, "PORT", 3000),
     corsOrigin: str(env, "CORS_ORIGIN", "http://localhost:5173"),
+    authToken: optSecret(env, "API_AUTH_TOKEN"),
     voice: {
       endpoint: str(
         env,
@@ -61,6 +87,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       apiVersion: str(env, "AZURE_VOICE_API_VERSION", "2026-04-10"),
       voiceName: str(env, "AZURE_VOICE_VOICE", "en-US-Andrew:DragonHDLatestNeural"),
       ephemeralTtlSeconds: num(env, "VOICE_EPHEMERAL_TTL_SECONDS", 600),
+      maxActiveSessions: num(env, "VOICE_MAX_ACTIVE_SESSIONS", 200),
     },
     tools: {
       // Locked defaults (frozen section 5): 30 min TTL.
@@ -69,11 +96,19 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       idempotencyTtlMs: num(env, "TOOL_IDEMPOTENCY_TTL_MINUTES", 30) * 60_000,
       idempotencyMaxEntries: 2000,
     },
+    rateLimits: {
+      globalPerMin: num(env, "RATE_LIMIT_GLOBAL_PER_MIN", 1000),
+      toolExecPerMin: num(env, "RATE_LIMIT_TOOL_EXEC_PER_MIN", 120),
+      voiceMintPerMin: num(env, "RATE_LIMIT_VOICE_MINT_PER_MIN", 60),
+      codeRunPerMin: num(env, "RATE_LIMIT_CODE_RUN_PER_MIN", 30),
+    },
     sandbox: {
       // S7a local runner (HLD Phase 6): wall-clock kill + output caps.
-      // Local-dev bounds; container isolation is the S8 follow-up.
+      // Local-dev bounds; container isolation is the S8b deploy follow-up.
       defaultTimeoutMs: num(env, "CODE_RUN_TIMEOUT_MS", 5000),
       maxActualChars: num(env, "CODE_RUN_MAX_OUTPUT_CHARS", 20000),
+      maxConcurrentRuns: num(env, "CODE_RUN_MAX_CONCURRENT", 4),
+      maxSubmissionsPerInterview: num(env, "CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW", 100),
     },
   };
 }

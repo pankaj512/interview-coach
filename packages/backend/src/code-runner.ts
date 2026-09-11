@@ -7,7 +7,7 @@
 // Isolation honesty: this is NOT a security boundary — no namespaces,
 // cgroups, or network egress control. It is safe for local development and
 // trusted-candidate traffic only. Real container isolation (CPU/mem quotas,
-// no-network containers) is the S8 deploy-track follow-up, mirroring how
+// no-network containers) is the S8b deploy-track follow-up, mirroring how
 // api-key voice mode is local-dev-only (frozen section 7).
 
 import { execFile } from "node:child_process";

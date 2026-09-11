@@ -19,7 +19,12 @@ import { createBrowserMicCapture, createBrowserPlayback } from "../voice/browser
 import { VoiceInterviewClient, type VoiceConnectionState, type VoiceWebSocket } from "../voice/voice-client.js";
 
 export function useBackendClient(): BackendClient {
-  return useMemo(() => new BackendClient(loadWebConfig().backendUrl), []);
+  return useMemo(() => {
+    const config = loadWebConfig();
+    return new BackendClient(config.backendUrl, undefined, {
+      ...(config.apiToken === undefined ? {} : { authToken: config.apiToken }),
+    });
+  }, []);
 }
 
 export function formatApiError(error: unknown): string {

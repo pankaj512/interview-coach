@@ -252,3 +252,31 @@ Verified 2026-09-11: install ok, typecheck ok, test 222 passed (214 prior + 8 ne
 Tag: `session-7b` after commit.
 
 ## S8 — Hardening + deploy (HLD Phases 7–8, open)
+
+## S8a — Service hardening: auth gate, real rate limits, quotas, probes/metrics (2026-09-11)
+Status: done (verified below). Scope per user choice: hardening first; containers/CI/deploy track (S8b) later.
+
+Done:
+* Auth gate (`packages/backend/src/auth.ts`): optional `API_AUTH_TOKEN` bearer. When set, all `/api/*` except `GET /api/health|ready` 401 (`UNAUTHORIZED`, permanent) without `Authorization: Bearer`; unset = open local-dev mode + one startup warn. Timing-safe compare. Per-user ownership stays out (needs Entra/OIDC identity → S8b + ADR, documented in the module header).
+* Rate limits (`packages/backend/src/rate-limit.ts`, owned fixed-window per-IP): global 1000/min + tighter tool-exec 120 / voice-mint 60 / code-run 30 per min (env-overridable). 429s use the shared `{ok:false}` envelope with `RATE_LIMITED`/`retryable:true` + `Retry-After`, so the browser forwarder backs off with the same `call_id`. Health/ready probes exempt.
+* Quotas: `VOICE_MAX_ACTIVE_SESSIONS` 200 (429 past it), `CODE_RUN_MAX_CONCURRENT` 4 (in-process semaphore, 429 past it), `CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW` 100 (429 past it). Explicit 256KB body cap (413 before domain logic).
+* Probes/observability: `GET /api/ready` (repo ping → 503 `NOT_READY` when the DB is down; reports voice mode + session count), `GET /api/metrics` (auth-gated; interviews/tools+replays+failures/voice minted+rejected/code runs by status/submissions/sessions/idempotency size, uptime). Counters wired into create/tool-exec/voice-mint/submit/run paths. `GET /api/health` unchanged and open.
+* Headers: `@fastify/helmet` (nosniff/frameguard/hsts/csp verified live).
+* Web client: `BackendClient` optional bearer (`VITE_API_TOKEN`, local-dev-only like the api-key voice precedent) on control-plane + tool-exec paths; `loadWebConfig().apiToken`; wired in `useBackendClient`. No new `VITE_AZURE_*` (bundle still clean — only the pre-existing guard comment).
+* Tests: backend `hardening.test.ts` (10: auth open/gated, metrics counting incl. replay + rejection, session/submission caps, tool-exec 429 envelope, 413 body cap, helmet header, secret non-leak in 404/503); web `backend-client-s8.test.ts` (3: header absent by default, present on both paths, env parsing).
+
+Audit findings (fixed in S8a, no ADR — additive, no plane change):
+* `@fastify/rate-limit` removed: `void app.register(rateLimit)` never limited anything — the plugin installs budgets via an `onRoute` hook at plugin-execution time (deferred to `ready()`), but buildApp adds all routes synchronously first, so the hook missed every route (proven: a max-2 budget never fired). The S3 "1000/min" was a no-op. Owned root `onRequest` limiter installs synchronously; every budget is test-covered.
+* Secret hygiene verified: server log + error bodies contain no voice key; bundle has no `VITE_AZURE_*` values.
+
+Decisions locked:
+* 401s are permanent (`retryable:false`); 429s are retryable (`retryable:true`) across auth/quota/rate-limit paths alike.
+* Rate limiting runs before auth (token brute-forcing is throttled); probes stay open for load-balancer/K8s checks.
+* Container isolation for the sandbox stays S8b (quotas here are defense-in-depth, not a security boundary).
+
+Open for S8b (deploy track):
+* Dockerfiles + compose (backend/web/db), CI (test→build→security), Entra/OIDC user identity + per-interview authz, Prometheus exporter over the metrics shape, retention/deletion policy (HLD 7.4).
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && vite build` (no-DB warn-and-pass 235 + live-DB vs postgres:16 port 5433 235) plus live server smoke with `API_AUTH_TOKEN` set.
+Verified 2026-09-11: install ok (+helmet, −rate-limit), typecheck ok, test 235 passed (222 prior + 13 new), `tsc -b` ok, `vite build` ok (311.31kB JS / 95.60kB gzip). Live smoke vs postgres:16 (port 5433, port 3210 server, token-gated + `api-key-local-dev` voice): health/ready open; create without token 401; full flow with token create→ready→mint (correct wss URL)→tool-exec→replay(`replayed:true`)→metrics(interviews 1, exec 1, replay 1, minted 1, sessions 1)→helmet headers present→hangup→end(`completed`, idempotent). Server log + error bodies: no key leak. Note: smoke server left running on 127.0.0.1:3210 (shell tool blocks kill) — stop with `pkill -f "tsx watch"`.
+Tag: `session-8a` after commit.

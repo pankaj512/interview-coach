@@ -7,6 +7,12 @@
 
 export interface WebClientConfig {
   readonly backendUrl: string;
+  /**
+   * S8a service token, local-dev-only (mirrors the server-side
+   * `API_AUTH_TOKEN` gate). Ships in the bundle when set, so never use it
+   * outside local development — production needs per-user identity (S8b).
+   */
+  readonly apiToken: string | undefined;
 }
 
 const DEFAULT_BACKEND_URL = "http://localhost:3000";
@@ -19,5 +25,10 @@ export function loadWebConfig(
 ): WebClientConfig {
   const raw = env["VITE_BACKEND_URL"];
   const trimmed = raw === undefined ? "" : raw.trim().replace(/\/+$/, "");
-  return { backendUrl: trimmed === "" ? DEFAULT_BACKEND_URL : trimmed };
+  const tokenRaw = env["VITE_API_TOKEN"];
+  const token = tokenRaw === undefined || tokenRaw.trim() === "" ? undefined : tokenRaw.trim();
+  return {
+    backendUrl: trimmed === "" ? DEFAULT_BACKEND_URL : trimmed,
+    apiToken: token,
+  };
 }

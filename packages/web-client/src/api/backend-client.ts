@@ -81,10 +81,13 @@ export interface CreateInterviewInput {
 export class BackendClient {
   private readonly baseUrl: string;
   private readonly fetchFn: FetchFn;
+  private readonly authToken: string | undefined;
 
-  constructor(baseUrl: string, fetchFn?: FetchFn) {
+  constructor(baseUrl: string, fetchFn?: FetchFn, options?: { authToken?: string }) {
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.fetchFn = fetchFn ?? defaultFetch();
+    const token = options?.authToken?.trim();
+    this.authToken = token === undefined || token === "" ? undefined : token;
   }
 
   get url(): string {
@@ -215,7 +218,10 @@ export class BackendClient {
         `${this.baseUrl}/api/interviews/${encodeURIComponent(interviewId)}/tool-exec`,
         {
           method: "POST",
-          headers: { "content-type": "application/json" },
+          headers: {
+            "content-type": "application/json",
+            ...(this.authToken === undefined ? {} : { authorization: `Bearer ${this.authToken}` }),
+          },
           body: JSON.stringify({
             call_id: callId,
             tool,
@@ -408,12 +414,16 @@ export class BackendClient {
     try {
       // Content-Type only with a body: the backend rejects an empty JSON
       // body when the header is set (S3 strict parsing), so bodyless
-      // POST/DELETE calls (ready/start/end/voice-session) omit it.
+      // POST/DELETE calls (ready/start/end/voice-session) omit it. The S8a
+      // bearer token rides on every call when configured (local-dev-only).
+      const headers: Record<string, string> = {
+        ...(this.authToken === undefined ? {} : { authorization: `Bearer ${this.authToken}` }),
+        ...(body === undefined ? {} : { "content-type": "application/json" }),
+      };
       response = await this.fetchFn(`${this.baseUrl}${path}`, {
         method,
-        ...(body === undefined
-          ? {}
-          : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+        ...(Object.keys(headers).length === 0 ? {} : { headers }),
+        ...(body === undefined ? {} : { body: JSON.stringify(body) }),
       });
     } catch (error) {
       throw new BackendApiError(0, "NETWORK_ERROR", networkMessage(error), true);

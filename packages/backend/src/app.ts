@@ -36,7 +36,7 @@
 
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
-import rateLimit from "@fastify/rate-limit";
+import helmet from "@fastify/helmet";
 import { z } from "zod";
 import {
   EVALUATION_DIMENSIONS,
@@ -59,6 +59,9 @@ import {
   type ToolResult,
 } from "@interview-coach/domain";
 import { loadConfig, type BackendConfig } from "./config.js";
+import { registerAuthHook } from "./auth.js";
+import { BackendMetrics } from "./metrics.js";
+import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
   IdempotencyStore,
@@ -93,6 +96,7 @@ export interface BuiltBackend {
   readonly app: FastifyInstance;
   readonly toolIdempotency: IdempotencyStore<ToolResult>;
   readonly activeVoiceSessions: Map<string, ActiveVoiceSession>;
+  readonly metrics: BackendMetrics;
 }
 
 export interface ActiveVoiceSession {
@@ -241,12 +245,19 @@ function zodMessage(error: z.ZodError): string {
 export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const config = deps.config ?? loadConfig();
   const voiceProvider = deps.voiceProvider ?? createVoiceSessionProviderFromEnv();
-  const app = Fastify({ logger: deps.logger ?? true });
+  // S8a: explicit body cap (code 50k + cases fit comfortably); oversized
+  // payloads 413 via the error handler instead of consuming the runner.
+  const app = Fastify({ logger: deps.logger ?? true, bodyLimit: 256 * 1024 });
   const toolIdempotency = new IdempotencyStore<ToolResult>({
     ttlMs: config.tools.idempotencyTtlMs,
     maxEntries: config.tools.idempotencyMaxEntries,
   });
   const activeVoiceSessions = new Map<string, ActiveVoiceSession>();
+  // S8a observability (HLD 8.4): in-memory counters, reset on restart.
+  const metrics = new BackendMetrics();
+  // S8a sandbox quota: concurrent LocalCodeRunner executions. Node runs the
+  // check + increment synchronously, so no race within one process.
+  let activeCodeRuns = 0;
 
   const interviews = new InterviewService({ ...deps.repos });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
@@ -270,8 +281,34 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
   void app.register(cors, { origin: config.corsOrigin });
-  // Present per the locked stack; abuse tuning lands in S8 hardening.
-  void app.register(rateLimit, { max: 1000, timeWindow: "1 minute" });
+  // S8a: security headers (nosniff/frameguard/hsts), owned fixed-window rate
+  // limits (global + tighter budgets on tool-exec/voice-mint/code-run), then
+  // the service auth gate. Limiting runs before auth so token brute-forcing
+  // is throttled too.
+  void app.register(helmet);
+  const limiter = new FixedWindowRateLimiter();
+  const budgets: Record<Exclude<ReturnType<typeof bucketForRoute>, "exempt">, RateBudget> = {
+    global: { max: config.rateLimits.globalPerMin, windowMs: 60_000 },
+    toolExec: { max: config.rateLimits.toolExecPerMin, windowMs: 60_000 },
+    voiceMint: { max: config.rateLimits.voiceMintPerMin, windowMs: 60_000 },
+    codeRun: { max: config.rateLimits.codeRunPerMin, windowMs: 60_000 },
+  };
+  app.addHook("onRequest", (request, reply, done) => {
+    const pathname = request.url.split("?", 1)[0] ?? "/";
+    const bucket = bucketForRoute(request.method, pathname);
+    if (bucket === "exempt") {
+      done();
+      return;
+    }
+    const verdict = limiter.check(bucket, request.ip, budgets[bucket]);
+    if (!verdict.allowed) {
+      reply.header("retry-after", String(Math.max(1, Math.ceil(verdict.retryAfterMs / 1000))));
+      sendApiError(reply, 429, "RATE_LIMITED", "Rate limit exceeded, retry shortly", true);
+      return;
+    }
+    done();
+  });
+  registerAuthHook(app, config.authToken);
 
   app.setNotFoundHandler((request, reply) => {
     sendApiError(reply, 404, "NOT_FOUND", `No route for ${request.url}`, false);
@@ -297,12 +334,41 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
   app.addHook("onClose", (_instance, done) => {
+    limiter.close();
     toolIdempotency.close();
     done();
   });
 
   app.get("/api/health", (_request, reply) => {
     reply.send({ ok: true, service: "interview-coach-backend", version: VERSION });
+  });
+
+  // S8a probes: readiness exercises the repo layer (Postgres SELECT on Drizzle,
+  // memory scan on in-memory) so a dead DB reads unready; metrics is the
+  // auth-gated operational snapshot (HLD 8.4). Both are cheap by design.
+  app.get("/api/ready", async (_request, reply) => {
+    try {
+      await deps.repos.problems.list();
+    } catch {
+      return reply
+        .status(503)
+        .send({ ok: false, error: { code: "NOT_READY", message: "Repository unreachable", retryable: true } });
+    }
+    return reply.send({
+      ok: true,
+      ready: true,
+      service: "interview-coach-backend",
+      version: VERSION,
+      voiceMode: voiceProvider.mode,
+      activeVoiceSessions: activeVoiceSessions.size,
+    });
+  });
+
+  app.get("/api/metrics", (_request, reply) => {
+    return reply.send({
+      ok: true,
+      metrics: metrics.snapshot(activeVoiceSessions.size, toolIdempotency.size),
+    });
   });
 
   app.post("/api/interviews", async (request, reply) => {
@@ -316,6 +382,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
     if (!created.ok) return sendDomainError(reply, created.error);
     request.log.info({ interviewId: created.value.id }, "interview.created");
+    metrics.countInterviewCreated();
     return reply.status(201).send({ ok: true, interview: serializeInterview(created.value) });
   });
 
@@ -689,6 +756,18 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
     }
     const id = asInterviewId(params.data.id);
+    // S8a quota: bound stored state per interview (abuse protection).
+    const existing = await submissions.listSubmissions(id);
+    if (existing.ok && existing.value.length >= config.sandbox.maxSubmissionsPerInterview) {
+      return sendApiError(
+        reply,
+        429,
+        "RATE_LIMITED",
+        `Submission quota exceeded for interview ${params.data.id} (max ${config.sandbox.maxSubmissionsPerInterview})`,
+        true,
+      );
+    }
+    if (!existing.ok) return sendDomainError(reply, existing.error);
     const submitted = await submissions.submit(id, {
       language: parsed.data.language,
       code: parsed.data.code,
@@ -701,6 +780,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       { interviewId: params.data.id, submissionId: submitted.value.id },
       "code.submitted",
     );
+    metrics.countCodeSubmission();
     return reply
       .status(201)
       .send({ ok: true, submission: serializeSubmission(submitted.value) });
@@ -747,16 +827,32 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
           false,
         );
       }
-      const run = await submissions.runTests(
-        submissionId,
-        parsed.data.testCases.map((t) => ({
-          name: t.name,
-          args: t.args,
-          expected: t.expected,
-          ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
-        })),
-        parsed.data.timeoutMs,
-      );
+      // S8a quota: concurrent subprocess executions across the process.
+      if (activeCodeRuns >= config.sandbox.maxConcurrentRuns) {
+        return sendApiError(
+          reply,
+          429,
+          "RATE_LIMITED",
+          `Code runner busy (${activeCodeRuns}/${config.sandbox.maxConcurrentRuns} running); retry shortly`,
+          true,
+        );
+      }
+      activeCodeRuns += 1;
+      let run;
+      try {
+        run = await submissions.runTests(
+          submissionId,
+          parsed.data.testCases.map((t) => ({
+            name: t.name,
+            args: t.args,
+            expected: t.expected,
+            ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
+          })),
+          parsed.data.timeoutMs,
+        );
+      } finally {
+        activeCodeRuns -= 1;
+      }
       if (!run.ok) return sendDomainError(reply, run.error);
       request.log.info(
         {
@@ -768,6 +864,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         },
         "code.executed",
       );
+      metrics.countCodeRun(run.value.status);
       return reply
         .status(201)
         .send({ ok: true, run: serializeRun(run.value) });
@@ -808,7 +905,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, run: serializeRun(run) });
   });
 
-  app.post("/api/interviews/:id/tool-exec", async (request, reply) => {
+  app.post(
+    "/api/interviews/:id/tool-exec",
+    async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
@@ -846,6 +945,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       "tool.executed",
     );
     const record = outcome.record;
+    metrics.countTool(outcome.replayed, record.ok);
     if (record.ok) {
       return reply.send({
         ok: true,
@@ -900,7 +1000,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
-  app.post("/api/interviews/:id/voice-session", async (request, reply) => {
+  app.post(
+    "/api/interviews/:id/voice-session",
+    async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
@@ -914,6 +1016,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       const started = await interviews.start(id);
       if (!started.ok) return sendDomainError(reply, started.error);
     } else if (status !== "in_progress" && status !== "paused") {
+      metrics.countVoiceRejected();
       return sendApiError(
         reply,
         409,
@@ -922,11 +1025,23 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         false,
       );
     }
+    // S8a quota: bound the in-memory session map (abuse protection).
+    if (!activeVoiceSessions.has(params.data.id) && activeVoiceSessions.size >= config.voice.maxActiveSessions) {
+      metrics.countVoiceRejected();
+      return sendApiError(
+        reply,
+        429,
+        "RATE_LIMITED",
+        `Too many active voice sessions (max ${config.voice.maxActiveSessions}); retry shortly`,
+        true,
+      );
+    }
     let mint;
     try {
       mint = await voiceProvider.mint(id);
     } catch (error) {
       if (error instanceof VoiceNotConfiguredError) {
+        metrics.countVoiceRejected();
         return sendApiError(reply, 503, "VOICE_NOT_CONFIGURED", error.message, false);
       }
       throw error;
@@ -945,6 +1060,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       { interviewId: params.data.id, mode: mint.mode },
       "voice_session.created",
     );
+    metrics.countVoiceMinted();
     // S7a sandbox summary (HLD 6.4): code progress travels with the mint so
     // the model starts aware of submissions and latest run verdicts.
     const submissionCount = await submissions.submissionCount(id);
@@ -999,7 +1115,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, active: false });
   });
 
-  return { app, toolIdempotency, activeVoiceSessions };
+  return { app, toolIdempotency, activeVoiceSessions, metrics };
 }
 
 function describeConfiguration(config: InterviewConfiguration): string {
