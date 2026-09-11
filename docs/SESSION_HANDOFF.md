@@ -189,3 +189,23 @@ Open for S7+:
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus preview serve smoke.
 Verified 2026-09-11: install ok (no new deps — React/Vite already present), typecheck ok, test 167 passed (153 prior + 14 new), `tsc -b` ok, `vite build` ok (303.43kB JS / 93.52kB gzip — curriculum JSON bundled; 12.35kB CSS with tokens), preview serves `Interview Coach` shell. No `VITE_AZURE_*` in client (one pre-existing comment reference only).
 Tag: `session-6` after commit.
+
+## S6.1 — Pre-S7 lifecycle gap closure (2026-09-11)
+Status: done (verified below). Pre-S7 audit of HLD Phases 0–5 found one real gap: domain `pause/resume/cancel/fail` (S1 `interview-service.ts:86-121`) had no HTTP exposure, leaving `paused`/`cancelled`/`failed` unreachable via the API (sandbox timeouts/cancel paths need them in S7).
+
+Done:
+* Backend: `POST /api/interviews/:id/pause|resume|cancel|fail` (`packages/backend/src/app.ts`) — same id-param validation + `{ok:false}` envelope + `interview.lifecycle` pino logs as existing transitions. `cancel`/`fail` take an optional `{reason≤500}` body; bodyless POSTs (no content-type, per S4 note) mean "no reason", malformed reasons → 400. Model never calls these (app-only, like `end`).
+* Web client: `pauseInterview/resumeInterview/cancelInterview/failInterview` on `BackendClient` (body omitted when no reason). No UI wiring yet — S7 decides where pause/cancel surface.
+* `docs/architecture-frozen.md` §9 phase→session mapping corrected (was stale: S3–S5/S6/S7; now S3/S4/S6-rebuild/S5a+b/S7-sandbox/S8).
+* Backend `interviews.test.ts`: +5 tests (pause→resume round-trip, pause-while-created 409, cancel-with-reason, bodyless fail, malformed reason 400).
+
+Deliberately deferred (not pre-S7 blockers, stay open for S7+):
+* `GET /api/interviews` server listing — not in HLD §1.3 API; local history index stands until S7+ decides.
+* Transcript persistence — voice transcripts stay ephemeral per architecture principle 8 (conversation history ≠ app state); canonical eval input is `POST .../responses` + `record_candidate_answer` (already persisted). S7 eval integration builds on that.
+* Entra ephemeral mint — local-dev api-key mode suffices until deploy track (S8).
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build` (no-DB warn-and-pass 172 + live-DB vs postgres:16 port 5433 172) plus live server smoke.
+Verified 2026-09-11: install ok, typecheck ok, test 172 passed (167 prior + 5 new), `tsc -b` ok. Live smoke vs postgres:16 ok: create→ready→start→pause(`paused`)→resume(`in_progress`)→fail(`failed`, reason)→cancel second interview bodyless (`cancelled`).
+Tag: `session-6-1` after commit.
+
+## S7 — Code execution sandbox (HLD Phase 6, open)

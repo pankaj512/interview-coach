@@ -141,6 +141,42 @@ export class BackendClient {
     return { interview: body.interview, transitioned: body.transitioned };
   }
 
+  // S6.1: remaining lifecycle transitions (app-only; the model never calls
+  // these). Cancel/fail accept an optional reason; no body means no reason.
+  async pauseInterview(id: string): Promise<SerializedInterview> {
+    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/pause`,
+    );
+    return body.interview;
+  }
+
+  async resumeInterview(id: string): Promise<SerializedInterview> {
+    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/resume`,
+    );
+    return body.interview;
+  }
+
+  async cancelInterview(id: string, reason?: string): Promise<SerializedInterview> {
+    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/cancel`,
+      reason === undefined ? undefined : { reason },
+    );
+    return body.interview;
+  }
+
+  async failInterview(id: string, reason?: string): Promise<SerializedInterview> {
+    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/fail`,
+      reason === undefined ? undefined : { reason },
+    );
+    return body.interview;
+  }
+
   async assignProblems(id: string, problemIds: readonly string[]): Promise<SerializedInterview> {
     const body = await this.request<{ ok: true; interview: SerializedInterview }>(
       "POST",

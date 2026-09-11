@@ -60,4 +60,4 @@ Tool requirements: narrow scope, authz vs current interview, deterministic where
 
 ## 9. Phase order
 
-0 Freeze (S0, this session) → 1 Domain (S1) → 2 Persistence (S2) → 3 Voice session + idempotency (S3–S5) → 4 Web client (S6) → 5 Intelligence/eval (S7) → 6 Sandbox (deferred) → 7–8 Hardening/deploy (S8).
+0 Freeze (S0) → 1 Domain (S1) → 2 Persistence (S2) → 3 Voice session + idempotency (S3) → 4 Web client (S4, rebuilt S6 per SD3 handoff) → 5 Intelligence/eval (S5a backend + S5b web) → 6 Sandbox (S7) → 7–8 Hardening/deploy (S8).

@@ -13,6 +13,10 @@
 //   GET    /api/interviews/:id/state
 //   POST   /api/interviews/:id/ready            (extension: lifecycle needs it)
 //   POST   /api/interviews/:id/start
+//   POST   /api/interviews/:id/pause            (S6.1: expose domain pause)
+//   POST   /api/interviews/:id/resume           (S6.1: expose domain resume)
+//   POST   /api/interviews/:id/cancel           (S6.1: app-only cancel + reason)
+//   POST   /api/interviews/:id/fail             (S6.1: app-only fail + reason)
 //   POST   /api/interviews/:id/end
 //   POST   /api/interviews/:id/problems         (extension: attach problems)
 //   POST   /api/interviews/:id/problems/select  (S5: deterministic auto-select)
@@ -313,6 +317,24 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
 
+  // S6.1: optional app-only reason for cancel/fail. Bodyless POSTs arrive
+  // with no body (see S4 content-type note), so a missing body means no
+  // reason rather than a validation error.
+  const lifecycleReasonSchema = z.object({
+    reason: z.string().min(1).max(500).optional(),
+  });
+
+  function parseLifecycleReason(body: unknown):
+    | { ok: true; reason: string | undefined }
+    | { ok: false; message: string } {
+    if (body === null || body === undefined || body === "") {
+      return { ok: true, reason: undefined };
+    }
+    const parsed = lifecycleReasonSchema.safeParse(body);
+    if (!parsed.success) return { ok: false, message: zodMessage(parsed.error) };
+    return { ok: true, reason: parsed.data.reason };
+  }
+
   // App-only finalization: in_progress/paused -> completing -> completed in
   // one request. Idempotent for completed. The model never calls this; it
   // signals done via the end_interview tool (which stops at completing).
@@ -353,6 +375,62 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       `Cannot end interview ${params.data.id} while ${status}`,
       false,
     );
+  });
+
+  // S6.1: expose the remaining domain lifecycle transitions over HTTP.
+  // The model never calls these; pause/resume serve reconnect and client
+  // flow control, cancel serves explicit user cancellation, fail serves
+  // app-side timeout/abuse handling (sandbox timeouts land here in S7).
+  app.post("/api/interviews/:id/pause", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const next = await interviews.pause(asInterviewId(params.data.id));
+    if (!next.ok) return sendDomainError(reply, next.error);
+    request.log.info({ interviewId: next.value.id, to: "paused" }, "interview.lifecycle");
+    return reply.send({ ok: true, interview: serializeInterview(next.value) });
+  });
+
+  app.post("/api/interviews/:id/resume", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const next = await interviews.resume(asInterviewId(params.data.id));
+    if (!next.ok) return sendDomainError(reply, next.error);
+    request.log.info({ interviewId: next.value.id, to: "in_progress" }, "interview.lifecycle");
+    return reply.send({ ok: true, interview: serializeInterview(next.value) });
+  });
+
+  app.post("/api/interviews/:id/cancel", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const reason = parseLifecycleReason(request.body);
+    if (!reason.ok) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", reason.message, false);
+    }
+    const next = await interviews.cancel(asInterviewId(params.data.id), reason.reason);
+    if (!next.ok) return sendDomainError(reply, next.error);
+    request.log.info({ interviewId: next.value.id, to: "cancelled" }, "interview.lifecycle");
+    return reply.send({ ok: true, interview: serializeInterview(next.value) });
+  });
+
+  app.post("/api/interviews/:id/fail", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const reason = parseLifecycleReason(request.body);
+    if (!reason.ok) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", reason.message, false);
+    }
+    const next = await interviews.fail(asInterviewId(params.data.id), reason.reason);
+    if (!next.ok) return sendDomainError(reply, next.error);
+    request.log.info({ interviewId: next.value.id, to: "failed" }, "interview.lifecycle");
+    return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
 
   app.post("/api/interviews/:id/problems", async (request, reply) => {

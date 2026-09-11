@@ -1,5 +1,5 @@
-// S3 interview lifecycle routes: create/get/state/ready/start/end,
-// problem assignment, problem fetch, health.
+// S3 interview lifecycle routes: create/get/state/ready/start/pause/resume/
+// cancel/fail/end, problem assignment, problem fetch, health.
 
 import { afterEach, describe, expect, it } from "vitest";
 import { buildTestBackend, createStartedInterview, seedProblem } from "./helpers.js";
@@ -116,6 +116,67 @@ describe("interview lifecycle", () => {
     const res = await b.app.inject({ method: "POST", url: `/api/interviews/${id}/end` });
     expect(res.statusCode).toBe(409);
     expect(res.json()).toMatchObject({ ok: false, error: { code: "ILLEGAL_TRANSITION" } });
+  });
+
+  it("pause -> resume round-trips through in_progress", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const paused = await b.app.inject({ method: "POST", url: `/api/interviews/${id}/pause` });
+    expect(paused.statusCode).toBe(200);
+    expect(paused.json()).toMatchObject({ ok: true, interview: { status: "paused" } });
+    const resumed = await b.app.inject({ method: "POST", url: `/api/interviews/${id}/resume` });
+    expect(resumed.statusCode).toBe(200);
+    expect(resumed.json()).toMatchObject({ ok: true, interview: { status: "in_progress" } });
+  });
+
+  it("pause rejects interviews that never started", async () => {
+    const b = useBackend();
+    const created = await b.app.inject({
+      method: "POST",
+      url: "/api/interviews",
+      payload: { candidateId: "user_1", configuration: { interviewType: "dsa" } },
+    });
+    const id = (created.json() as { interview: { id: string } }).interview.id;
+    const res = await b.app.inject({ method: "POST", url: `/api/interviews/${id}/pause` });
+    expect(res.statusCode).toBe(409);
+    expect(res.json()).toMatchObject({ ok: false, error: { code: "ILLEGAL_TRANSITION" } });
+  });
+
+  it("cancel moves a created interview to cancelled with an optional reason", async () => {
+    const b = useBackend();
+    const created = await b.app.inject({
+      method: "POST",
+      url: "/api/interviews",
+      payload: { candidateId: "user_1", configuration: { interviewType: "dsa" } },
+    });
+    const id = (created.json() as { interview: { id: string } }).interview.id;
+    const res = await b.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/cancel`,
+      payload: { reason: "candidate withdrew" },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true, interview: { status: "cancelled" } });
+  });
+
+  it("fail moves a running interview to failed without requiring a body", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const res = await b.app.inject({ method: "POST", url: `/api/interviews/${id}/fail` });
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toMatchObject({ ok: true, interview: { status: "failed" } });
+  });
+
+  it("cancel rejects malformed reasons with 400", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const res = await b.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/cancel`,
+      payload: { reason: 42 },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json()).toMatchObject({ ok: false, error: { code: "VALIDATION_ERROR" } });
   });
 });
 
