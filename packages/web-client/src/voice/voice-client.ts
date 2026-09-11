@@ -1,0 +1,709 @@
+// @interview-coach/web-client — realtime Voice Live client (S4).
+//
+// Media plane (frozen section 2): Browser<->Voice Live direct over WebSocket,
+// PCM16 / 24 kHz / mono both directions. Event handling mirrors the CLI
+// harness: one model function call can surface through several protocol
+// events (`conversation.item.created`, `response.function_call_arguments.done`,
+// `response.output_item.done`, `response.done`), so execution dedups by
+// `call_id` (local handled-set + backend idempotency via tool-exec).
+//
+// Barge-in mirrors the CLI: `speech_started` while the assistant is speaking
+// (once per turn) -> `response.cancel` + local playback flush.
+//
+// Collaborators (WebSocket, mic, playback, tool execution, storage, clocks)
+// are injected so vitest covers the lifecycle with fakes — no mic or network
+// in tests. Logging is lifecycle/timing only (frozen section 3); audio
+// deltas and PCM chunks are never logged.
+
+import { BackendApiError, BackendClient } from "../api/backend-client.js";
+import type { ToolName, VoiceSessionPayload } from "../api/types.js";
+import { base64ToPcm16 } from "./audio.js";
+import {
+  addPendingCallId,
+  loadPendingCallIds,
+  removePendingCallId,
+  type KeyValueStorage,
+} from "./pending-store.js";
+import {
+  buildAuthenticatedVoiceUrl,
+  buildFunctionCallOutput,
+  buildSessionUpdate,
+} from "./session.js";
+import { forwardToolCall, ToolOutputLedger, type ToolExecutor } from "./tool-forwarder.js";
+
+export type VoiceConnectionState =
+  | "idle"
+  | "connecting"
+  | "connected"
+  | "reconnecting"
+  | "closed"
+  | "failed";
+
+export interface VoiceServerEvent {
+  readonly type: string;
+  readonly delta?: string;
+  readonly call_id?: string;
+  readonly name?: string;
+  readonly arguments?: string;
+  readonly item?: unknown;
+  readonly error?: unknown;
+  readonly response_id?: string;
+  readonly responseId?: string;
+  readonly item_id?: string;
+  readonly response?: unknown;
+  readonly transcript?: unknown;
+  readonly [key: string]: unknown;
+}
+
+export interface VoiceClientEvents {
+  readonly onConnectionState?: (state: VoiceConnectionState) => void;
+  readonly onAssistantSpeaking?: (speaking: boolean) => void;
+  readonly onCandidateSpeaking?: (speaking: boolean) => void;
+  readonly onToolStart?: (callId: string, tool: ToolName) => void;
+  readonly onToolComplete?: (callId: string, tool: ToolName, elapsedMs: number, replayed: boolean) => void;
+  readonly onTranscript?: (text: string) => void;
+  readonly onError?: (error: Error) => void;
+  // Lifecycle/timing metric (frozen observability). Never audio content.
+  readonly onMetric?: (event: string, fields?: Record<string, unknown>) => void;
+}
+
+// Minimal WebSocket surface (browser WebSocket satisfies this).
+export interface VoiceWebSocket {
+  readonly readyState: number;
+  send(data: string): void;
+  close(code?: number, reason?: string): void;
+  onopen: ((event: unknown) => void) | null;
+  onmessage: ((event: { data: unknown }) => void) | null;
+  onerror: ((event: unknown) => void) | null;
+  onclose: ((event: { code: number; reason: string }) => void) | null;
+}
+
+export type WebSocketFactory = (url: string) => VoiceWebSocket;
+
+// Outgoing PCM: base64 PCM16 @24kHz mono (see audio.ts prepareCaptureChunk).
+export interface MicCapture {
+  start(): Promise<void>;
+  stop(): Promise<void>;
+  onChunk: ((base64Pcm16: string) => void) | null;
+}
+
+export interface PlaybackSink {
+  enqueue(samples: Int16Array): void;
+  flush(): void;
+  stop(): void;
+}
+
+export interface VoiceClientDeps {
+  readonly wsFactory: WebSocketFactory;
+  readonly mic: MicCapture;
+  readonly playback: PlaybackSink;
+  readonly toolExecutor: ToolExecutor;
+  readonly storage?: KeyValueStorage;
+  readonly connectTimeoutMs?: number;
+  readonly sessionAckTimeoutMs?: number;
+  readonly sleep?: (ms: number) => Promise<void>;
+  readonly now?: () => number;
+}
+
+interface PendingCall {
+  readonly callId: string;
+  readonly name: ToolName;
+  readonly previousItemId?: string;
+}
+
+const VALID_TOOL_NAMES: readonly string[] = [
+  "get_current_problem",
+  "get_interview_state",
+  "get_candidate_performance",
+  "end_interview",
+];
+
+function defaultSleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+export class VoiceInterviewClient {
+  private readonly deps: VoiceClientDeps;
+  private readonly events: VoiceClientEvents;
+  private readonly ledger = new ToolOutputLedger();
+  private ws: VoiceWebSocket | null = null;
+  private interviewId: string | null = null;
+  private session: VoiceSessionPayload | null = null;
+  private connectionState: VoiceConnectionState = "idle";
+  private assistantSpeaking = false;
+  private hasLoggedAudioStart = false;
+  private bargeInArmedForTurn = false;
+  private activeResponseId: string | null = null;
+  private pendingCall: PendingCall | null = null;
+  private handledCallIds = new Set<string>();
+  // Outputs recovered across a reload via GET tool-results (frozen section 5).
+  // Served only if the new session requests the same call_id — the client
+  // never invents outputs for calls the model did not make.
+  private recoveredOutputs = new Map<string, string>();
+  private lastServerEventAt = 0;
+  private connectAttempt = 0;
+  private disposed = false;
+
+  constructor(deps: VoiceClientDeps, events: VoiceClientEvents = {}) {
+    this.deps = deps;
+    this.events = events;
+  }
+
+  get state(): VoiceConnectionState {
+    return this.connectionState;
+  }
+
+  get pendingOutputCount(): number {
+    return this.ledger.pendingCount;
+  }
+
+  get lastEventAt(): number {
+    return this.lastServerEventAt;
+  }
+
+  get currentInterviewId(): string | null {
+    return this.interviewId;
+  }
+
+  async connect(interviewId: string, session: VoiceSessionPayload): Promise<void> {
+    if (this.connectionState === "connected" || this.connectionState === "connecting") {
+      throw new Error("Voice client is already connected or connecting");
+    }
+    this.disposed = false;
+    this.interviewId = interviewId;
+    this.session = session;
+    this.connectAttempt += 1;
+    const firstAttempt = this.connectAttempt === 1;
+    this.setState(firstAttempt ? "connecting" : "reconnecting");
+
+    const url = buildAuthenticatedVoiceUrl(session);
+    const ws = this.deps.wsFactory(url);
+    this.ws = ws;
+    const connectTimeoutMs = this.deps.connectTimeoutMs ?? 15_000;
+
+    await new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("Voice Live connect timeout")), connectTimeoutMs);
+      ws.onopen = () => {
+        clearTimeout(timer);
+        resolve();
+      };
+      ws.onerror = (event) => {
+        clearTimeout(timer);
+        reject(event instanceof Error ? event : new Error("Voice Live connection failed"));
+      };
+      ws.onclose = () => {
+        clearTimeout(timer);
+        reject(new Error("Voice Live closed before open"));
+      };
+    }).catch((error) => {
+      this.ws = null;
+      this.setState("failed");
+      this.emitError(error instanceof Error ? error : new Error(String(error)));
+      throw error;
+    });
+
+    if (this.disposed) {
+      try {
+        ws.close();
+      } catch {
+        // ignore
+      }
+      return;
+    }
+
+    ws.onmessage = (event) => {
+      this.handleRawMessage(event.data);
+    };
+    ws.onerror = () => {
+      this.metric("voice.error", { interviewId });
+    };
+    ws.onclose = (event) => {
+      this.handleClose(event.code, event.reason);
+    };
+
+    ws.send(JSON.stringify(buildSessionUpdate(session)));
+    this.metric("voice.session_update_sent", { interviewId });
+
+    // Wait for session.updated like the CLI (3s), then proceed regardless —
+    // the greeting must not hang a healthy session on a dropped ack.
+    const acked = await this.waitForSessionAck(ws);
+    this.metric("voice.session_ack", { interviewId, acked });
+
+    // Flush outputs queued while disconnected (bounded 20, skip acked).
+    this.flushPendingOutputs();
+
+    await this.deps.mic.start();
+    this.setState("connected");
+    this.metric("voice.connected", { interviewId });
+
+    // Interviewer speaks first (CLI parity).
+    this.sendJson({ type: "response.create" });
+    this.metric("voice.initial_greeting_requested", { interviewId });
+  }
+
+  // Reconnect with the same mint when it is still valid; queued unacked
+  // outputs flush after session ack. Returns false when there is nothing to
+  // reconnect (no prior interview/session).
+  async reconnect(): Promise<boolean> {
+    const interviewId = this.interviewId;
+    const session = this.session;
+    if (interviewId === null || session === null) return false;
+    this.closeSocket();
+    this.setState("reconnecting");
+    await this.connect(interviewId, session);
+    return true;
+  }
+
+  // Reload recovery (frozen section 5): rehydrate pending `call_id`s from
+  // sessionStorage via GET tool-results. Found results are cached and served
+  // when (and only when) the new session requests the same call_id — the
+  // client never invents outputs for calls the model did not make. Unknown
+  // ids (never executed) are dropped so a stale id can never shadow a fresh
+  // call.
+  async recoverPendingOutputs(
+    backend: BackendClient,
+    interviewId: string,
+    storage: KeyValueStorage,
+  ): Promise<Map<string, string>> {
+    const recovered = new Map<string, string>();
+    const pending = loadPendingCallIds(storage);
+    for (const callId of pending) {
+      let outcome;
+      try {
+        outcome = await backend.toolResult(interviewId, callId);
+      } catch {
+        continue;
+      }
+      if (outcome === null) {
+        removePendingCallId(storage, callId);
+        continue;
+      }
+      const output = outcome.ok
+        ? JSON.stringify({ call_id: callId, result: outcome.result })
+        : JSON.stringify({ call_id: callId, error: { code: outcome.code, message: outcome.message } });
+      recovered.set(callId, output);
+      this.recoveredOutputs.set(callId, output);
+      this.handledCallIds.add(callId);
+    }
+    return recovered;
+  }
+
+  async disconnect(reason = "hangup"): Promise<void> {
+    this.disposed = true;
+    try {
+      await this.deps.mic.stop();
+    } catch {
+      // ignore
+    }
+    this.deps.playback.stop();
+    this.persistPending();
+    this.closeSocket();
+    this.setAssistantSpeaking(false);
+    this.events.onCandidateSpeaking?.(false);
+    this.setState("closed");
+    this.metric("voice.disconnected", { reason });
+  }
+
+  // Outgoing mic PCM (base64 PCM16 @24kHz mono). Dropped unless connected.
+  sendMicAudio(base64Pcm16: string): void {
+    if (base64Pcm16 === "" || this.ws === null || this.connectionState !== "connected") return;
+    this.sendJson({ type: "input_audio_buffer.append", audio: base64Pcm16 });
+  }
+
+  handleRawMessage(data: unknown): void {
+    let event: VoiceServerEvent;
+    try {
+      event = JSON.parse(String(data)) as VoiceServerEvent;
+    } catch {
+      return;
+    }
+    if (typeof event.type !== "string") return;
+    this.lastServerEventAt = this.now();
+    this.handleServerEvent(event);
+  }
+
+  private handleServerEvent(event: VoiceServerEvent): void {
+    const interviewId = this.interviewId ?? "";
+    switch (event.type) {
+      case "session.updated":
+      case "session.created":
+        break;
+      case "input_audio_buffer.speech_started": {
+        this.events.onCandidateSpeaking?.(true);
+        this.metric("speech_started", { interviewId });
+        if (this.assistantSpeaking) {
+          if (this.bargeInArmedForTurn) break; // one cancel per turn (CLI parity)
+          this.bargeInArmedForTurn = true;
+          this.metric("response.cancel", { interviewId, responseId: this.activeResponseId ?? "unknown" });
+          this.sendJson({ type: "response.cancel" });
+          const startedAt = this.now();
+          this.deps.playback.flush();
+          this.metric("playback_flush", { interviewId, elapsedMs: this.now() - startedAt });
+          this.hasLoggedAudioStart = false;
+        } else {
+          this.bargeInArmedForTurn = false;
+        }
+        break;
+      }
+      case "input_audio_buffer.speech_stopped":
+        this.events.onCandidateSpeaking?.(false);
+        this.bargeInArmedForTurn = false;
+        this.metric("speech_stopped", { interviewId });
+        break;
+      case "conversation.item.created": {
+        const item = event.item as Record<string, unknown> | undefined;
+        if (item !== undefined && item["type"] === "function_call") {
+          const callId = String(item["call_id"] ?? "");
+          const name = String(item["name"] ?? "");
+          if (callId !== "" && this.isToolName(name)) {
+            this.pendingCall = {
+              callId,
+              name,
+              ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
+            };
+            const args = String(item["arguments"] ?? "");
+            if (args.trim().length > 2) {
+              void this.executeTool(name, callId, this.pendingCall.previousItemId);
+            }
+          }
+        }
+        if (item !== undefined && item["type"] === "message" && item["role"] === "user") {
+          const transcript = extractTranscript(item["content"]);
+          if (transcript !== "") this.events.onTranscript?.(transcript);
+        }
+        break;
+      }
+      case "conversation.item.input_audio_transcription.completed": {
+        const transcript = String(event.transcript ?? "").trim();
+        if (transcript !== "") this.events.onTranscript?.(transcript);
+        break;
+      }
+      case "response.created": {
+        this.activeResponseId = extractResponseId(event) ?? this.activeResponseId;
+        this.setAssistantSpeaking(true);
+        this.hasLoggedAudioStart = false;
+        // Ordered channel: a new server response proves every submitted
+        // output arrived — ack the queue (and clear reload recovery).
+        this.ackSubmittedOutputs();
+        this.metric("response_created", { interviewId });
+        break;
+      }
+      case "response.output_audio.delta":
+      case "response.audio.delta": {
+        if (typeof event.delta === "string" && event.delta !== "") {
+          if (!this.hasLoggedAudioStart) {
+            this.hasLoggedAudioStart = true;
+            this.metric("first_audio_delta", { interviewId });
+          }
+          try {
+            this.deps.playback.enqueue(base64ToPcm16(event.delta));
+          } catch {
+            // Malformed delta: skip the chunk, keep the session alive.
+          }
+        }
+        break;
+      }
+      case "response.output_audio.done":
+      case "response.audio.done":
+        this.hasLoggedAudioStart = false;
+        break;
+      case "response.function_call_arguments.delta":
+        break;
+      case "response.function_call_arguments.done": {
+        const callId = String(event.call_id ?? "");
+        const name = String(event.name ?? "");
+        const effectiveName = name !== "" ? name : (this.pendingCall?.name ?? "");
+        const effectiveCallId = callId !== "" ? callId : (this.pendingCall?.callId ?? "");
+        if (effectiveCallId !== "" && this.isToolName(effectiveName)) {
+          const previous = this.pendingCall?.previousItemId;
+          this.pendingCall = { callId: effectiveCallId, name: effectiveName as ToolName };
+          void this.executeTool(effectiveName as ToolName, effectiveCallId, previous);
+        }
+        break;
+      }
+      case "response.output_item.added": {
+        const item = event.item as Record<string, unknown> | undefined;
+        if (item !== undefined && item["type"] === "function_call") {
+          const callId = String(item["call_id"] ?? "");
+          const name = String(item["name"] ?? "");
+          if (callId !== "" && this.isToolName(name)) {
+            this.pendingCall = {
+              callId,
+              name: name as ToolName,
+              ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
+            };
+            this.metric("tool.requested", { interviewId, callId, tool: name });
+          }
+        }
+        break;
+      }
+      case "response.output_item.done": {
+        const item = event.item as Record<string, unknown> | undefined;
+        if (item !== undefined && item["type"] === "function_call") {
+          const callId = String(item["call_id"] ?? "") || this.pendingCall?.callId || "";
+          const name = String(item["name"] ?? "") || this.pendingCall?.name || "";
+          if (callId !== "" && this.isToolName(name)) {
+            void this.executeTool(name as ToolName, callId, previousItemIdOf(item) ?? this.pendingCall?.previousItemId);
+          }
+        }
+        break;
+      }
+      case "response.cancelled":
+      case "response.canceled":
+        this.setAssistantSpeaking(false);
+        this.bargeInArmedForTurn = false;
+        this.hasLoggedAudioStart = false;
+        break;
+      case "response.done": {
+        this.setAssistantSpeaking(false);
+        this.bargeInArmedForTurn = false;
+        this.hasLoggedAudioStart = false;
+        // A function call that only materializes in the final snapshot
+        // (CLI parity: execute when it matches the pending call).
+        if (this.pendingCall !== null) {
+          const output = (event.response as Record<string, unknown> | undefined)?.["output"];
+          if (Array.isArray(output)) {
+            for (const entry of output as Array<Record<string, unknown>>) {
+              if (
+                entry["type"] === "function_call" &&
+                String(entry["call_id"] ?? "") === this.pendingCall.callId &&
+                String(entry["name"] ?? "") === this.pendingCall.name
+              ) {
+                void this.executeTool(
+                  this.pendingCall.name,
+                  this.pendingCall.callId,
+                  previousItemIdOf(entry) ?? this.pendingCall.previousItemId,
+                );
+                return;
+              }
+            }
+          }
+        }
+        break;
+      }
+      case "response.text.delta":
+      case "response.text.done":
+        break;
+      case "error": {
+        const message = event.error === undefined ? event.type : JSON.stringify(event.error);
+        this.emitError(new Error(`Voice Live error: ${message.slice(0, 300)}`));
+        break;
+      }
+      default:
+        break;
+    }
+  }
+
+  private async executeTool(tool: ToolName, callId: string, previousItemId?: string): Promise<void> {
+    if (this.handledCallIds.has(callId)) {
+      // Duplicate protocol event for an in-session call: already submitted
+      // (ledger) — skip. The one exception is a reload-recovered result for
+      // the same call_id, served exactly once without re-execution.
+      const cached = this.recoveredOutputs.get(callId);
+      if (cached !== undefined) {
+        this.recoveredOutputs.delete(callId);
+        if (this.ledger.enqueue(callId, cached)) {
+          this.sendJson(buildFunctionCallOutput(callId, cached, previousItemId));
+          this.metric("output_submitted_recovered", { callId, tool });
+          if (this.deps.storage !== undefined) {
+            removePendingCallId(this.deps.storage, callId);
+          }
+        }
+      }
+      return;
+    }
+    this.handledCallIds.add(callId);
+    this.pendingCall = null;
+    const interviewId = this.interviewId ?? "";
+    this.events.onToolStart?.(callId, tool);
+    this.metric("tool.start", { interviewId, callId, tool });
+    const startedAt = this.now();
+    let output: string;
+    let replayed = false;
+    try {
+      const forwarded = await forwardToolCall(this.deps.toolExecutor, callId, tool);
+      output = forwarded.output;
+      replayed = forwarded.replayed;
+    } catch (error) {
+      // Exhausted retries (timeout/network/5xx): surface a transient error
+      // as the tool output so the model can react instead of stalling.
+      const message = error instanceof BackendApiError ? error.message : "Tool execution temporarily unavailable";
+      output = JSON.stringify({ call_id: callId, error: { code: "TOOL_UNAVAILABLE", message } });
+    }
+    const elapsedMs = this.now() - startedAt;
+    this.metric("tool.complete", { interviewId, callId, tool, elapsedMs, replayed });
+
+    // Exactly-once output per call_id (ledger) + reload recovery (storage).
+    // The entry stays queued as unacked until the server proves receipt by
+    // continuing the conversation (see response.created below — an ordered
+    // channel guarantees our output arrived before that new response).
+    if (!this.ledger.enqueue(callId, output)) return;
+    if (this.deps.storage !== undefined && this.interviewId !== null) {
+      addPendingCallId(this.deps.storage, callId);
+    }
+    this.events.onToolComplete?.(callId, tool, elapsedMs, replayed);
+    this.sendJson(buildFunctionCallOutput(callId, output, previousItemId));
+    this.metric("output_submitted", { interviewId, callId, tool });
+    // Let the model reason over the result (CLI parity: +50ms pacing).
+    await (this.deps.sleep ?? defaultSleep)(50);
+    if (!this.disposed && this.ws !== null && this.connectionState === "connected") {
+      this.sendJson({ type: "response.create" });
+      this.metric("next_response_started", { interviewId, callId, tool });
+    }
+  }
+
+  private flushPendingOutputs(): void {
+    for (const entry of this.ledger.drainPending()) {
+      this.sendJson(buildFunctionCallOutput(entry.callId, entry.output));
+      this.metric("output_flushed_on_reconnect", { callId: entry.callId });
+    }
+  }
+
+  private ackSubmittedOutputs(): void {
+    for (const callId of this.ledger.pendingCallIds()) {
+      this.ledger.ack(callId);
+      if (this.deps.storage !== undefined) {
+        removePendingCallId(this.deps.storage, callId);
+      }
+    }
+  }
+
+  private persistPending(): void {
+    if (this.deps.storage === undefined) return;
+    for (const callId of this.ledger.pendingCallIds()) {
+      addPendingCallId(this.deps.storage, callId);
+    }
+  }
+
+  private handleClose(code: number, reason: string): void {
+    if (this.disposed) return;
+    this.persistPending();
+    this.setAssistantSpeaking(false);
+    this.events.onCandidateSpeaking?.(false);
+    this.setState("closed");
+    this.metric("voice.closed_unexpectedly", { code, reason: reason.slice(0, 120) });
+    this.emitError(new Error(`Voice Live connection closed (code ${code})`));
+  }
+
+  private closeSocket(): void {
+    const ws = this.ws;
+    this.ws = null;
+    if (ws === null) return;
+    ws.onopen = null;
+    ws.onmessage = null;
+    ws.onerror = null;
+    ws.onclose = null;
+    try {
+      ws.close();
+    } catch {
+      // ignore
+    }
+  }
+
+  private async waitForSessionAck(ws: VoiceWebSocket): Promise<boolean> {
+    const timeoutMs = this.deps.sessionAckTimeoutMs ?? 3000;
+    return new Promise<boolean>((resolve) => {
+      const timer = setTimeout(() => {
+        ws.onmessage = (event) => {
+          this.handleRawMessage(event.data);
+        };
+        resolve(false);
+      }, timeoutMs);
+      ws.onmessage = (event) => {
+        let type = "";
+        try {
+          type = (JSON.parse(String(event.data)) as { type?: unknown }).type as string;
+        } catch {
+          // not JSON — fall through to normal handling
+        }
+        if (type === "session.updated") {
+          clearTimeout(timer);
+          ws.onmessage = (evt) => {
+            this.handleRawMessage(evt.data);
+          };
+          resolve(true);
+          return;
+        }
+        this.handleRawMessage(event.data);
+      };
+    });
+  }
+
+  private sendJson(payload: unknown): void {
+    if (this.ws === null) return;
+    try {
+      this.ws.send(JSON.stringify(payload));
+    } catch {
+      // Send failure surfaces via onclose/onerror; never throw into handlers.
+    }
+  }
+
+  private setState(state: VoiceConnectionState): void {
+    this.connectionState = state;
+    this.events.onConnectionState?.(state);
+  }
+
+  private setAssistantSpeaking(speaking: boolean): void {
+    if (this.assistantSpeaking === speaking) return;
+    this.assistantSpeaking = speaking;
+    this.events.onAssistantSpeaking?.(speaking);
+  }
+
+  private metric(event: string, fields?: Record<string, unknown>): void {
+    try {
+      this.events.onMetric?.(event, fields);
+    } catch {
+      // metrics must never break the call
+    }
+  }
+
+  private emitError(error: Error): void {
+    try {
+      this.events.onError?.(error);
+    } catch {
+      // ignore
+    }
+  }
+
+  private now(): number {
+    return this.deps.now?.() ?? Date.now();
+  }
+
+  private isToolName(name: string): name is ToolName {
+    return VALID_TOOL_NAMES.includes(name);
+  }
+}
+
+function extractResponseId(event: VoiceServerEvent): string | null {
+  const response = event.response;
+  if (typeof response === "object" && response !== null) {
+    const id = (response as Record<string, unknown>)["id"];
+    if (typeof id === "string" && id !== "") return id;
+  }
+  if (typeof event.response_id === "string" && event.response_id !== "") return event.response_id;
+  if (typeof event.responseId === "string" && event.responseId !== "") return event.responseId;
+  return null;
+}
+
+function previousItemIdOf(item: Record<string, unknown>): string | undefined {
+  const id = item["id"];
+  return typeof id === "string" && id !== "" ? id : undefined;
+}
+
+function extractTranscript(content: unknown): string {
+  if (!Array.isArray(content)) return "";
+  const parts: string[] = [];
+  for (const part of content as Array<Record<string, unknown>>) {
+    if (part["type"] === "input_text" || part["type"] === "text") {
+      const text = String(part["text"] ?? part["transcript"] ?? "").trim();
+      if (text !== "") parts.push(text);
+    }
+    if (part["type"] === "input_audio" && typeof part["transcript"] === "string") {
+      const text = part["transcript"].trim();
+      if (text !== "") parts.push(text);
+    }
+  }
+  return parts.join(" ");
+}

@@ -11,6 +11,7 @@ Runners (locked, pnpm-only — never npm/yarn):
 - DB local: `docker compose up db` (postgres:16, see `.env.example`)
 - DB package (`packages/db`, S2): `pnpm --filter @interview-coach/db db:generate|db:migrate|db:seed` with `DATABASE_URL` set; integration tests need a live DB (`docker compose up db` + `db:migrate`), warn-and-pass without one
 - Backend (`packages/backend`, S3): `DATABASE_URL=... pnpm --filter @interview-coach/backend dev|start` (Fastify on `HOST:PORT`, default `127.0.0.1:3000`); backend tests use in-memory repos + fake voice provider, no DB needed
+- Web client (`packages/web-client`, S4): `pnpm --filter @interview-coach/web-client dev|build|preview|typecheck` (Vite + React on `127.0.0.1:5173`, `VITE_BACKEND_URL` only — never `VITE_AZURE_*`); `vitest` covers pure modules (api client, tool forwarder, audio, voice client) with fakes, no mic/WS needed
 
 Only sources of truth:
 - `interview-coach-hld-and-implementation-plan.md` — architecture baseline (2026-09-11), phased plan. Trust it over guesses.

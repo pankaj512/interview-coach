@@ -93,3 +93,25 @@ Open for S4 (web client):
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build` plus live-DB server smoke (create→assign→ready→voice-session→tool-exec→replay→end_interview→end→cleanup).
 Verified 2026-09-11: install ok (+56 pkgs), typecheck ok, test 58 passed (27 prior + 31 backend; live-DB run also 58, persistence live), build (`tsc -b`) ok. Server smoke vs postgres:16 (port 5433) full flow ok: 201/200s, idempotent replay, `api-key-local-dev` mint with correct `wss://.../voice-live/realtime?api-version=2026-04-10&model=gpt-realtime-mini`, no secret leak.
 Tag: `session-3` after commit.
+
+## S4 — Web client + browser voice loop (2026-09-11)
+Status: done (pending verification below).
+
+Done:
+* `packages/web-client` (`@interview-coach/web-client`): Vite + React 19 + TS on `127.0.0.1:5173` (scripts `dev|build|preview|typecheck`). No `VITE_AZURE_*`, no Azure SDK, no `@interview-coach/domain` import (domain pulls `node:crypto`); structural API mirrors only. Root `tsconfig.json` now covers `**/*.tsx` with `jsx: react-jsx` + DOM lib (per-package `tsconfig.json` keeps NodeNext `.js`-suffix imports, which Vite resolves).
+* Control plane (`src/api/`, `src/config.ts`): `VITE_BACKEND_URL` only; `BackendClient` maps all S3 routes (create/get/state/ready/start/end/problems/problem/tool-exec/tool-results/voice-session mint+delete). 4xx tool failures return as data (model-facing, never retried); transport/5xx throw retryable `BackendApiError`. Found live: backend 400s bodyless POSTs carrying `Content-Type: application/json` — client omits the header when there is no body (regression-tested).
+* Tool forwarder (`src/voice/tool-forwarder.ts`, frozen §5): same `call_id` every attempt, 8s timeout, max 2 retries, 300→800ms+jitter backoff; retry only timeout/network/502/503/504/`retryable:true`, never 4xx/`retryable:false`. `ToolOutputLedger` = exactly-once submitted-set + bounded-20 unacked queue; `pending-store.ts` persists pending ids in sessionStorage (cap 20, corrupt/full-storage safe).
+* Voice client (`src/voice/voice-client.ts` + `session.ts` + `audio.ts` + `browser-audio.ts`): CLI-mirrored wire protocol (`session.update` from the mint, `response.create` greeting, `input_audio_buffer.append`, `speech_started`→`response.cancel`+flush once per turn, all four function-call event shapes deduped by `call_id`, output→`conversation.item.create`→`response.create`). Ordered-channel implicit ack (`response.created` acks queued outputs); `recoverPendingOutputs` rehydrates via `GET tool-results` and serves cached outputs only for matching call_ids. Browser auth: credential as query param (`api-key` / `access_token`; bearer browser binding finalizes S7). PCM16/24kHz/mono utils (downmix/resample/base64) tested; WebAudio mic (AudioWorklet, EC+NS) + scheduled playback with `flush()` are thin untested adapters.
+* UI (`src/components/`, `src/state/use-interview.ts`, `App.tsx`): setup (create→assign w/ live id validation→ready) → room (status bar: connection/speakers/timer/end; canonical problem panel; local-only code scratchpad marked Phase-6; activity log) → results (backend evaluation or explicit unevaluated state). Hangup DELETEs the voice session; finish = hangup + `POST .../end`.
+* `tests/`: backend-client (10), tool-forwarder (12), pending-store (6), audio (9), session (5), voice-client (10).
+
+Decisions locked:
+* Session parameters always come from the backend mint (browser maps `sessionConfig` → Voice Live fields); `end_interview` advertised as 4th tool (model signals done, app finalizes).
+* No `GET /api/problems` listing in S4 — problem browser + selection intelligence belong to S5; setup validates ids via `GET /api/problems/:id`.
+
+Open for S5 (intelligence/eval):
+* Problem selection/config, hint policy, structured context, post-interview evaluation pipeline.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB UI-flow smoke (same calls `BackendClient` makes).
+Verified 2026-09-11: install ok (+51 pkgs, react/vite), typecheck ok, test 110 passed (58 prior + 52 web-client), `tsc -b` ok, `vite build` ok (259kB JS / 80kB gzip). Live smoke vs postgres:16 (port 5433) full UI flow ok: create→assign(prob_3sum)→ready→mint(`api-key-local-dev`, correct wss URL, no credential in URL)→state(`in_progress`)→tool-exec→replay→recovery→end_interview(`completing`)→hangup→end(`completed`).
+Tag: `session-4` after commit.
