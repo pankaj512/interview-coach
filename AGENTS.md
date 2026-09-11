@@ -9,6 +9,7 @@ Runners (locked, pnpm-only — never npm/yarn):
 - `pnpm test` — `vitest run`
 - `pnpm lint` — `tsc --noEmit` (eslint lands only if S8 needs it)
 - DB local: `docker compose up db` (postgres:16, see `.env.example`)
+- DB package (`packages/db`, S2): `pnpm --filter @interview-coach/db db:generate|db:migrate|db:seed` with `DATABASE_URL` set; integration tests need a live DB (`docker compose up db` + `db:migrate`), warn-and-pass without one
 
 Only sources of truth:
 - `interview-coach-hld-and-implementation-plan.md` — architecture baseline (2026-09-11), phased plan. Trust it over guesses.
