@@ -1,0 +1,81 @@
+// Shared S3 backend test harness: in-memory repos + fake voice provider.
+// No DB required, so `pnpm test` stays green without Postgres.
+
+import {
+  asProblemId,
+  createInMemoryRepositories,
+  type RepositorySet,
+} from "@interview-coach/domain";
+import { buildApp, type BuiltBackend } from "../src/app.js";
+import { loadConfig } from "../src/config.js";
+import { FakeVoiceSessionProvider } from "../src/voice-session.js";
+
+export interface TestBackend extends BuiltBackend {
+  readonly repos: RepositorySet;
+}
+
+export function buildTestBackend(): TestBackend {
+  const repos = createInMemoryRepositories();
+  const built = buildApp({
+    repos,
+    config: loadConfig({
+      ...process.env,
+      HOST: "127.0.0.1",
+      PORT: "3000",
+      CORS_ORIGIN: "http://localhost:5173",
+    }),
+    voiceProvider: new FakeVoiceSessionProvider(),
+    logger: false,
+  });
+  return { ...built, repos };
+}
+
+export async function seedProblem(
+  repos: RepositorySet,
+  id = "prob_two-sum",
+  title = "Two Sum",
+): Promise<void> {
+  await repos.problems.save({
+    id: asProblemId(id),
+    title,
+    difficulty: "Easy",
+  });
+}
+
+export interface StartedInterview {
+  readonly id: string;
+}
+
+function bodyOf(response: { body: string }): Record<string, unknown> {
+  return JSON.parse(response.body) as Record<string, unknown>;
+}
+
+// Full setup flow over HTTP: create -> assign -> ready -> start.
+export async function createStartedInterview(
+  backend: TestBackend,
+  problemIds: readonly string[] = [],
+): Promise<StartedInterview> {
+  const created = await backend.app.inject({
+    method: "POST",
+    url: "/api/interviews",
+    payload: {
+      candidateId: "user_test",
+      configuration: { interviewType: "dsa" },
+    },
+  });
+  if (created.statusCode !== 201) throw new Error(`create failed: ${created.body}`);
+  const id = (bodyOf(created)["interview"] as { id: string }).id;
+  if (problemIds.length > 0) {
+    const assigned = await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/problems`,
+      payload: { problemIds: [...problemIds] },
+    });
+    if (assigned.statusCode !== 200) throw new Error(`assign failed: ${assigned.body}`);
+  }
+  const ready = await backend.app.inject({ method: "POST", url: `/api/interviews/${id}/ready` });
+  if (ready.statusCode !== 200) throw new Error(`ready failed: ${ready.body}`);
+  const started = await backend.app.inject({ method: "POST", url: `/api/interviews/${id}/start` });
+  if (started.statusCode !== 200) throw new Error(`start failed: ${started.body}`);
+  return { id };
+}
