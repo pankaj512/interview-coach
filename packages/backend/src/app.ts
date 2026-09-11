@@ -15,7 +15,11 @@
 //   POST   /api/interviews/:id/start
 //   POST   /api/interviews/:id/end
 //   POST   /api/interviews/:id/problems         (extension: attach problems)
+//   POST   /api/interviews/:id/problems/select  (S5: deterministic auto-select)
+//   GET    /api/problems                        (S5: browser + selection)
 //   GET    /api/problems/:id
+//   POST   /api/interviews/:id/responses        (S5: persist candidate answers)
+//   POST   /api/interviews/:id/evaluation       (S5: structured eval pipeline)
 //   POST   /api/interviews/:id/tool-exec        (call_id idempotency, frozen §5)
 //   GET    /api/interviews/:id/tool-results/:call_id (recovery)
 //   POST   /api/interviews/:id/voice-session
@@ -26,11 +30,15 @@ import cors from "@fastify/cors";
 import rateLimit from "@fastify/rate-limit";
 import { z } from "zod";
 import {
+  EVALUATION_DIMENSIONS,
   InterviewService,
   ToolService,
   asInterviewId,
   asProblemId,
   asUserId,
+  finalizeEvaluation,
+  selectProblems,
+  TOOL_NAMES,
   type InterviewConfiguration,
   type InterviewId,
   type RepositorySet,
@@ -43,7 +51,11 @@ import {
   IdempotencyStore,
 } from "./idempotency.js";
 import { sendApiError, sendDomainError } from "./http-errors.js";
-import { serializeInterview, serializeStateSnapshot } from "./serializers.js";
+import {
+  serializeEvaluation,
+  serializeInterview,
+  serializeStateSnapshot,
+} from "./serializers.js";
 import {
   FROZEN_VOICE_SESSION_CONFIG,
   VoiceNotConfiguredError,
@@ -91,16 +103,72 @@ const assignProblemsSchema = z.object({
   problemIds: z.array(z.string().min(1).max(200)).min(1).max(50),
 });
 
-const TOOL_NAMES = [
-  "get_current_problem",
-  "get_interview_state",
-  "get_candidate_performance",
-  "end_interview",
+// S5: deterministic auto-select (HLD 5.1). All fields optional; missing
+// values fall back to the interview's stored configuration.
+const selectProblemsSchema = z.object({
+  count: z.number().int().min(1).max(20).optional(),
+  difficulty: z.enum(["Easy", "Medium", "Hard", "Mixed"]).optional(),
+  topicFocus: z.array(z.string().min(1).max(120)).max(20).optional(),
+});
+
+const problemsQuerySchema = z.object({
+  difficulty: z.enum(["Easy", "Medium", "Hard"]).optional(),
+  topic: z.string().min(1).max(120).optional(),
+  q: z.string().min(1).max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+const RESPONSE_KINDS_TUPLE = [
+  "answer",
+  "approach",
+  "code",
+  "question",
+  "note",
 ] as const;
+
+// S5: candidate answers persisted outside the model (HLD 5.11).
+const recordResponseSchema = z.object({
+  kind: z.enum(RESPONSE_KINDS_TUPLE).default("answer"),
+  content: z.string().min(1).max(10_000),
+  problemId: z.string().min(1).max(200).optional(),
+});
+
+const dimensionScoreSchema = z.object({
+  score: z.number().int().min(0).max(5),
+  notes: z.string().min(1).max(1000).optional(),
+});
+
+// S5: structured evaluation pipeline (HLD 5.5). Dimensions are validated
+// against the frozen HLD set; overallScore/recommendation are computed when
+// omitted (evaluation-pipeline.finalizeEvaluation).
+const evaluationSchema = z.object({
+  dimensions: z
+    .record(z.string(), dimensionScoreSchema)
+    .refine(
+      (dims) =>
+        Object.keys(dims).every((k) =>
+          (EVALUATION_DIMENSIONS as readonly string[]).includes(k),
+        ),
+      { message: `dimensions keys must be within ${EVALUATION_DIMENSIONS.join(", ")}` },
+    )
+    .optional(),
+  hintsUsed: z.number().int().min(0).max(1000).optional(),
+  strengths: z.array(z.string().min(1).max(500)).max(20).optional(),
+  weaknesses: z.array(z.string().min(1).max(500)).max(20).optional(),
+  recommendation: z.enum(["hire", "lean_hire", "lean_no_hire", "no_hire"]).optional(),
+  overallScore: z.number().int().min(0).max(100).optional(),
+});
+
+const TOOL_NAMES_TUPLE = TOOL_NAMES as unknown as [
+  ToolName,
+  ...ToolName[],
+];
 
 const toolExecSchema = z.object({
   call_id: z.string().min(1).max(200),
-  tool: z.enum(TOOL_NAMES),
+  tool: z.enum(TOOL_NAMES_TUPLE),
+  arguments: z.record(z.string(), z.unknown()).optional(),
 });
 
 const idParamSchema = z.object({ id: z.string().min(1).max(200) });
@@ -147,6 +215,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const tools = new ToolService({
     interviews,
     responses: deps.repos.responses,
+    evaluations: deps.repos.evaluations,
     events: deps.repos.events,
   });
 
@@ -319,6 +388,169 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, problem });
   });
 
+  // S5: problem browser (HLD 5.1). Filtered in memory over the 300-row
+  // catalog; stable (difficulty, title) order so pagination is repeatable.
+  app.get("/api/problems", async (request, reply) => {
+    const parsed = problemsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const all = await deps.repos.problems.list();
+    const needle = parsed.data.q?.trim().toLowerCase();
+    const topic = parsed.data.topic?.trim().toLowerCase();
+    const filtered = all.filter((p) => {
+      if (parsed.data.difficulty !== undefined && p.difficulty !== parsed.data.difficulty) {
+        return false;
+      }
+      if (topic !== undefined && topic !== "") {
+        const concepts = (p.expectedConcepts ?? []).map((c) => c.toLowerCase());
+        if (!concepts.some((c) => c === topic || c.includes(topic) || topic.includes(c))) {
+          return false;
+        }
+      }
+      if (needle !== undefined && needle !== "") {
+        if (!p.title.toLowerCase().includes(needle)) return false;
+      }
+      return true;
+    });
+    const rank = (d: string): number => (d === "Easy" ? 0 : d === "Medium" ? 1 : 2);
+    filtered.sort((a, b) => rank(a.difficulty) - rank(b.difficulty) || a.title.localeCompare(b.title));
+    const total = filtered.length;
+    const problems = filtered.slice(parsed.data.offset, parsed.data.offset + parsed.data.limit);
+    return reply.send({
+      ok: true,
+      problems,
+      total,
+      limit: parsed.data.limit,
+      offset: parsed.data.offset,
+    });
+  });
+
+  // S5: deterministic auto-select (HLD 5.1). Resolves the ordered problem
+  // set from configuration + catalog, then assigns via the domain service
+  // (created/ready only — running interviews keep their set).
+  app.post("/api/interviews/:id/problems/select", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = selectProblemsSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const interview = await deps.repos.interviews.findById(id);
+    if (interview === null) {
+      return sendApiError(reply, 404, "NOT_FOUND", `Interview ${params.data.id} does not exist`, false);
+    }
+    const all = await deps.repos.problems.list();
+    const topicFocus = parsed.data.topicFocus ?? interview.configuration.topicFocus;
+    const selected = selectProblems({
+      problems: all,
+      difficulty: parsed.data.difficulty ?? interview.configuration.difficulty ?? "Mixed",
+      count: parsed.data.count ?? interview.configuration.problemCount ?? 1,
+      ...(topicFocus === undefined ? {} : { topicFocus }),
+    });
+    if (selected.length === 0) {
+      return sendApiError(
+        reply,
+        400,
+        "VALIDATION_ERROR",
+        "No problems match the requested difficulty/topicFocus",
+        false,
+      );
+    }
+    const next = await interviews.assignProblems(
+      id,
+      selected.map((p) => p.id),
+    );
+    if (!next.ok) return sendDomainError(reply, next.error);
+    request.log.info(
+      { interviewId: next.value.id, count: next.value.problems.length, auto: true },
+      "problem.assigned",
+    );
+    return reply.send({ ok: true, interview: serializeInterview(next.value) });
+  });
+
+  // S5: persist candidate answers (HLD 5.11). Used by the UI and the
+  // record_candidate_answer tool path alike; evaluation reads these.
+  app.post("/api/interviews/:id/responses", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = recordResponseSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const recorded = await interviews.recordResponse(id, {
+      kind: parsed.data.kind,
+      content: parsed.data.content,
+      ...(parsed.data.problemId === undefined
+        ? {}
+        : { problemId: asProblemId(parsed.data.problemId) }),
+    });
+    if (!recorded.ok) return sendDomainError(reply, recorded.error);
+    const responses = await deps.repos.responses.listByInterview(id);
+    request.log.info(
+      { interviewId: params.data.id, kind: parsed.data.kind },
+      "response.recorded",
+    );
+    return reply.status(201).send({
+      ok: true,
+      interview: serializeInterview(recorded.value),
+      responseCount: responses.length,
+    });
+  });
+
+  // S5: structured evaluation pipeline (HLD 5.5/5.8). Computes overallScore
+  // and derives recommendation when omitted; explicit values are kept.
+  // Allowed while running, completing, or completed (post-interview).
+  app.post("/api/interviews/:id/evaluation", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = evaluationSchema.safeParse(request.body ?? {});
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const existing = await deps.repos.interviews.findById(id);
+    if (existing === null) {
+      return sendApiError(reply, 404, "NOT_FOUND", `Interview ${params.data.id} does not exist`, false);
+    }
+    const finalized = finalizeEvaluation({
+      ...(parsed.data.dimensions === undefined ? {} : { dimensions: parsed.data.dimensions }),
+      ...(parsed.data.hintsUsed === undefined ? {} : { hintsUsed: parsed.data.hintsUsed }),
+      ...(parsed.data.strengths === undefined ? {} : { strengths: parsed.data.strengths }),
+      ...(parsed.data.weaknesses === undefined ? {} : { weaknesses: parsed.data.weaknesses }),
+      ...(parsed.data.recommendation === undefined
+        ? {}
+        : { recommendation: parsed.data.recommendation }),
+      ...(parsed.data.overallScore === undefined ? {} : { overallScore: parsed.data.overallScore }),
+    });
+    // Preserve accumulated hintsUsed when the caller omits it: the stored
+    // evaluation (hint accounting) wins over the default 0.
+    let hintsUsed = finalized.hintsUsed;
+    if (parsed.data.hintsUsed === undefined) {
+      const stored = await deps.repos.evaluations.findByInterview(id);
+      if (stored !== null && stored.hintsUsed > hintsUsed) hintsUsed = stored.hintsUsed;
+    }
+    const recorded = await interviews.recordEvaluation(id, {
+      dimensions: finalized.dimensions,
+      hintsUsed,
+      strengths: [...finalized.strengths],
+      weaknesses: [...finalized.weaknesses],
+      ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
+      ...(finalized.recommendation === null ? {} : { recommendation: finalized.recommendation }),
+    });
+    if (!recorded.ok) return sendDomainError(reply, recorded.error);
+    request.log.info({ interviewId: params.data.id }, "evaluation.recorded");
+    return reply.status(201).send({ ok: true, evaluation: serializeEvaluation(recorded.value) });
+  });
+
   app.post("/api/interviews/:id/tool-exec", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -335,12 +567,13 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const callId = parsed.data.call_id;
     const tool = parsed.data.tool as ToolName;
+    const toolArgs = parsed.data.arguments as Record<string, unknown> | undefined;
     request.log.info({ interviewId: interviewId as string, callId, tool }, "tool.received");
     const startedAt = Date.now();
     let outcome;
     try {
       outcome = await toolIdempotency.execute(callId, interviewId as string, tool, async () => {
-        const result = await tools.dispatch(tool, { interviewId, callId });
+        const result = await tools.dispatch(tool, { interviewId, callId }, toolArgs);
         if (result.ok) return { ok: true as const, result: result.value, error: null };
         return { ok: false as const, result: null, error: result.error };
       });
@@ -468,9 +701,17 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         credential: mint.credential,
         credentialMode: mint.mode,
         sessionConfig: FROZEN_VOICE_SESSION_CONFIG,
+        // S5 structured context (HLD 5.2): configuration + current problem
+        // + progress travel with the mint so the model starts grounded.
         instructions: buildSessionInstructions({
           candidateId: state.value.interview.candidateId as string,
           interviewId: params.data.id,
+          configurationSummary: describeConfiguration(state.value.interview.configuration),
+          ...(state.value.currentProblem === null
+            ? {}
+            : { problemSummary: describeProblem(state.value.currentProblem) }),
+          responseCount: state.value.responseCount,
+          hintsUsed: state.value.evaluation?.hintsUsed ?? 0,
         }),
       },
     });
@@ -491,6 +732,29 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
   return { app, toolIdempotency, activeVoiceSessions };
+}
+
+function describeConfiguration(config: InterviewConfiguration): string {
+  const parts = [`type=${config.interviewType}`];
+  if (config.difficulty !== undefined) parts.push(`difficulty=${config.difficulty}`);
+  if (config.durationMinutes !== undefined) parts.push(`duration=${config.durationMinutes}min`);
+  if (config.problemCount !== undefined) parts.push(`problems=${config.problemCount}`);
+  if (config.topicFocus !== undefined && config.topicFocus.length > 0) {
+    parts.push(`topics=${config.topicFocus.join(", ")}`);
+  }
+  return parts.join("; ");
+}
+
+function describeProblem(problem: {
+  title: string;
+  difficulty: string;
+  expectedConcepts?: readonly string[];
+}): string {
+  const concepts =
+    problem.expectedConcepts !== undefined && problem.expectedConcepts.length > 0
+      ? ` — ${problem.expectedConcepts.join(", ")}`
+      : "";
+  return `${problem.title} (${problem.difficulty})${concepts}`;
 }
 
 function errorBody(record: { ok: boolean; error: { code: string; message: string } | null }): {

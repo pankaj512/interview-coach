@@ -115,3 +115,28 @@ Open for S5 (intelligence/eval):
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB UI-flow smoke (same calls `BackendClient` makes).
 Verified 2026-09-11: install ok (+51 pkgs, react/vite), typecheck ok, test 110 passed (58 prior + 52 web-client), `tsc -b` ok, `vite build` ok (259kB JS / 80kB gzip). Live smoke vs postgres:16 (port 5433) full UI flow ok: create→assign(prob_3sum)→ready→mint(`api-key-local-dev`, correct wss URL, no credential in URL)→state(`in_progress`)→tool-exec→replay→recovery→end_interview(`completing`)→hangup→end(`completed`).
 Tag: `session-4` after commit.
+
+## S5a — Interview intelligence, backend half (2026-09-11)
+Status: done (pending verification below). Scope per user choice: domain + backend only; web UI (problem browser, hint button, eval form) deferred to S5b.
+
+Done:
+* `packages/domain/src/selection.ts`: pure deterministic `selectProblems`/`selectProblemIds` (difficulty filter Easy/Medium/Hard/Mixed, case-insensitive topicFocus over `expectedConcepts`, optional curriculum title-order bias, excludeIds, count clamp 1..20, stable fallback sort).
+* `packages/domain/src/hints.ts`: 3-tier controlled hints (`nextHintLevel` caps at 3, `parseHintLevel` strict, `buildHint` templates referencing title/difficulty/concepts, `revealsSolution:false` always, no final code).
+* `packages/domain/src/evaluation-pipeline.ts`: `computeOverallScore` (mean 0..5 → 0..100, null when empty), `deriveRecommendation` (85/70/50 bands, one-tier downgrade at ≥3 hints), `finalizeEvaluation` (explicit score/recommendation win).
+* `InterviewService.recordEvaluation` now also allows `completed` (post-interview pipeline); new `recordHint` (upserts hintsUsed, appends `hint.issued` event). New event type `hint.issued` (free-text column, no migration).
+* `ToolService`: + `get_interview_configuration` / `get_problem_hint` (optional `level` arg, defaults to next tier, records hint) / `record_candidate_answer` (`kind`/`content`≤10k/`problemId` args). `TOOL_NAMES` exported; constructor now takes `evaluations` repo (backend + existing test updated).
+* `packages/backend/src/app.ts`: `GET /api/problems` (difficulty/topic/q filters, limit≤100/offset, stable order, `{problems,total,limit,offset}`), `POST .../problems/select` (config-fallback auto-select → `assignProblems`), `POST .../responses` (201 + responseCount), `POST .../evaluation` (finalize pipeline, preserves stored hintsUsed when omitted, 201, works on completed), `tool-exec` accepts optional `arguments` passed to dispatch (idempotency unchanged, failures replayable 4xx).
+* `packages/backend/src/voice-session.ts`: `buildSessionInstructions` takes structured context (configuration + problem summaries, response/hint counts) + HLD-5.2 conduct block (hint policy, record answers, config/performance tools, end_interview only when done). Route builds summaries from the snapshot.
+* Tests: domain `selection` (6), `hints` (3), `evaluation-pipeline` (4), `tool-service-s5` (6); backend `intelligence` (14: browser/select/responses/eval/tool-args/instructions).
+
+Decisions locked:
+* Auto-select falls back to stored configuration field-by-field; empty match set → 400 (not silent single).
+* Evaluation finalize preserves accumulated `hintsUsed` when the caller omits it; explicit `overallScore`/`recommendation` are never recomputed.
+* `recordEvaluation` on `completed` is intentional (pipeline runs post-interview); earlier statuses still rejected.
+
+Open for S5b (web client):
+* Problem browser + auto-select button, hint button (level display), answer capture, evaluation finalize form — all against the S5a routes above; extend `BackendClient` + `ToolName` union then.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build` plus live-DB intelligence smoke (create→select→ready→mint→hint-tool→responses→config-tool→evaluation→end→evaluation-after-complete).
+Verified 2026-09-11: install ok (no new deps), typecheck ok, test 143 passed (110 prior + 33 new: 19 domain + 14 backend; no-DB run warn-and-pass, live-DB run vs postgres:16 port 5433 also 143 with persistence live), `tsc -b` ok. Live smoke full flow ok: 201s, auto-select assigned, mint `test` with hint-aware instructions, hint L1/hintsUsed 1, response recorded, eval computed 80/`lean_hire` (hints preserved), end `completed`, post-complete eval 95/`hire` kept explicit.
+Tag: `session-5a` after commit.

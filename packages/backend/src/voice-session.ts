@@ -159,16 +159,51 @@ const BASE_INSTRUCTIONS =
   "After receiving tool results, reason over them and answer naturally. " +
   "Opening behavior: when prompted to speak first at session start, greet the candidate, briefly explain this is a DSA technical interview where you will ask questions, evaluate reasoning, and ask follow-ups, tell the candidate they can think aloud and ask clarifying questions, then ask the candidate to introduce themselves and begin.";
 
+export interface SessionInstructionContext {
+  readonly candidateId: string;
+  readonly interviewId: string;
+  /** HLD 5.2 structured context: interview configuration summary. */
+  readonly configurationSummary?: string;
+  /** Current problem summary: "Title (Difficulty) — concepts". */
+  readonly problemSummary?: string;
+  readonly responseCount?: number;
+  readonly hintsUsed?: number;
+}
+
 export function buildSessionInstructions(input: {
   candidateId: string;
   interviewId: string;
+  configurationSummary?: string;
+  problemSummary?: string;
+  responseCount?: number;
+  hintsUsed?: number;
 }): string {
-  return [
+  const context: SessionInstructionContext = input;
+  const lines = [
     BASE_INSTRUCTIONS,
     "",
+    "Interview conduct (HLD Phase 5):",
+    "- Ask one question at a time; probe reasoning before giving hints.",
+    "- Hint policy: at most 3 escalating tiers via get_problem_hint (1 concept nudge, 2 approach scaffold, 3 detailed plan). Never reveal or dictate the final code.",
+    "- Record what the candidate says with record_candidate_answer (kind: answer/approach/code/question/note) so the backend persists it.",
+    "- Read interview rules with get_interview_configuration; read progress with get_candidate_performance.",
+    "- Signal done with end_interview only when the candidate has finished; the app finalizes state.",
+    "",
     "Session context (reference only):",
-    `Candidate: ${input.candidateId}`,
-    `Interview: ${input.interviewId}`,
+    `Candidate: ${context.candidateId}`,
+    `Interview: ${context.interviewId}`,
     "DSA interview — current problem and history are available ONLY via tools. Do not invent them.",
-  ].join("\n");
+  ];
+  if (context.configurationSummary !== undefined && context.configurationSummary !== "") {
+    lines.push(`Configuration: ${context.configurationSummary}`);
+  }
+  if (context.problemSummary !== undefined && context.problemSummary !== "") {
+    lines.push(`Current problem: ${context.problemSummary}`);
+  }
+  if (context.responseCount !== undefined || context.hintsUsed !== undefined) {
+    lines.push(
+      `Progress: ${context.responseCount ?? 0} recorded responses, ${context.hintsUsed ?? 0} hints used.`,
+    );
+  }
+  return lines.join("\n");
 }

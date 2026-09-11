@@ -16,3 +16,6 @@ export * from "./repositories.js";
 export * from "./interview-service.js";
 export * from "./tool-service.js";
 export * from "./catalog.js";
+export * from "./selection.js";
+export * from "./hints.js";
+export * from "./evaluation-pipeline.js";

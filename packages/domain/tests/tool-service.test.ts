@@ -15,6 +15,7 @@ function setup() {
   const tools = new ToolService({
     interviews,
     responses: repos.responses,
+    evaluations: repos.evaluations,
     events: repos.events,
     clock,
   });

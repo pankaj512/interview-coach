@@ -256,10 +256,14 @@ export class InterviewService {
   ): Promise<Result<Evaluation>> {
     const interview = await this.repos.interviews.findById(id);
     if (interview === null) return err(this.notFound(id));
+    // S5: the post-interview pipeline also runs after completion
+    // (completed), not just while running. Evaluation stays a backend-only
+    // write; the model never persists scores directly.
     if (
       interview.status !== "in_progress" &&
       interview.status !== "paused" &&
-      interview.status !== "completing"
+      interview.status !== "completing" &&
+      interview.status !== "completed"
     ) {
       return err(
         domainError(
@@ -278,6 +282,44 @@ export class InterviewService {
     await this.repos.evaluations.save(created.value);
     await this.recordEvent(id, "evaluation.recorded");
     return created;
+  }
+
+  // S5 hint accounting: every issued hint increments the interview's
+  // hintsUsed (creating a dimensions-empty evaluation when none exists yet)
+  // and appends a hint.issued event. Finalize preserves the accumulated
+  // count. Allowed while running or completing; never terminal.
+  async recordHint(id: InterviewId, level: number): Promise<Result<number>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    if (
+      interview.status !== "in_progress" &&
+      interview.status !== "paused" &&
+      interview.status !== "completing"
+    ) {
+      return err(
+        domainError(
+          "ILLEGAL_TRANSITION",
+          `Cannot issue a hint while interview ${id} is ${interview.status}`,
+          { status: interview.status },
+        ),
+      );
+    }
+    const existing = await this.repos.evaluations.findByInterview(id);
+    const hintsUsed = (existing?.hintsUsed ?? 0) + 1;
+    if (existing !== null) {
+      const next: Evaluation = { ...existing, hintsUsed, updatedAt: this.clock.now() };
+      await this.repos.evaluations.save(next);
+    } else {
+      const created = createEvaluation({
+        interviewId: id,
+        hintsUsed,
+        now: this.clock.now(),
+      });
+      if (!created.ok) return created;
+      await this.repos.evaluations.save(created.value);
+    }
+    await this.recordEvent(id, "hint.issued", { level, hintsUsed });
+    return ok(hintsUsed);
   }
 
   async getState(id: InterviewId): Promise<Result<InterviewStateSnapshot>> {

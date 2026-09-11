@@ -1,16 +1,23 @@
-import type { InterviewId } from "./ids.js";
+import type { InterviewId, ProblemId } from "./ids.js";
+import { asProblemId } from "./ids.js";
 import type { EvaluationRecommendation } from "./evaluation.js";
 import type {
   InterviewService,
   InterviewStateSnapshot,
 } from "./interview-service.js";
-import type { InterviewStatus } from "./interview.js";
+import type { InterviewConfiguration, InterviewStatus } from "./interview.js";
 import type { Problem } from "./problem.js";
 import type { ResponseKind } from "./candidate-response.js";
-import type { EventRepository, ResponseRepository } from "./repositories.js";
+import type {
+  EvaluationRepository,
+  EventRepository,
+  ResponseRepository,
+} from "./repositories.js";
 import type { Clock } from "./interview-service.js";
 import { systemClock } from "./interview-service.js";
 import { buildEvent } from "./interview-event.js";
+import { buildHint, nextHintLevel, parseHintLevel } from "./hints.js";
+import type { HintLevel } from "./hints.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
@@ -21,16 +28,42 @@ import { err, ok } from "./result.js";
 //
 // call_id deduplication and transport retries live in the S3 voice-service
 // forwarder; execution here is deterministic so replays are safe.
+//
+// S5 adds three tools from the frozen "later" list (section 4):
+// get_interview_configuration (structured context), get_problem_hint
+// (controlled 3-tier hints, never the solution), record_candidate_answer
+// (model-observed answers become persisted responses). run_code /
+// submit_solution stay deferred to the Phase 6 sandbox.
 export type ToolName =
   | "get_current_problem"
   | "get_interview_state"
   | "get_candidate_performance"
-  | "end_interview";
+  | "end_interview"
+  | "get_interview_configuration"
+  | "get_problem_hint"
+  | "record_candidate_answer";
+
+export const TOOL_NAMES: readonly ToolName[] = [
+  "get_current_problem",
+  "get_interview_state",
+  "get_candidate_performance",
+  "end_interview",
+  "get_interview_configuration",
+  "get_problem_hint",
+  "record_candidate_answer",
+];
+
+export function isToolName(raw: string): raw is ToolName {
+  return (TOOL_NAMES as readonly string[]).includes(raw);
+}
 
 export interface ToolContext {
   readonly interviewId: InterviewId;
   readonly callId: string;
 }
+
+/** Raw model-supplied arguments (from tool-exec `arguments`). */
+export type ToolArgs = Record<string, unknown>;
 
 export interface CurrentProblemResult {
   readonly problem: Problem | null;
@@ -58,33 +91,71 @@ export interface EndInterviewResult {
   readonly transitioned: boolean;
 }
 
+export interface InterviewConfigurationResult {
+  readonly configuration: InterviewConfiguration;
+  readonly status: InterviewStatus;
+  readonly problemCount: number;
+  readonly currentProblemId: string | null;
+}
+
+export interface ProblemHintResult {
+  readonly level: HintLevel;
+  readonly hint: string;
+  readonly revealsSolution: false;
+  readonly hintsUsed: number;
+}
+
+export interface RecordAnswerResult {
+  readonly recorded: boolean;
+  readonly kind: ResponseKind;
+  readonly responseCount: number;
+}
+
 export type ToolResult =
   | CurrentProblemResult
   | InterviewStateResult
   | CandidatePerformanceResult
-  | EndInterviewResult;
+  | EndInterviewResult
+  | InterviewConfigurationResult
+  | ProblemHintResult
+  | RecordAnswerResult;
 
 export interface ToolServiceDeps {
   readonly interviews: InterviewService;
   readonly responses: ResponseRepository;
+  readonly evaluations: EvaluationRepository;
   readonly events: EventRepository;
   readonly clock?: Clock;
 }
 
+const RESPONSE_KINDS: readonly ResponseKind[] = [
+  "answer",
+  "approach",
+  "code",
+  "question",
+  "note",
+];
+
 export class ToolService {
   private readonly interviews: InterviewService;
   private readonly responses: ResponseRepository;
+  private readonly evaluations: EvaluationRepository;
   private readonly events: EventRepository;
   private readonly clock: Clock;
 
   constructor(deps: ToolServiceDeps) {
     this.interviews = deps.interviews;
     this.responses = deps.responses;
+    this.evaluations = deps.evaluations;
     this.events = deps.events;
     this.clock = deps.clock ?? systemClock;
   }
 
-  async dispatch(name: ToolName, ctx: ToolContext): Promise<Result<ToolResult>> {
+  async dispatch(
+    name: ToolName,
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<ToolResult>> {
     await this.events.append(
       buildEvent(ctx.interviewId, "tool.invoked", this.clock.now(), {
         tool: name,
@@ -104,6 +175,15 @@ export class ToolService {
         break;
       case "end_interview":
         result = await this.endInterview(ctx);
+        break;
+      case "get_interview_configuration":
+        result = await this.getInterviewConfiguration(ctx);
+        break;
+      case "get_problem_hint":
+        result = await this.getProblemHint(ctx, args);
+        break;
+      case "record_candidate_answer":
+        result = await this.recordCandidateAnswer(ctx, args);
         break;
     }
     if (!result.ok) {
@@ -190,6 +270,118 @@ export class ToolService {
     const next = await this.interviews.beginCompleting(ctx.interviewId);
     if (!next.ok) return next;
     return ok({ status: next.value.status, transitioned: true });
+  }
+
+  // Structured context (HLD 5.2): the model reads backend-owned
+  // configuration instead of inventing interview rules.
+  async getInterviewConfiguration(
+    ctx: ToolContext,
+  ): Promise<Result<InterviewConfigurationResult>> {
+    const state = await this.interviews.getState(ctx.interviewId);
+    if (!state.ok) return state;
+    return ok({
+      configuration: state.value.interview.configuration,
+      status: state.value.interview.status,
+      problemCount: state.value.interview.problems.length,
+      currentProblemId: state.value.currentProblem?.id ?? null,
+    });
+  }
+
+  // Controlled hints (HLD 5.4): tiered guidance, never the solution.
+  // Optional args.level 1..3; defaults to nextHintLevel(hintsUsed).
+  // Every issued hint increments hintsUsed (visible to evaluation).
+  async getProblemHint(
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<ProblemHintResult>> {
+    const rawLevel = args?.["level"];
+    let requested: HintLevel | null = null;
+    if (rawLevel !== undefined) {
+      requested = parseHintLevel(rawLevel);
+      if (requested === null) {
+        return err(
+          domainError("VALIDATION_ERROR", "hint level must be 1, 2, or 3", {
+            level: rawLevel,
+          }),
+        );
+      }
+    }
+    const state = await this.interviews.getState(ctx.interviewId);
+    if (!state.ok) return state;
+    if (state.value.currentProblem === null) {
+      return err(
+        domainError(
+          "NO_CURRENT_PROBLEM",
+          `Interview ${ctx.interviewId} has no active problem`,
+          { interviewId: ctx.interviewId },
+        ),
+      );
+    }
+    const hintsUsedSoFar = state.value.evaluation?.hintsUsed ?? 0;
+    const level = requested ?? nextHintLevel(hintsUsedSoFar);
+    const built = buildHint(state.value.currentProblem, level);
+    const recorded = await this.interviews.recordHint(ctx.interviewId, level);
+    if (!recorded.ok) return recorded;
+    return ok({
+      level: built.level,
+      hint: built.hint,
+      revealsSolution: false,
+      hintsUsed: recorded.value,
+    });
+  }
+
+  // Model-observed answers become persisted candidate responses (backend
+  // owns them from here on). Args: { kind?, content (required), problemId? }.
+  async recordCandidateAnswer(
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<RecordAnswerResult>> {
+    const rawKind = args?.["kind"] ?? "answer";
+    if (
+      typeof rawKind !== "string" ||
+      !(RESPONSE_KINDS as readonly string[]).includes(rawKind)
+    ) {
+      return err(
+        domainError(
+          "VALIDATION_ERROR",
+          "kind must be one of answer, approach, code, question, note",
+          { kind: rawKind },
+        ),
+      );
+    }
+    const kind = rawKind as ResponseKind;
+    const rawContent = args?.["content"];
+    if (typeof rawContent !== "string" || rawContent.trim().length === 0) {
+      return err(
+        domainError("VALIDATION_ERROR", "content must be a non-empty string"),
+      );
+    }
+    if (rawContent.length > 10_000) {
+      return err(
+        domainError(
+          "VALIDATION_ERROR",
+          "content must be at most 10000 characters",
+        ),
+      );
+    }
+    const rawProblemId = args?.["problemId"];
+    let problemId: ProblemId | undefined;
+    if (rawProblemId !== undefined) {
+      if (typeof rawProblemId !== "string" || rawProblemId.trim() === "") {
+        return err(
+          domainError("VALIDATION_ERROR", "problemId must be a non-empty string"),
+        );
+      }
+      problemId = asProblemId(rawProblemId);
+    }
+    const recorded = await this.interviews.recordResponse(ctx.interviewId, {
+      kind,
+      content: rawContent,
+      ...(problemId === undefined ? {} : { problemId }),
+    });
+    if (!recorded.ok) return recorded;
+    const responses = await this.responses.listByInterview(ctx.interviewId);
+    return ok({ recorded: true, kind, responseCount: responses.length });
   }
 }
 
