@@ -36,9 +36,9 @@ Per-session handoff: `docs/SESSION_HANDOFF.md` (update every session; tag `sessi
 
 ## Validated realtime config (MVP-proven, reuse as-is)
 
-- Endpoint `https://interview-coach-voice.services.ai.azure.com`, model `gpt-realtime-mini`, API version `2026-04-10`, voice `en-US-Andrew:DragonHDLatestNeural`.
+- Endpoint `https://interview-coach-voice.services.ai.azure.com`, model `gpt-realtime-mini`, API version `2026-04-10`, voice `{ type: "azure-standard", name: "en-US-Andrew:DragonHDLatestNeural" }` (harness sends the `{type,name}` object).
 - Audio: PCM16 / 24 kHz / mono both directions. Linux CLI uses `arecord` capture / `aplay` playback.
-- `server_vad` (`threshold 0.35`, `speech_duration_ms 80`, `silence_duration_ms 500`, `interrupt_response true`, `create_response true`) + server echo cancellation + Azure deep noise suppression.
+- `server_vad` (`threshold 0.35`, `speech_duration_ms 80`, `silence_duration_ms 500`, `interrupt_response true`, `create_response true`) — enabled and validated. Server echo cancellation + Azure deep noise suppression are Voice Live capabilities the CLI harness leaves **disabled** (raw mic); the web client adds EC/NS in its own WebAudio path.
 - Barge-in path: `speech_started` → `response.cancel` → local playback flush (~4–5 ms). Variable latency is in server VAD detection, not the local flush.
 - Keep the CLI as a regression harness even after the web client exists. Test with headphones to avoid assistant-audio mic leakage.
 - Logging: lifecycle/timing events only (`speech_started/stopped`, `response_created`, first audio delta, `response.cancel`, playback flush, tool start/complete). Never per-PCM-chunk logging in normal operation.

@@ -22,11 +22,14 @@ Tool path:     Voice Live --function_call--> Browser --POST /tool-exec--> Fastif
 
 ## 3. Validated realtime config (reuse as-is)
 
-* Endpoint `https://interview-coach-voice.services.ai.azure.com`, model `gpt-realtime-mini`, API `2026-04-10`, voice `en-US-Andrew:DragonHDLatestNeural`.
+* Endpoint `https://interview-coach-voice.services.ai.azure.com`, model `gpt-realtime-mini`, API `2026-04-10`.
+* Voice: `{ type: "azure-standard", name: "en-US-Andrew:DragonHDLatestNeural" }` — the harness sends the voice as this `{ type, name }` object, not a bare name string.
 * Audio PCM16 / 24 kHz / mono both directions.
-* `server_vad{threshold 0.35, speech_duration_ms 80, silence_duration_ms 500, interrupt_response true, create_response true}` + server echo cancellation + Azure deep noise suppression.
+* Turn detection: `server_vad{threshold 0.35, speech_duration_ms 80, silence_duration_ms 500, interrupt_response true, create_response true}` — enabled and validated.
+* Input echo cancellation / noise suppression: Voice Live *capabilities* that exist as session options (`server_echo_cancellation`, `azure_deep_noise_suppression`), but the CLI harness does **not** enable them — the validated MVP ran with **raw mic** (no server AEC, no server noise suppression; both fields commented out in the harness `voice-session.ts`). The S4 web client instead adds echo cancellation + noise suppression in its own WebAudio path.
 * Barge-in: `speech_started → response.cancel → local playback flush (~4–5 ms)`. Variance is server VAD detection, not local flush.
 * Logging: lifecycle/timing only. Never per-PCM-chunk.
+* Baseline metrics from the validated MVP run: `docs/mvp-baseline-metrics.md`.
 
 ## 4. Tool boundary
 

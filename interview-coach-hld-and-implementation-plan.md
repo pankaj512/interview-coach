@@ -20,8 +20,8 @@ The MVP currently uses:
 - realtime microphone input
 - realtime PCM audio output
 - server-side VAD
-- server echo cancellation
-- Azure deep noise suppression
+- server echo cancellation (Voice Live capability; harness leaves it disabled — raw mic)
+- Azure deep noise suppression (Voice Live capability; harness leaves it disabled — raw mic)
 - model tool calling
 - deterministic interview tools
 - in-memory interview state
@@ -422,7 +422,8 @@ API version:
 2026-04-10
 
 Voice:
-en-US-Andrew:DragonHDLatestNeural
+{ type: "azure-standard", name: "en-US-Andrew:DragonHDLatestNeural" }
+(the harness sends the voice as this { type, name } object)
 
 Audio:
 PCM16 / 24 kHz / mono
@@ -461,10 +462,18 @@ turn_detection:
 
 Echo/noise:
 
+The following are Voice Live *capabilities* (session input options) that exist but
+are **not** enabled by the CLI harness, which runs raw mic:
+
 ```text
-server_echo_cancellation
-azure_deep_noise_suppression
+server_echo_cancellation        (available, NOT enabled by harness)
+azure_deep_noise_suppression    (available, NOT enabled by harness)
 ```
+
+The validated MVP configuration therefore ran with **raw microphone input** —
+no server echo cancellation, no server noise suppression (both fields are
+commented out in the harness `voice-session.ts`). The web client (S4) adds echo
+cancellation + noise suppression in its own WebAudio path instead.
 
 ### Important operational finding
 
@@ -660,8 +669,8 @@ This boundary prevents model hallucination from becoming application state.
 | Audio playback | Linux `aplay` | Validated |
 | Audio | PCM16, 24 kHz, mono | Validated |
 | VAD | Server VAD | Validated |
-| Echo cancellation | Server echo cancellation | Validated |
-| Noise reduction | Azure deep noise suppression | Validated |
+| Echo cancellation | Server echo cancellation | Available (harness disabled — raw mic) |
+| Noise reduction | Azure deep noise suppression | Available (harness disabled — raw mic) |
 | Tool calling | Voice Live model tools | Validated |
 | Development | npm + tsx | Working |
 | Development OS | Ubuntu/Linux | Working |
@@ -700,7 +709,9 @@ Successfully detects candidate turns.
 
 ### Server AEC + noise suppression
 
-Works sufficiently for the MVP.
+Available as Voice Live capabilities, but the CLI harness leaves them disabled
+(raw mic), so they were **not** part of the validated MVP configuration. The web
+client adds echo cancellation + noise suppression in its own WebAudio path.
 
 ### Headphones
 
@@ -1335,8 +1346,8 @@ The MVP already demonstrated that local playback flush can be only a few millise
 | Azure Voice Live | End-to-end validated | High |
 | `gpt-realtime-mini` | End-to-end validated | High |
 | Server VAD | Validated | High |
-| Server echo cancellation | Validated | Medium/High |
-| Azure deep noise suppression | Validated | Medium/High |
+| Server echo cancellation | Available; harness disabled (raw mic) | Medium/High |
+| Azure deep noise suppression | Available; harness disabled (raw mic) | Medium/High |
 | PCM16 24 kHz mono | Validated | High |
 | Linux `arecord` | Validated | High |
 | Linux `aplay` | Validated | High |
