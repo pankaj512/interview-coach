@@ -14,7 +14,11 @@ import type {
   RepositorySet,
   ResponseRepository,
   RunRepository,
+  SessionRepository,
   SubmissionRepository,
+  UserAccount,
+  UserRepository,
+  UserSession,
 } from "@interview-coach/domain";
 import type {
   CandidateResponse,
@@ -39,6 +43,7 @@ import type {
   ProblemId,
   RunId,
   SubmissionId,
+  UserId,
 } from "@interview-coach/domain";
 import * as schema from "./schema.js";
 
@@ -550,34 +555,111 @@ function toCodeRun(row: CodeRunRow): CodeRun {
   };
 }
 
-// Extra: users table access for future auth (S7). Not part of the S1
-// RepositorySet — interviews reference candidate IDs without a hard FK.
-export class DrizzleUserRepository {
+// S8c accounts (HLD 7.1): local credentials behind the domain
+// UserRepository/SessionRepository contracts. Emails are stored normalized;
+// passwordHash/tokenHash formats are owned by the backend hasher.
+export class DrizzleUserRepository implements UserRepository {
   constructor(private readonly db: Db) {}
 
-  async save(user: { id: string; displayName: string; createdAt: Date }): Promise<void> {
+  async save(account: UserAccount): Promise<void> {
     await this.db
       .insert(schema.users)
-      .values({ id: user.id, displayName: user.displayName, createdAt: user.createdAt })
+      .values({
+        id: account.id,
+        displayName: account.displayName,
+        email: account.email,
+        passwordHash: account.passwordHash,
+        createdAt: account.createdAt,
+      })
       .onConflictDoUpdate({
         target: schema.users.id,
-        set: { displayName: user.displayName },
+        set: {
+          displayName: account.displayName,
+          email: account.email,
+          passwordHash: account.passwordHash,
+        },
       });
   }
 
-  async findById(
-    id: string,
-  ): Promise<{ id: string; displayName: string; createdAt: Date } | null> {
+  async findById(id: UserId): Promise<UserAccount | null> {
     const rows = await this.db
       .select()
       .from(schema.users)
       .where(eq(schema.users.id, id))
       .limit(1);
-    const row = rows[0];
-    return row === undefined
-      ? null
-      : { id: row.id, displayName: row.displayName, createdAt: row.createdAt };
+    return toAccount(rows[0] ?? null);
   }
+
+  async findByEmail(email: string): Promise<UserAccount | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1);
+    return toAccount(rows[0] ?? null);
+  }
+}
+
+export class DrizzleSessionRepository implements SessionRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(session: UserSession): Promise<void> {
+    await this.db
+      .insert(schema.userSessions)
+      .values({
+        tokenHash: session.tokenHash,
+        userId: session.userId,
+        createdAt: session.createdAt,
+        expiresAt: session.expiresAt,
+      })
+      .onConflictDoNothing();
+  }
+
+  async findByTokenHash(tokenHash: string): Promise<UserSession | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.userSessions)
+      .where(eq(schema.userSessions.tokenHash, tokenHash))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) return null;
+    return {
+      tokenHash: row.tokenHash,
+      userId: row.userId as UserId,
+      createdAt: row.createdAt,
+      expiresAt: row.expiresAt,
+    };
+  }
+
+  async deleteByTokenHash(tokenHash: string): Promise<boolean> {
+    const removed = await this.db
+      .delete(schema.userSessions)
+      .where(eq(schema.userSessions.tokenHash, tokenHash))
+      .returning({ tokenHash: schema.userSessions.tokenHash });
+    return removed.length > 0;
+  }
+
+  async deleteByUserId(userId: UserId): Promise<number> {
+    const removed = await this.db
+      .delete(schema.userSessions)
+      .where(eq(schema.userSessions.userId, userId))
+      .returning({ tokenHash: schema.userSessions.tokenHash });
+    return removed.length;
+  }
+}
+
+function toAccount(
+  row: typeof schema.users.$inferSelect | null,
+): UserAccount | null {
+  // Pre-S8c rows have no credentials and are invisible to auth flows.
+  if (row === null || row.email === null || row.passwordHash === null) return null;
+  return {
+    id: row.id as UserId,
+    email: row.email,
+    displayName: row.displayName,
+    passwordHash: row.passwordHash,
+    createdAt: row.createdAt,
+  };
 }
 
 export function createDrizzleRepositories(db: Db): RepositorySet {
@@ -589,5 +671,7 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     events: new DrizzleEventRepository(db),
     submissions: new DrizzleSubmissionRepository(db),
     runs: new DrizzleRunRepository(db),
+    users: new DrizzleUserRepository(db),
+    sessions: new DrizzleSessionRepository(db),
   };
 }

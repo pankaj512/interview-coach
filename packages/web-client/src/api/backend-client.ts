@@ -25,6 +25,9 @@ import type {
   ToolExecOutcome,
   ToolName,
   VoiceSessionPayload,
+  AuthSessionPayload,
+  LoginInput,
+  RegisterInput,
 } from "./types.js";
 
 export class BackendApiError extends Error {
@@ -96,6 +99,31 @@ export class BackendClient {
 
   async getHealth(): Promise<{ ok: true; service: string; version: string }> {
     return this.request("GET", "/api/health");
+  }
+
+  // S8c accounts (HLD 7.1): self-service register/login return the session
+  // token once; logout revokes it. The active token travels on every call
+  // via the constructor option (localStorage-backed auth store).
+  async register(input: RegisterInput): Promise<AuthSessionPayload> {
+    const body = await this.request<{ ok: true } & AuthSessionPayload>(
+      "POST",
+      "/api/auth/register",
+      { email: input.email, displayName: input.displayName, password: input.password },
+    );
+    return { user: body.user, session: body.session };
+  }
+
+  async login(input: LoginInput): Promise<AuthSessionPayload> {
+    const body = await this.request<{ ok: true } & AuthSessionPayload>(
+      "POST",
+      "/api/auth/login",
+      { email: input.email, password: input.password },
+    );
+    return { user: body.user, session: body.session };
+  }
+
+  async logout(): Promise<void> {
+    await this.request<{ ok: true }>("POST", "/api/auth/logout");
   }
 
   async createInterview(input: CreateInterviewInput): Promise<SerializedInterview> {

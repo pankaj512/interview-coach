@@ -295,3 +295,19 @@ Done:
 Verified 2026-09-11: install ok (tsx→deps), typecheck ok, test 242 passed (235 prior + 7 new; no-DB warn-and-pass and live-DB vs postgres:16 port 5433 both 242), `tsc -b` ok, `vite build` ok. Images build clean (backend required no fix; web needed root `tsconfig.base.json` + curriculum JSON in build context — both fixed in-Dockerfile). Compose smoke (ports remapped: backend 3121, web 8091, pg 5433 — host 3000/3100/3210 already bound): backend healthy, boot-migrated, seed 300/0, create→ready→select→voice-503 (correct, no credential)→prometheus scrape→end→delete→web 200 + SPA fallback — all ok (SMOKE-OK). Stack torn down after.
 Open for S8c: Entra/OIDC identity + per-interview authz (+ADR), Prometheus scrape config/alerts, managed TLS/backups.
 Tag: `session-8b` after commit.
+
+## S8c — Local user accounts + per-interview ownership (2026-09-11)
+Status: done (verified below). Scope per user decision: self-registered email+password now; social (Google/GitHub/Microsoft) in Prod/S8d; local dev stays open mode. Design recorded in `docs/adr-001-user-auth.md`.
+
+Done:
+* Domain: `User` += normalized `email` (+`normalizeEmail`/`validEmail`); new `UserAccount`/`UserSession` shapes + `sessionExpired`; `UserRepository`/`SessionRepository` contracts + in-memory impls; `RepositorySet` += `users`/`sessions`.
+* DB: migration `0002` (`users.email` unique + `password_hash` nullable for pre-S8c rows, `user_sessions` with cascade + index); `DrizzleUserRepository`/`DrizzleSessionRepository` behind the domain contracts; factory extended. Pre-S8c credential-less rows are invisible to auth flows.
+* Backend (`src/users.ts`): scrypt passwords (N=16384/r=8/p=1, versioned format, timing-safe verify), 32-byte session tokens stored as SHA-256 (raw shown once, never logged/stored); `UserService.register/login/logout/resolveSession` (duplicate → 409, unknown/wrong → indistinguishable 401, expired/orphaned sessions lazily revoked). Routes `POST /api/auth/register|login|logout` (register/login open without bearer; strict `auth` rate bucket 10/min). Caller model: service token bypasses (CLI/admin), user sessions scope every `/api/interviews/:id…` route to own `candidateId` (foreign reads 404, no oracle), create stamps identity from the session (body spoof ignored), anonymous works only in open mode. Auth lifecycle logs carry user id only; counters `authRegistrations/Logins/Failures` in JSON + Prometheus.
+* Client: `BackendClient.register/login/logout`, `auth-store.ts` (localStorage-backed session, corrupt-safe, memory fallback for tests), `useBackendClient` prefers the signed-in token, `AuthPanel` on the setup screen (sign-in optional; anonymous flow unchanged).
+* Tests: domain `user` (4), backend `users` (8: hashing, register/login/logout, dup+uniform-401s, email/hash hygiene, ownership incl. spoof-override + service bypass + open-mode compat, expiry cleanup), client `backend-client-s8c` (5: endpoint shapes, error surfacing, store set/clear/corrupt).
+* `.env.example`: `RATE_LIMIT_AUTH_PER_MIN=10`, `AUTH_SESSION_TTL_HOURS=720`; retention doc covers account/session rows; S8d owns full account erasure + social.
+
+Verify: typecheck + test 258 (242 prior + 16 new; no-DB warn-and-pass and live-DB vs postgres:16 port 5433 both 258) + `tsc -b` + `vite build` (314.45kB JS / 96.60kB gzip).
+Verified 2026-09-11: all green. Live smoke vs postgres:16 (port 3220 server, open mode): register (email normalized) → dup 409 → wrong-pw 401 → owned create (spoof ignored) → cross-user 404 → anonymous 200 → logout + reuse 401 → prometheus auth series correct → delete ok. Server log: zero password/token hits. Note: smoke server left on 127.0.0.1:3220 (shell tool blocks kill) — stop with `pkill -f "tsx watch"`.
+Open for S8d (with user-created resources): Entra/social as second issuer over the same session rows, per-user authz hardening, account erasure, scrape config/alerts.
+Tag: `session-8c` after commit.

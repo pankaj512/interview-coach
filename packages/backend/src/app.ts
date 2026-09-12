@@ -8,6 +8,12 @@
 //
 // Routes (HLD 1.3 + S3 extensions marked):
 //   GET    /api/health
+//   GET    /api/ready                             (S8a probe)
+//   GET    /api/metrics                           (S8a observability)
+//   GET    /api/metrics/prometheus                (S8b scrape target)
+//   POST   /api/auth/register                     (S8c self-service signup)
+//   POST   /api/auth/login                        (S8c credential login)
+//   POST   /api/auth/logout                       (S8c session revoke)
 //   POST   /api/interviews
 //   GET    /api/interviews/:id
 //   GET    /api/interviews/:id/state
@@ -60,9 +66,10 @@ import {
   type ToolResult,
 } from "@interview-coach/domain";
 import { loadConfig, type BackendConfig } from "./config.js";
-import { registerAuthHook } from "./auth.js";
+import { extractBearerToken, registerAuthHook, registerOwnershipHook } from "./auth.js";
 import { BackendMetrics } from "./metrics.js";
 import { renderPrometheusMetrics } from "./prometheus.js";
+import { UserService, type AuthenticatedSession } from "./users.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
@@ -121,6 +128,34 @@ const createInterviewSchema = z.object({
   candidateId: z.string().min(1).max(200),
   configuration: configurationSchema,
 });
+
+// S8c credential endpoints (HLD 7.1). Fine-grained rules (password length,
+// email shape, duplicate detection) live in UserService; zod guards shape.
+const registerSchema = z.object({
+  email: z.string().min(1).max(254),
+  displayName: z.string().min(1).max(120),
+  password: z.string().min(1).max(128),
+});
+
+const loginSchema = z.object({
+  email: z.string().min(1).max(254),
+  password: z.string().min(1).max(128),
+});
+
+function serializeSession(session: AuthenticatedSession): {
+  user: { id: string; email: string; displayName: string; createdAt: string };
+  session: { token: string; expiresAt: string };
+} {
+  return {
+    user: {
+      id: session.id as string,
+      email: session.email,
+      displayName: session.displayName,
+      createdAt: session.createdAt.toISOString(),
+    },
+    session: { token: session.token, expiresAt: session.expiresAt.toISOString() },
+  };
+}
 
 const assignProblemsSchema = z.object({
   problemIds: z.array(z.string().min(1).max(200)).min(1).max(50),
@@ -262,6 +297,13 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   let activeCodeRuns = 0;
 
   const interviews = new InterviewService({ ...deps.repos });
+  // S8c accounts (HLD 7.1): self-registered local credentials. Social
+  // sign-in (S8d) mints the same session rows via a second issuer.
+  const users = new UserService({
+    users: deps.repos.users,
+    sessions: deps.repos.sessions,
+    sessionTtlMs: config.auth.sessionTtlMs,
+  });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
   // a fake via deps.codeRunner; container isolation lands in S8.
   const codeRunner =
@@ -294,6 +336,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     toolExec: { max: config.rateLimits.toolExecPerMin, windowMs: 60_000 },
     voiceMint: { max: config.rateLimits.voiceMintPerMin, windowMs: 60_000 },
     codeRun: { max: config.rateLimits.codeRunPerMin, windowMs: 60_000 },
+    auth: { max: config.rateLimits.authPerMin, windowMs: 60_000 },
   };
   app.addHook("onRequest", (request, reply, done) => {
     const pathname = request.url.split("?", 1)[0] ?? "/";
@@ -310,7 +353,17 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     done();
   });
-  registerAuthHook(app, config.authToken);
+  // S8c: the gate resolves service vs user callers; ownership scopes user
+  // callers to their own interviews (HLD 7.2).
+  registerAuthHook(app, {
+    authToken: config.authToken,
+    resolveUser: async (token) => {
+      const account = await users.resolveSession(token);
+      if (account === null) return null;
+      return { userId: account.id, displayName: account.displayName };
+    },
+  });
+  registerOwnershipHook(app, deps.repos);
 
   app.setNotFoundHandler((request, reply) => {
     sendApiError(reply, 404, "NOT_FOUND", `No route for ${request.url}`, false);
@@ -381,13 +434,72 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       .send(renderPrometheusMetrics(metrics.snapshot(activeVoiceSessions.size, toolIdempotency.size)));
   });
 
+  // S8c accounts (HLD 7.1): self-service registration + credential login.
+  // Register/login stay reachable without a bearer (that is their purpose);
+  // logout needs one. The raw session token is shown once here and never
+  // stored or logged.
+  app.post("/api/auth/register", async (request, reply) => {
+    const parsed = registerSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const registered = await users.register({
+      email: parsed.data.email,
+      displayName: parsed.data.displayName,
+      password: parsed.data.password,
+    });
+    if (!registered.ok) {
+      if (registered.error.code === "CONFLICT") metrics.countAuthFailure();
+      return sendDomainError(reply, registered.error);
+    }
+    request.log.info({ userId: registered.value.id }, "auth.registered");
+    metrics.countAuthRegistered();
+    return reply.status(201).send({ ok: true, ...serializeSession(registered.value) });
+  });
+
+  app.post("/api/auth/login", async (request, reply) => {
+    const parsed = loginSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const session = await users.login(parsed.data.email, parsed.data.password);
+    if (session === null) {
+      metrics.countAuthFailure();
+      return sendApiError(reply, 401, "INVALID_CREDENTIALS", "Unknown email or wrong password", false);
+    }
+    request.log.info({ userId: session.id }, "auth.login");
+    metrics.countAuthLogin();
+    return reply.send({ ok: true, ...serializeSession(session) });
+  });
+
+  app.post("/api/auth/logout", async (request, reply) => {
+    const token = extractBearerToken(request);
+    if (token === null) {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Missing or invalid bearer token", false);
+    }
+    const revoked = await users.logout(token);
+    if (!revoked) {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Missing or invalid bearer token", false);
+    }
+    return reply.send({ ok: true, revoked: true });
+  });
+
   app.post("/api/interviews", async (request, reply) => {
     const parsed = createInterviewSchema.safeParse(request.body);
     if (!parsed.success) {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
     }
+    // S8c: a user-authenticated caller always owns the interview they
+    // create — identity comes from the session, the body value is ignored.
+    // Anonymous (open local-dev) and service (CLI/admin) callers keep the
+    // client-supplied candidateId.
+    const caller = request.caller;
+    const candidateId =
+      caller !== undefined && caller.kind === "user"
+        ? caller.userId
+        : asUserId(parsed.data.candidateId);
     const created = await interviews.createInterview({
-      candidateId: asUserId(parsed.data.candidateId),
+      candidateId,
       configuration: toDomainConfiguration(parsed.data.configuration),
     });
     if (!created.ok) return sendDomainError(reply, created.error);

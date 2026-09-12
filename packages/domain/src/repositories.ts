@@ -5,7 +5,9 @@ import type {
   ResponseId,
   RunId,
   SubmissionId,
+  UserId,
 } from "./ids.js";
+import type { UserAccount, UserSession } from "./user.js";
 import type { CandidateResponse } from "./candidate-response.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
@@ -196,6 +198,69 @@ export class InMemoryRunRepository implements RunRepository {
   }
 }
 
+// S8c accounts (HLD 7.1): self-registered local credentials. Emails are
+// stored normalized (lowercased); lookups must normalize first.
+export interface UserRepository {
+  save(account: UserAccount): Promise<void>;
+  findById(id: UserId): Promise<UserAccount | null>;
+  findByEmail(email: string): Promise<UserAccount | null>;
+}
+
+// Opaque bearer sessions. Only the token hash is stored; the raw token is
+// shown once at login and never persisted anywhere.
+export interface SessionRepository {
+  save(session: UserSession): Promise<void>;
+  findByTokenHash(tokenHash: string): Promise<UserSession | null>;
+  deleteByTokenHash(tokenHash: string): Promise<boolean>;
+  deleteByUserId(userId: UserId): Promise<number>;
+}
+
+export class InMemoryUserRepository implements UserRepository {
+  private readonly store = new Map<UserId, UserAccount>();
+
+  async save(account: UserAccount): Promise<void> {
+    this.store.set(account.id, account);
+  }
+
+  async findById(id: UserId): Promise<UserAccount | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async findByEmail(email: string): Promise<UserAccount | null> {
+    for (const account of this.store.values()) {
+      if (account.email === email) return account;
+    }
+    return null;
+  }
+}
+
+export class InMemorySessionRepository implements SessionRepository {
+  private readonly store = new Map<string, UserSession>();
+
+  async save(session: UserSession): Promise<void> {
+    this.store.set(session.tokenHash, session);
+  }
+
+  async findByTokenHash(tokenHash: string): Promise<UserSession | null> {
+    return this.store.get(tokenHash) ?? null;
+  }
+
+  async deleteByTokenHash(tokenHash: string): Promise<boolean> {
+    return this.store.delete(tokenHash);
+  }
+
+  async deleteByUserId(userId: UserId): Promise<number> {
+    let removed = 0;
+    for (const [hash, session] of this.store) {
+      if (session.userId === userId) {
+        this.store.delete(hash);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
+}
+
 export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
@@ -204,6 +269,8 @@ export interface RepositorySet {
   readonly events: EventRepository;
   readonly submissions: SubmissionRepository;
   readonly runs: RunRepository;
+  readonly users: UserRepository;
+  readonly sessions: SessionRepository;
 }
 
 export function createInMemoryRepositories(): RepositorySet & {
@@ -214,6 +281,8 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly events: InMemoryEventRepository;
   readonly submissions: InMemorySubmissionRepository;
   readonly runs: InMemoryRunRepository;
+  readonly users: InMemoryUserRepository;
+  readonly sessions: InMemorySessionRepository;
 } {
   return {
     interviews: new InMemoryInterviewRepository(),
@@ -223,5 +292,7 @@ export function createInMemoryRepositories(): RepositorySet & {
     events: new InMemoryEventRepository(),
     submissions: new InMemorySubmissionRepository(),
     runs: new InMemoryRunRepository(),
+    users: new InMemoryUserRepository(),
+    sessions: new InMemorySessionRepository(),
   };
 }

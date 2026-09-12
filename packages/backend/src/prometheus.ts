@@ -58,6 +58,21 @@ export function renderPrometheusMetrics(snapshot: MetricsSnapshot): string {
       "Candidate code submissions stored.",
       snapshot.codeSubmissions,
     ),
+    counter(
+      "interview_coach_auth_registrations_total",
+      "Self-service account registrations.",
+      snapshot.authRegistrations,
+    ),
+    counter(
+      "interview_coach_auth_logins_total",
+      "Successful credential logins.",
+      snapshot.authLogins,
+    ),
+    counter(
+      "interview_coach_auth_failures_total",
+      "Failed logins plus duplicate-registration attempts.",
+      snapshot.authFailures,
+    ),
   ];
   for (const status of ["passed", "failed", "timeout", "error"] as const) {
     lines.push(

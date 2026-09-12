@@ -12,6 +12,9 @@ export interface MetricsSnapshot {
   readonly uptimeSeconds: number;
   readonly interviewsCreated: number;
   readonly interviewsDeleted: number;
+  readonly authRegistrations: number;
+  readonly authLogins: number;
+  readonly authFailures: number;
   readonly toolExecuted: number;
   readonly toolReplayed: number;
   readonly toolFailed: number;
@@ -27,6 +30,9 @@ export class BackendMetrics {
   private readonly startedAt = Date.now();
   private interviewsCreated = 0;
   private interviewsDeleted = 0;
+  private authRegistrations = 0;
+  private authLogins = 0;
+  private authFailures = 0;
   private toolExecuted = 0;
   private toolReplayed = 0;
   private toolFailed = 0;
@@ -46,6 +52,18 @@ export class BackendMetrics {
 
   countInterviewDeleted(): void {
     this.interviewsDeleted += 1;
+  }
+
+  countAuthRegistered(): void {
+    this.authRegistrations += 1;
+  }
+
+  countAuthLogin(): void {
+    this.authLogins += 1;
+  }
+
+  countAuthFailure(): void {
+    this.authFailures += 1;
   }
 
   countTool(replayed: boolean, ok: boolean): void {
@@ -75,6 +93,9 @@ export class BackendMetrics {
       uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
       interviewsCreated: this.interviewsCreated,
       interviewsDeleted: this.interviewsDeleted,
+      authRegistrations: this.authRegistrations,
+      authLogins: this.authLogins,
+      authFailures: this.authFailures,
       toolExecuted: this.toolExecuted,
       toolReplayed: this.toolReplayed,
       toolFailed: this.toolFailed,

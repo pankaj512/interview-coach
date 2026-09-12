@@ -1,22 +1,38 @@
-// @interview-coach/backend — service-level auth gate (HLD Phase 7, S8a).
+// @interview-coach/backend — service auth gate + caller ownership (S8a/S8c).
 //
-// Minimal honest boundary: an optional shared-secret bearer token. When
-// API_AUTH_TOKEN is set, every /api route except the unauthenticated probes
-// (GET /api/health, GET /api/ready) requires
-// `Authorization: Bearer <token>` and otherwise 401s (permanent, never
-// retried as-is). When unset, the service stays in the historical open
-// local-dev mode and logs one startup warning.
+// Two credential kinds (HLD 7.1, ADR-001):
+//   service — the shared API_AUTH_TOKEN (CLI/admin; bypasses ownership).
+//   user    — an opaque session token from /api/auth/* (ownership enforced).
+// Open local-dev mode (no API_AUTH_TOKEN) allows anonymous callers with
+// client-supplied candidate IDs, exactly like S7 and earlier; user sessions
+// still resolve there when presented.
 //
-// This is abuse protection, not user identity: per-user ownership
-// ( callers can only touch their own interviews) needs a real identity
-// layer (Entra/OIDC) and stays on the S8b deploy track with an ADR.
+// Per-user ownership (HLD 7.2): any caller authenticated as a user may only
+// touch interviews whose candidateId is their own user id. Foreign or missing
+// interviews both read 404 (no existence oracle). The model never calls
+// auth routes; per-interview authz for OIDC/social (S8d) reuses the same
+// session rows, so no route changes are needed then.
 
 import type { FastifyInstance, FastifyRequest } from "fastify";
+import { asInterviewId, type RepositorySet, type UserId } from "@interview-coach/domain";
 import { sendApiError } from "./http-errors.js";
+
+export type Caller =
+  | { readonly kind: "anonymous" }
+  | { readonly kind: "service" }
+  | { readonly kind: "user"; readonly userId: UserId; readonly displayName: string };
+
+declare module "fastify" {
+  interface FastifyRequest {
+    caller?: Caller;
+  }
+}
 
 export const OPEN_ROUTES: ReadonlySet<string> = new Set([
   "GET /api/health",
   "GET /api/ready",
+  "POST /api/auth/register",
+  "POST /api/auth/login",
 ]);
 
 export function extractBearerToken(request: FastifyRequest): string | null {
@@ -37,26 +53,63 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-export function registerAuthHook(app: FastifyInstance, authToken: string | undefined): void {
-  if (authToken === undefined) {
+export interface AuthGate {
+  readonly authToken: string | undefined;
+  /** Live-session lookup; null when the token is not a user session. */
+  readonly resolveUser: (
+    token: string,
+  ) => Promise<{ userId: UserId; displayName: string } | null>;
+}
+
+export function registerAuthHook(app: FastifyInstance, gate: AuthGate): void {
+  if (gate.authToken === undefined) {
     app.log.warn("API_AUTH_TOKEN is not set: /api is open (local-dev mode)");
-    return;
   }
-  app.addHook("onRequest", (request, reply, done) => {
+  app.addHook("onRequest", async (request, reply) => {
     const key = `${request.method} ${request.url.split("?", 1)[0]}`;
     if (OPEN_ROUTES.has(key)) {
-      done();
       return;
     }
     if (!request.url.startsWith("/api/")) {
-      done();
       return;
     }
     const presented = extractBearerToken(request);
-    if (presented === null || !timingSafeEqual(presented, authToken)) {
-      sendApiError(reply, 401, "UNAUTHORIZED", "Missing or invalid bearer token", false);
+    if (presented !== null) {
+      if (gate.authToken !== undefined && timingSafeEqual(presented, gate.authToken)) {
+        request.caller = { kind: "service" };
+        return;
+      }
+      const user = await gate.resolveUser(presented);
+      if (user !== null) {
+        request.caller = { kind: "user", userId: user.userId, displayName: user.displayName };
+        return;
+      }
+    }
+    if (gate.authToken === undefined) {
+      request.caller = { kind: "anonymous" };
       return;
     }
-    done();
+    sendApiError(reply, 401, "UNAUTHORIZED", "Missing or invalid bearer token", false);
+  });
+}
+
+// Ownership enforcement (HLD 7.2). Runs as a preHandler so the auth hook has
+// already resolved the caller. Service and anonymous (open-mode) callers pass
+// through; user callers are scoped to their own interviews.
+export function registerOwnershipHook(
+  app: FastifyInstance,
+  repos: Pick<RepositorySet, "interviews">,
+): void {
+  app.addHook("preHandler", async (request, reply) => {
+    const pathname = request.url.split("?", 1)[0] ?? "/";
+    const match = /^\/api\/interviews\/([^/]+)/.exec(pathname);
+    if (match === null) return;
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") return;
+    const interviewId = match[1] ?? "";
+    const interview = await repos.interviews.findById(asInterviewId(interviewId));
+    if (interview === null || interview.candidateId !== caller.userId) {
+      sendApiError(reply, 404, "NOT_FOUND", `Interview ${interviewId} does not exist`, false);
+    }
   });
 }

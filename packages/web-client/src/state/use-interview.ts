@@ -15,16 +15,21 @@ import type {
   VoiceSessionPayload,
 } from "../api/types.js";
 import { loadWebConfig } from "../config.js";
+import { useAuthSession } from "./auth-store.js";
 import { createBrowserMicCapture, createBrowserPlayback } from "../voice/browser-audio.js";
 import { VoiceInterviewClient, type VoiceConnectionState, type VoiceWebSocket } from "../voice/voice-client.js";
 
 export function useBackendClient(): BackendClient {
+  // S8c: the account session token (when signed in) beats the static
+  // local-dev VITE_API_TOKEN; every screen rebuilds its client on change.
+  const session = useAuthSession();
   return useMemo(() => {
     const config = loadWebConfig();
+    const token = session?.token ?? config.apiToken;
     return new BackendClient(config.backendUrl, undefined, {
-      ...(config.apiToken === undefined ? {} : { authToken: config.apiToken }),
+      ...(token === undefined ? {} : { authToken: token }),
     });
-  }, []);
+  }, [session?.token]);
 }
 
 export function formatApiError(error: unknown): string {

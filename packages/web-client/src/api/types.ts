@@ -253,3 +253,29 @@ export interface SerializedRun {
   readonly durationMs: number;
   readonly createdAt: string;
 }
+
+// S8c accounts (HLD 7.1): self-registered local credentials. Shapes mirror
+// the backend serializeSession output; the raw token is held in memory (and
+// localStorage for session restore) and never logged.
+export interface SerializedAuthUser {
+  readonly id: string;
+  readonly email: string;
+  readonly displayName: string;
+  readonly createdAt: string;
+}
+
+export interface AuthSessionPayload {
+  readonly user: SerializedAuthUser;
+  readonly session: { readonly token: string; readonly expiresAt: string };
+}
+
+export interface RegisterInput {
+  readonly email: string;
+  readonly displayName: string;
+  readonly password: string;
+}
+
+export interface LoginInput {
+  readonly email: string;
+  readonly password: string;
+}

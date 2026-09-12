@@ -23,6 +23,13 @@ export interface RateLimitConfig {
   readonly toolExecPerMin: number;
   readonly voiceMintPerMin: number;
   readonly codeRunPerMin: number;
+  /** S8c: strict budget on credential endpoints (brute-force protection). */
+  readonly authPerMin: number;
+}
+
+export interface AuthConfig {
+  /** Opaque session lifetime (S8c local credentials). */
+  readonly sessionTtlMs: number;
 }
 
 export interface SandboxConfig {
@@ -42,6 +49,7 @@ export interface BackendConfig {
   readonly corsOrigin: string | string[];
   /** Shared-service bearer token (S8a). Undefined = open local-dev mode. */
   readonly authToken: string | undefined;
+  readonly auth: AuthConfig;
   readonly voice: VoiceConfig;
   readonly tools: ToolsConfig;
   readonly rateLimits: RateLimitConfig;
@@ -77,6 +85,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     port: num(env, "PORT", 3000),
     corsOrigin: str(env, "CORS_ORIGIN", "http://localhost:5173"),
     authToken: optSecret(env, "API_AUTH_TOKEN"),
+    auth: {
+      sessionTtlMs: num(env, "AUTH_SESSION_TTL_HOURS", 720) * 3_600_000,
+    },
     voice: {
       endpoint: str(
         env,
@@ -101,6 +112,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       toolExecPerMin: num(env, "RATE_LIMIT_TOOL_EXEC_PER_MIN", 120),
       voiceMintPerMin: num(env, "RATE_LIMIT_VOICE_MINT_PER_MIN", 60),
       codeRunPerMin: num(env, "RATE_LIMIT_CODE_RUN_PER_MIN", 30),
+      authPerMin: num(env, "RATE_LIMIT_AUTH_PER_MIN", 10),
     },
     sandbox: {
       // S7a local runner (HLD Phase 6): wall-clock kill + output caps.

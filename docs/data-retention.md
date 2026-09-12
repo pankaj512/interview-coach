@@ -9,6 +9,8 @@ today.
 | Data | Store | Lifetime |
 |---|---|---|
 | Interviews, assignments, responses, evaluations, events, submissions, runs | Postgres (`pgdata` volume) | Until explicit `DELETE` — no automatic expiry in S8b |
+| User accounts (email, display name, password hash) | Postgres `users` | Until account erasure (S8d account-management scope) |
+| Login sessions (token hashes only) | Postgres `user_sessions` | 30-day TTL (`AUTH_SESSION_TTL_HOURS`); revoked on logout |
 | Problem catalog (300 seeded rows) | Postgres `problems` | Permanent reference data, never user data |
 | `users` rows | Postgres `users` | Reserved for S8c auth; unused by services today |
 | Tool `call_id` records | Backend memory | 30 min TTL, cap 2000 (frozen §5) |
@@ -35,7 +37,10 @@ terminates at Voice Live and the browser (architecture principle 8).
 - `GET` reads after delete return 404; a second `DELETE` returns 404.
 
 What erasure does NOT touch: the shared problem catalog, other interviews,
-server logs (operational, no candidate content — lifecycle/timing only).
+other users' accounts, server logs (operational, no candidate content —
+lifecycle/timing only). Deleting an interview never deletes its owner's
+account row; full account erasure (user row + sessions) arrives with S8d
+account management.
 
 ## Encryption & transport (deployment notes)
 

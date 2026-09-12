@@ -16,11 +16,32 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  displayName: text("display_name").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+export const users = pgTable(
+  "users",
+  {
+    id: text("id").primaryKey(),
+    displayName: text("display_name").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    // S8c accounts (HLD 7.1): nullable at the DB level because pre-S8c rows
+    // predate credentials; auth flows require both (enforced above this layer).
+    email: text("email").unique(),
+    passwordHash: text("password_hash"),
+  },
+  (t) => [index("users_email_idx").on(t.email)],
+);
+
+export const userSessions = pgTable(
+  "user_sessions",
+  {
+    tokenHash: text("token_hash").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("user_sessions_user_id_idx").on(t.userId)],
+);
 
 export const problems = pgTable("problems", {
   id: text("id").primaryKey(),

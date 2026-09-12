@@ -10,4 +10,5 @@ export * from "./auth.js";
 export * from "./metrics.js";
 export * from "./prometheus.js";
 export * from "./rate-limit.js";
+export * from "./users.js";
 export { buildApp, type ActiveVoiceSession, type BuildAppDeps, type BuiltBackend } from "./app.js";

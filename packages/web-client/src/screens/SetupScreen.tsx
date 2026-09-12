@@ -8,6 +8,7 @@
 import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { InterviewConfiguration, Problem, SerializedInterview } from "../api/types.js";
+import { AuthPanel } from "../components/AuthPanel.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
 import { formatApiError, useBackendClient, useInterviewSetup } from "../state/use-interview.js";
 
@@ -99,6 +100,7 @@ export function SetupScreen({
       </header>
       <p className="eyebrow">Setup · Step 1 of 2</p>
       <h2 className="screen-title">Configure your interview</h2>
+      <AuthPanel backend={backend} />
       <form className="card setup-card" onSubmit={submit}>
         <div className="format-row" role="group" aria-label="Interview format">
           <div className="format-card format-selected" aria-current="true">

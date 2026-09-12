@@ -82,7 +82,7 @@ export class FixedWindowRateLimiter {
   }
 }
 
-export type RateBucket = "toolExec" | "voiceMint" | "codeRun" | "global" | "exempt";
+export type RateBucket = "toolExec" | "voiceMint" | "codeRun" | "auth" | "global" | "exempt";
 
 export function bucketForRoute(method: string, pathname: string): RateBucket {
   // Liveness/readiness probes and non-API traffic are never limited.
@@ -90,6 +90,8 @@ export function bucketForRoute(method: string, pathname: string): RateBucket {
     return "exempt";
   }
   if (!pathname.startsWith("/api/")) return "exempt";
+  // S8c: credential endpoints get the strictest budget (brute-force shield).
+  if (method === "POST" && pathname.startsWith("/api/auth/")) return "auth";
   if (method === "POST" && pathname.endsWith("/tool-exec")) return "toolExec";
   if (method === "POST" && pathname.endsWith("/voice-session")) return "voiceMint";
   if (method === "POST" && pathname.includes("/submissions/") && pathname.endsWith("/runs")) {
