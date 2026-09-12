@@ -311,3 +311,24 @@ Verify: typecheck + test 258 (242 prior + 16 new; no-DB warn-and-pass and live-D
 Verified 2026-09-11: all green. Live smoke vs postgres:16 (port 3220 server, open mode): register (email normalized) → dup 409 → wrong-pw 401 → owned create (spoof ignored) → cross-user 404 → anonymous 200 → logout + reuse 401 → prometheus auth series correct → delete ok. Server log: zero password/token hits. Note: smoke server left on 127.0.0.1:3220 (shell tool blocks kill) — stop with `pkill -f "tsx watch"`.
 Open for S8d (with user-created resources): Entra/social as second issuer over the same session rows, per-user authz hardening, account erasure, scrape config/alerts.
 Tag: `session-8c` after commit.
+
+## S8d — Prod identity + prod voice + account erasure (PARKED, open)
+Status: parked per user decision (2026-09-11). Local accounts (S8c) are the auth for now; social + Entra voice are prod-only and wait for user-created resources. No code started; design seam is ready (ADR-001 §4: social arrives as a second issuer minting the same `user_sessions` rows — no route changes).
+
+User prerequisites (nothing for the agent to guess; ask for these when unparking):
+* Provider app registrations (each with backend callback `https://<BACKEND>/api/auth/<provider>/callback` + localhost equivalents):
+  * Google (console.cloud.google.com): OAuth client (Web), scopes `openid profile email` → `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET`.
+  * GitHub (Settings → Developer settings → OAuth Apps): callback URL set → `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` (runtime scopes `read:user user:email`).
+  * Microsoft (entra.microsoft.com): "Accounts in any org + personal" (social), Web platform + ID tokens → `MICROSOFT_TENANT_ID` (`common` or tenant GUID) / `MICROSOFT_CLIENT_ID` / `MICROSOFT_CLIENT_SECRET`.
+  * Decisions: same-email-across-providers links one account (recommended yes); account deletion = user row + sessions + all owned interviews (recommended yes); `BACKEND_PUBLIC_URL` value.
+* Prod voice (only for internet-facing voice; local dev stays on `AZURE_VOICE_API_KEY` api-key mode): confirm `interview-coach-voice` resource + `gpt-realtime-mini` deployment still exists; backend hosting decision (Azure → managed identity + role on the voice resource; off-Azure → Entra SP `TENANT_ID/CLIENT_ID/CLIENT_SECRET`); then implement Entra ephemeral mint behind the existing provider seam (mint URL deliberately unguessed) + one live browser-connect test.
+* Secrets travel via env only (never commit); add prod URLs as extra redirect URIs alongside localhost.
+
+Agent scope when unparked:
+* `GET /api/auth/:provider/start` + `GET /api/auth/:provider/callback` (google/github/microsoft), find-or-create `users` by normalized email, mint `user_sessions`; `DELETE /api/auth/account` (user row + sessions + owned interviews via existing cascade); client provider buttons + account panel delete; Prometheus scrape config/alerts; managed TLS/backup notes.
+* Tests: issuer unit (state/nonce, code exchange fake), linking (same-email), account erasure cascade, voice ephemeral mint fake + live connect note.
+
+## Phase 9 — Product expansion (UNSTARTED, open)
+Status: untouched. Per HLD, only after DSA voice interviews are stable in prod.
+* Candidate tracks: System Design, Behavioral, Backend, Frontend, ML, Resume-based, Company-specific — all on the shared realtime foundation (frozen planes, tool `call_id` contract, lifecycle unchanged).
+* No design, no code, no migration started. When starting, open a `Phase 9` handoff section with track scope + eval-dimensions delta + problem-repository additions; never relitigate frozen sections without an ADR.
