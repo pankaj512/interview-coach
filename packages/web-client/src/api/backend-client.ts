@@ -73,7 +73,12 @@ function defaultFetch(): FetchFn {
   if (typeof impl !== "function") {
     throw new Error("No fetch implementation available");
   }
-  return impl as FetchFn;
+  const fn = impl as FetchFn;
+  // Wrap instead of returning the bare reference: the client calls
+  // `this.fetchFn(...)`, and a browser's `window.fetch` rejects a non-Window
+  // `this` ("'fetch' called on an object that does not implement interface
+  // Window"). The arrow wrapper drops the receiver.
+  return (input, init) => fn(input, init);
 }
 
 export interface CreateInterviewInput {

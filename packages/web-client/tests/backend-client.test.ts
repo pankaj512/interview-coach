@@ -186,4 +186,26 @@ describe("BackendClient", () => {
     expect(urls).toContain("POST http://localhost:3000/api/interviews/int_1/voice-session");
     expect(urls).toContain("DELETE http://localhost:3000/api/interviews/int_1/voice-session");
   });
+
+  it("calls the global fetch without a foreign `this` (browser Window requirement)", async () => {
+    const original = (globalThis as { fetch?: unknown })["fetch"];
+    let receiver: unknown = "unset";
+    (globalThis as { fetch?: unknown })["fetch"] = function (this: unknown) {
+      receiver = this;
+      return Promise.resolve({
+        status: 200,
+        json: async () => ({ ok: true, service: "s", version: "1" }),
+      });
+    };
+    try {
+      // No fetchFn injected: the client uses the default wrapper.
+      const client = new BackendClient("http://localhost:3000");
+      await client.getHealth();
+      // A bare `window.fetch` call with `this = BackendClient` throws
+      // "called on an object that does not implement interface Window".
+      expect(receiver === undefined || receiver === globalThis).toBe(true);
+    } finally {
+      (globalThis as { fetch?: unknown })["fetch"] = original;
+    }
+  });
 });
