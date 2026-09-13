@@ -9,7 +9,7 @@ Runners (locked, pnpm-only — never npm/yarn):
 - `pnpm test` — `vitest run`
 - `pnpm lint` — `tsc --noEmit` (eslint lands only if S8 needs it)
 - DB local: `docker compose up db` (postgres:16, see `.env.example`)
-- DB package (`packages/db`, S2): `pnpm --filter @interview-coach/db db:generate|db:migrate|db:seed` with `DATABASE_URL` set; integration tests need a live DB (`docker compose up db` + `db:migrate`), warn-and-pass without one
+- DB package (`packages/db`, S2): `pnpm --filter @interview-coach/db db:generate|db:migrate|db:seed` with `DATABASE_URL` set; integration tests need a live DB (`docker compose up db` + `db:migrate`), warn-and-pass without one. **Never point the live-DB tests at the seeded dev DB**: they call `truncateAll()`, which deletes the `problems` catalog. Use a dedicated `*_test` DB via `TEST_DATABASE_URL`, or set `ALLOW_DESTRUCTIVE_DB_TESTS=true` only for a throwaway DB
 - Backend (`packages/backend`, S3): `DATABASE_URL=... pnpm --filter @interview-coach/backend dev|start` (Fastify on `HOST:PORT`, default `127.0.0.1:3000`); backend tests use in-memory repos + fake voice provider, no DB needed
 - Web client (`packages/web-client`, S4): `pnpm --filter @interview-coach/web-client dev|build|preview|typecheck` (Vite + React on `127.0.0.1:5173`, `VITE_BACKEND_URL` only — never `VITE_AZURE_*`); `vitest` covers pure modules (api client, tool forwarder, audio, voice client) with fakes, no mic/WS needed
 - Hardening (S8a): `API_AUTH_TOKEN` gates `/api` (health/ready open); `GET /api/ready`, `GET /api/metrics`, `GET /api/metrics/prometheus`; quotas via `RATE_LIMIT_*`/`VOICE_MAX_ACTIVE_SESSIONS`/`CODE_RUN_MAX_*` (see `.env.example`)

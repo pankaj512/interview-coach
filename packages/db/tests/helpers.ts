@@ -27,8 +27,26 @@ export async function truncateAll(db: PostgresJsDatabase<typeof schema>): Promis
   await db.delete(schema.users);
 }
 
+// Never let these destructive tests wipe a non-test database. A dev DB
+// seeded with the problem catalog is a tempting `DATABASE_URL`, and
+// `truncateAll` deletes `problems` — which silently empties auto-select. Run
+// against a dedicated `*_test` database (TEST_DATABASE_URL), or opt in
+// explicitly for a throwaway DB with ALLOW_DESTRUCTIVE_DB_TESTS=true (CI).
+export function destructiveTestsAllowed(): boolean {
+  if (process.env["ALLOW_DESTRUCTIVE_DB_TESTS"] === "true") return true;
+  const url =
+    process.env["TEST_DATABASE_URL"] ?? process.env["DATABASE_URL"] ?? "";
+  try {
+    const name = new URL(url).pathname.replace(/^\//, "");
+    return /test/i.test(name);
+  } catch {
+    return false;
+  }
+}
+
 export async function connectTestDb(): Promise<TestContext | null> {
-  const handle = createDatabase();
+  // Prefer a dedicated test database so the dev catalog is never touched.
+  const handle = createDatabase(process.env["TEST_DATABASE_URL"]);
   try {
     await handle.db.execute(sql`select 1`);
   } catch {
@@ -38,7 +56,8 @@ export async function connectTestDb(): Promise<TestContext | null> {
   return { handle, db: handle.db, repos: createDrizzleRepositories(handle.db) };
 }
 
-// Wrap a test body: skips with a warning when Postgres is unavailable.
+// Wrap a test body: skips with a warning when Postgres is unavailable, or
+// when the target database is not clearly a test database.
 export function withDb(
   ctx: { current: TestContext | null },
   body: (t: TestContext) => Promise<void>,
@@ -47,6 +66,12 @@ export function withDb(
     const t = ctx.current;
     if (t === null) {
       console.warn("Postgres unavailable — skipping persistence test");
+      return;
+    }
+    if (!destructiveTestsAllowed()) {
+      console.warn(
+        "Refusing to truncate a non-test database — set TEST_DATABASE_URL to a *_test database, or ALLOW_DESTRUCTIVE_DB_TESTS=true. Skipping persistence test",
+      );
       return;
     }
     await truncateAll(t.db);

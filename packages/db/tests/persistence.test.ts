@@ -116,8 +116,10 @@ describe("postgres persistence", () => {
     if (!evaled.ok) throw new Error(evaled.error.message);
 
     // Simulate a process restart: drop every connection, reconnect fresh.
+    // Use the test URL so a TEST_DATABASE_URL run never falls back to a
+    // different (e.g. dev) database.
     await t.handle.close();
-    const fresh = createDatabase();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
     try {
       const repos = createDrizzleRepositories(fresh.db);
       const resumed = new InterviewService({ ...repos });
@@ -190,7 +192,7 @@ describe("postgres persistence", () => {
     expect(run.value.status).toBe("passed");
 
     await t.handle.close();
-    const fresh = createDatabase();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
     try {
       const repos = createDrizzleRepositories(fresh.db);
       expect((await repos.submissions.listByInterview(id)).map((s) => s.id)).toEqual([

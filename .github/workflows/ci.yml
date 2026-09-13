@@ -13,7 +13,10 @@ on:
   pull_request:
 
 env:
-  DATABASE_URL: postgresql://coach:coach_dev_only@localhost:5432/interview_coach
+  # Dedicated throwaway DB for the destructive persistence tests; the guard in
+  # packages/db/tests/helpers.ts requires a *_test name or this explicit flag.
+  DATABASE_URL: postgresql://coach:coach_dev_only@localhost:5432/interview_coach_test
+  ALLOW_DESTRUCTIVE_DB_TESTS: "true"
 
 jobs:
   verify:
@@ -22,13 +25,13 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: interview_coach
+          POSTGRES_DB: interview_coach_test
           POSTGRES_USER: coach
           POSTGRES_PASSWORD: coach_dev_only
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U coach -d interview_coach"
+          --health-cmd "pg_isready -U coach -d interview_coach_test"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5

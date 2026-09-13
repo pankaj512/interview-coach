@@ -67,11 +67,13 @@ pnpm typecheck                 # tsc --noEmit
 pnpm test                      # vitest run (DB tests warn-and-pass w/o Postgres)
 pnpm build                     # tsc -b
 pnpm --filter @interview-coach/web-client build   # phases 4+
-# live-DB (phases 2, 3, 5, 6, 7, 8):
+# live-DB (phases 2, 3, 5, 6, 7, 8). Use a DEDICATED *_test database: the
+# persistence tests truncate all tables, including the seeded problem catalog.
 POSTGRES_PORT=5433 docker compose up -d db
-DATABASE_URL=postgresql://coach:coach_dev_only@localhost:5433/interview_coach \
+DATABASE_URL=postgresql://coach:coach_dev_only@localhost:5433/interview_coach_test \
   pnpm --filter @interview-coach/db db:migrate
-DATABASE_URL=... pnpm test
+TEST_DATABASE_URL=postgresql://coach:coach_dev_only@localhost:5433/interview_coach_test \
+  pnpm test
 # compose boot probe (phase 8):
 docker compose up -d db backend web
 ```
