@@ -6,12 +6,11 @@ import { GhostButton } from "../ds/buttons.js";
 import { Card, Pill } from "../ds/primitives.js";
 import { dimensionLabel } from "../dimensions.js";
 
-function scoreOf(value: { readonly score: number; readonly notes?: string } | number): number {
-  return typeof value === "number" ? value : value.score;
+function scoreOf(value: { readonly score: number; readonly notes?: string }): number {
+  return value.score;
 }
 
-function notesOf(value: { readonly score: number; readonly notes?: string } | number): string | undefined {
-  if (typeof value === "number") return undefined;
+function notesOf(value: { readonly score: number; readonly notes?: string }): string | undefined {
   return value.notes === undefined || value.notes === "" ? undefined : value.notes;
 }
 

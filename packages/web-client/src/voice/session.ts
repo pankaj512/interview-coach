@@ -80,6 +80,9 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
       properties: {
         kind: { type: "string", enum: ["answer", "approach", "code", "question", "note"] },
         content: { type: "string" },
+        // I5-6: the backend accepts an optional problemId, so the model must
+        // be able to attach an answer to a specific problem over voice too.
+        problemId: { type: "string" },
       },
       required: ["content"],
       additionalProperties: false,

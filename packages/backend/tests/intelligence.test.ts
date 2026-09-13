@@ -146,6 +146,38 @@ describe("S5 evaluation pipeline", () => {
     });
   });
 
+  it("I5-1: heavy stored hints downgrade the recommendation on the omitted-hintsUsed path", async () => {
+    backend = buildTestBackend();
+    await seedProblem(backend.repos);
+    const created = await backend.app.inject({
+      method: "POST",
+      url: "/api/interviews",
+      payload: { candidateId: "u", configuration: { interviewType: "dsa" } },
+    });
+    const id = (created.json() as { interview: { id: string } }).interview.id;
+    await backend.app.inject({ method: "POST", url: `/api/interviews/${id}/problems`, payload: { problemIds: ["prob_two-sum"] } });
+    await backend.app.inject({ method: "POST", url: `/api/interviews/${id}/ready` });
+    await backend.app.inject({ method: "POST", url: `/api/interviews/${id}/start` });
+    for (const n of [1, 2, 3]) {
+      await backend.app.inject({
+        method: "POST",
+        url: `/api/interviews/${id}/tool-exec`,
+        payload: { call_id: `hint_downgrade_${n}`, tool: "get_problem_hint" },
+      });
+    }
+    // Score 4/5 -> overall 80 -> base lean_hire; 3 stored hints downgrade one tier.
+    const res = await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/evaluation`,
+      payload: { dimensions: { correctness: { score: 4 } } },
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json()).toMatchObject({
+      ok: true,
+      evaluation: { overallScore: 80, recommendation: "lean_no_hire", hintsUsed: 3 },
+    });
+  });
+
   it("keeps explicit score/recommendation and preserves hint count", async () => {
     backend = buildTestBackend();
     await seedProblem(backend.repos);

@@ -879,9 +879,18 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     if (existing === null) {
       return sendApiError(reply, 404, "NOT_FOUND", `Interview ${params.data.id} does not exist`, false);
     }
+    // Resolve the effective hint count BEFORE deriving the recommendation
+    // (audit I5-1): when the caller omits hintsUsed (as the finalize form
+    // does), the stored hint-accounting row supplies the real count, so the
+    // heavy-hinting downgrade actually fires.
+    let effectiveHintsUsed = parsed.data.hintsUsed;
+    if (effectiveHintsUsed === undefined) {
+      const stored = await deps.repos.evaluations.findByInterview(id);
+      effectiveHintsUsed = stored?.hintsUsed ?? 0;
+    }
     const finalized = finalizeEvaluation({
       ...(parsed.data.dimensions === undefined ? {} : { dimensions: parsed.data.dimensions }),
-      ...(parsed.data.hintsUsed === undefined ? {} : { hintsUsed: parsed.data.hintsUsed }),
+      hintsUsed: effectiveHintsUsed,
       ...(parsed.data.strengths === undefined ? {} : { strengths: parsed.data.strengths }),
       ...(parsed.data.weaknesses === undefined ? {} : { weaknesses: parsed.data.weaknesses }),
       ...(parsed.data.recommendation === undefined
@@ -889,16 +898,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         : { recommendation: parsed.data.recommendation }),
       ...(parsed.data.overallScore === undefined ? {} : { overallScore: parsed.data.overallScore }),
     });
-    // Preserve accumulated hintsUsed when the caller omits it: the stored
-    // evaluation (hint accounting) wins over the default 0.
-    let hintsUsed = finalized.hintsUsed;
-    if (parsed.data.hintsUsed === undefined) {
-      const stored = await deps.repos.evaluations.findByInterview(id);
-      if (stored !== null && stored.hintsUsed > hintsUsed) hintsUsed = stored.hintsUsed;
-    }
     const recorded = await interviews.recordEvaluation(id, {
       dimensions: finalized.dimensions,
-      hintsUsed,
+      hintsUsed: finalized.hintsUsed,
       strengths: [...finalized.strengths],
       weaknesses: [...finalized.weaknesses],
       ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),

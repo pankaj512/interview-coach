@@ -403,10 +403,11 @@ export class InterviewService {
   async recordHint(id: InterviewId, level: number): Promise<Result<number>> {
     const interview = await this.repos.interviews.findById(id);
     if (interview === null) return err(this.notFound(id));
+    // I5-7: hints are running-only; once the model signals done (completing)
+    // a post-wrap-up hint is not counted.
     if (
       interview.status !== "in_progress" &&
-      interview.status !== "paused" &&
-      interview.status !== "completing"
+      interview.status !== "paused"
     ) {
       return err(
         domainError(

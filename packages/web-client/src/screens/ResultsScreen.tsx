@@ -15,12 +15,11 @@ function toTen(score: number): number {
   return score > 10 ? Math.round((score / 10) * 10) / 10 : Math.round(score * 10) / 10;
 }
 
-function dimensionScore(value: { readonly score: number; readonly notes?: string } | number): number {
-  return typeof value === "number" ? value : value.score;
+function dimensionScore(value: { readonly score: number; readonly notes?: string }): number {
+  return value.score;
 }
 
-function dimensionNotes(value: { readonly score: number; readonly notes?: string } | number): string | undefined {
-  if (typeof value === "number") return undefined;
+function dimensionNotes(value: { readonly score: number; readonly notes?: string }): string | undefined {
   return value.notes === undefined || value.notes === "" ? undefined : value.notes;
 }
 
@@ -126,7 +125,7 @@ export function ResultsScreen({
 
       <ExecutionPanel backend={backend} interviewId={snapshot.interview.id} />
 
-      {evaluation === null && (
+      {(evaluation === null || Object.keys(evaluation.dimensions).length === 0) && (
         <EvaluationForm backend={backend} interviewId={snapshot.interview.id} onEvaluated={() => undefined} />
       )}
 

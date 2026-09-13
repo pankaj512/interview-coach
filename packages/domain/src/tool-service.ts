@@ -299,7 +299,10 @@ export class ToolService {
       responseCount: responses.length,
       byKind,
       hintsUsed: evaluation?.hintsUsed ?? 0,
-      hasEvaluation: evaluation !== null,
+      // I5-4: a hint-only row (dimensions empty) is hint accounting, not a
+      // completed evaluation — report "evaluated" only once scored.
+      hasEvaluation:
+        evaluation !== null && Object.keys(evaluation.dimensions).length > 0,
       recommendation: evaluation?.recommendation ?? null,
       submissionCount,
       lastRunStatus: latest.value?.status ?? null,

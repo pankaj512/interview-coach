@@ -68,7 +68,7 @@ export interface Problem {
 export interface SerializedEvaluation {
   readonly id: string;
   readonly interviewId: string;
-  readonly dimensions: Record<string, { readonly score: number; readonly notes?: string } | number>;
+  readonly dimensions: Record<string, { readonly score: number; readonly notes?: string }>;
   readonly hintsUsed: number;
   readonly strengths: readonly string[];
   readonly weaknesses: readonly string[];
