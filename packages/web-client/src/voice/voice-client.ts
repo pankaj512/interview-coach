@@ -62,6 +62,7 @@ export interface VoiceClientEvents {
   readonly onToolStart?: (callId: string, tool: ToolName) => void;
   readonly onToolComplete?: (callId: string, tool: ToolName, elapsedMs: number, replayed: boolean) => void;
   readonly onTranscript?: (text: string) => void;
+  readonly onAssistantTranscript?: (text: string) => void;
   readonly onError?: (error: Error) => void;
   // Lifecycle/timing metric (frozen observability). Never audio content.
   readonly onMetric?: (event: string, fields?: Record<string, unknown>) => void;
@@ -336,6 +337,20 @@ export class VoiceInterviewClient {
     this.sendJson({ type: "input_audio_buffer.append", audio: base64Pcm16 });
   }
 
+  // Text fallback (spec §16): submit a typed user turn and ask the
+  // interviewer to respond. Returns false when the session is not connected.
+  sendTextMessage(text: string): boolean {
+    const trimmed = text.trim();
+    if (trimmed === "" || this.ws === null || this.connectionState !== "connected") return false;
+    this.sendJson({
+      type: "conversation.item.create",
+      item: { type: "message", role: "user", content: [{ type: "input_text", text: trimmed }] },
+    });
+    this.sendJson({ type: "response.create" });
+    this.metric("text_turn_sent", { interviewId: this.interviewId ?? "" });
+    return true;
+  }
+
   handleRawMessage(data: unknown): void {
     let event: VoiceServerEvent;
     try {
@@ -517,6 +532,13 @@ export class VoiceInterviewClient {
             }
           }
         }
+        break;
+      }
+      case "response.output_audio_transcript.done":
+      case "response.audio_transcript.done":
+      case "response.output_text.done": {
+        const transcript = String(event.transcript ?? event.text ?? "").trim();
+        if (transcript !== "") this.events.onAssistantTranscript?.(transcript);
         break;
       }
       case "response.text.delta":

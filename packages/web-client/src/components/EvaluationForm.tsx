@@ -8,6 +8,7 @@
 import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { EvaluationInput, SerializedEvaluation } from "../api/types.js";
+import { dimensionLabel } from "../dimensions.js";
 import { formatApiError } from "../state/use-interview.js";
 
 // HLD 5.8 dimension set (structural mirror of the domain; the results panel
@@ -83,7 +84,7 @@ export function EvaluationForm({
       </p>
       {EVALUATION_DIMENSIONS.map((dimension) => (
         <label key={dimension}>
-          {dimension.replace(/_/g, " ")}
+          {dimensionLabel(dimension)}
           <select value={scores[dimension] ?? ""} onChange={(e) => setScore(dimension, e.target.value)}>
             <option value="">—</option>
             {[0, 1, 2, 3, 4, 5].map((n) => (

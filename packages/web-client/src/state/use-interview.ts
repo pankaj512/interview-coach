@@ -1,4 +1,4 @@
-// @interview-coach/web-client — interview lifecycle hooks (S4).
+// @interview-coach/web-client — interview lifecycle hooks.
 //
 // UI state only. Authoritative state lives in the backend; these hooks poll
 // `GET .../state` for display and drive transitions through the control-plane
@@ -94,13 +94,14 @@ export interface LiveEvent {
 }
 
 // HLD 4.2: realtime interview screen state — connection, speakers, timer,
-// polled backend snapshot, tool/transcript activity. End-to-end flow:
-// mint voice session -> recover pending -> connect mic+playback -> converse
-// -> hangup (DELETE voice-session) -> end interview -> results snapshot.
+// polled backend snapshot, tool/transcript activity, plus the S6.1 mute/pause
+// controls and the text-fallback path.
 export function useLiveInterview(backend: BackendClient, interview: SerializedInterview) {
   const [connection, setConnection] = useState<VoiceConnectionState>("idle");
   const [assistantSpeaking, setAssistantSpeaking] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [snapshot, setSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -109,10 +110,13 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const [finished, setFinished] = useState(false);
   const clientRef = useRef<VoiceInterviewClient | null>(null);
   const connectedAtRef = useRef<number | null>(null);
+  const mutedRef = useRef(false);
+  const pausedRef = useRef(false);
+  const startingRef = useRef(false);
 
   const log = useCallback((kind: string, detail: string) => {
     const entry: LiveEvent = { at: new Date().toISOString(), kind, detail };
-    setEvents((prev) => [...prev.slice(-99), entry]);
+    setEvents((prev) => [...prev.slice(-199), entry]);
   }, []);
 
   const refreshSnapshot = useCallback(async () => {
@@ -124,12 +128,16 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   }, [backend, interview.id]);
 
   const start = useCallback(async () => {
-    if (clientRef.current !== null) return;
+    if (clientRef.current !== null || startingRef.current) return;
+    startingRef.current = true;
     setBusy(true);
     setError(null);
+    setMuted(false);
+    mutedRef.current = false;
     try {
       const session: VoiceSessionPayload = await backend.createVoiceSession(interview.id);
       const mic = await createBrowserMicCapture((chunk) => {
+        if (mutedRef.current || pausedRef.current) return;
         clientRef.current?.sendMicAudio(chunk);
       });
       const client = new VoiceInterviewClient(
@@ -147,6 +155,14 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
             if (state === "connected" && connectedAtRef.current === null) {
               connectedAtRef.current = Date.now();
             }
+            // Unexpected close: release the mic and clear the client so the
+            // room's Rejoin can mint a fresh session (C4-1).
+            if (state === "closed") {
+              const dropped = clientRef.current;
+              clientRef.current = null;
+              connectedAtRef.current = null;
+              if (dropped !== null) void dropped.disconnect().catch(() => undefined);
+            }
           },
           onAssistantSpeaking: setAssistantSpeaking,
           onCandidateSpeaking: setCandidateSpeaking,
@@ -154,6 +170,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
           onToolComplete: (callId, tool, elapsedMs, replayed) =>
             log("tool", `${tool} complete in ${elapsedMs}ms${replayed ? " (replayed)" : ""}`),
           onTranscript: (text) => log("candidate", text),
+          onAssistantTranscript: (text) => log("assistant", text),
           onMetric: (event, fields) => {
             if (event === "voice.error" || event === "voice.closed_unexpectedly") {
               log("connection", `${event} ${JSON.stringify(fields ?? {})}`);
@@ -174,6 +191,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
       setError(formatApiError(e));
       throw e;
     } finally {
+      startingRef.current = false;
       setBusy(false);
     }
   }, [backend, interview.id, log, refreshSnapshot]);
@@ -191,6 +209,57 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     await backend.deleteVoiceSession(interview.id).catch(() => undefined);
     setConnection("closed");
   }, [backend, interview.id]);
+
+  const toggleMute = useCallback(() => {
+    setMuted((prev) => {
+      const next = !prev;
+      mutedRef.current = next;
+      return next;
+    });
+  }, []);
+
+  const togglePause = useCallback(async () => {
+    setBusy(true);
+    setError(null);
+    try {
+      if (pausedRef.current) {
+        await backend.resumeInterview(interview.id);
+        setPaused(false);
+        pausedRef.current = false;
+        log("interview", "resumed");
+      } else {
+        await backend.pauseInterview(interview.id);
+        setPaused(true);
+        pausedRef.current = true;
+        log("interview", "paused");
+      }
+      await refreshSnapshot();
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setBusy(false);
+    }
+  }, [backend, interview.id, log, refreshSnapshot]);
+
+  // Text fallback (spec §16): send a typed turn to Voice Live as an
+  // input_text user message and let the interviewer respond. Also persisted
+  // backend-side so evaluation sees the turn.
+  const sendText = useCallback(
+    async (text: string): Promise<boolean> => {
+      const trimmed = text.trim();
+      if (trimmed === "") return false;
+      const client = clientRef.current;
+      const sent = client !== null && client.sendTextMessage(trimmed);
+      log("candidate", trimmed);
+      try {
+        await backend.recordResponse(interview.id, { kind: "answer", content: trimmed });
+      } catch {
+        // The voice turn is the priority; persistence is best-effort here.
+      }
+      return sent;
+    },
+    [backend, interview.id, log],
+  );
 
   const finish = useCallback(async (): Promise<SerializedStateSnapshot | null> => {
     setBusy(true);
@@ -211,6 +280,13 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     }
   }, [backend, hangup, interview.id, log]);
 
+  // Release the session when the room unmounts (navigation, tab close).
+  const hangupRef = useRef(hangup);
+  hangupRef.current = hangup;
+  useEffect(() => () => {
+    void hangupRef.current();
+  }, []);
+
   // Elapsed timer while connected.
   useEffect(() => {
     if (connection !== "connected") return;
@@ -221,7 +297,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     return () => clearInterval(timer);
   }, [connection]);
 
-  // Display snapshot poll (canonical problem display, HLD 4.3).
+  // Display snapshot poll (canonical problem display + progress).
   useEffect(() => {
     if (connection !== "connected") return;
     const timer = setInterval(() => {
@@ -239,6 +315,8 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     connection,
     assistantSpeaking,
     candidateSpeaking,
+    muted,
+    paused,
     snapshot,
     events,
     elapsedSec,
@@ -248,6 +326,9 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     start,
     hangup,
     finish,
+    toggleMute,
+    togglePause,
+    sendText,
     refresh: refreshSnapshot,
     log,
     clearError: () => setError(null),

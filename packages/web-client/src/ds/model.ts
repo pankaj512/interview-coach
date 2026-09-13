@@ -1,4 +1,4 @@
-// S6 design-system state model (ux-spec §2 + §4).
+// Design-system state model (ux-spec §2/§4/§46).
 //
 // Pure mappings from live interview state to design-system presentation.
 // State is never color-alone: every mapping yields an icon + label pair.
@@ -52,7 +52,17 @@ export function chipViewFor(connection: VoiceConnectionState, micBlocked: boolea
   }
 }
 
-export type VoicePhase = "speaking" | "listening" | "thinking" | "muted";
+// ux-spec §12: Connecting, Listening, User speaking, AI thinking, AI
+// speaking, Paused, Error — plus Muted (the candidate muted the mic).
+export type VoicePhase =
+  | "connecting"
+  | "listening"
+  | "userSpeaking"
+  | "thinking"
+  | "speaking"
+  | "paused"
+  | "muted"
+  | "error";
 
 export interface VoiceView {
   readonly phase: VoicePhase;
@@ -61,30 +71,34 @@ export interface VoiceView {
 }
 
 const VOICE_VIEWS: Record<VoicePhase, VoiceView> = {
-  speaking: { phase: "speaking", icon: "◉", label: "Speaking" },
+  connecting: { phase: "connecting", icon: "◌", label: "Connecting…" },
   listening: { phase: "listening", icon: "◎", label: "Listening" },
-  thinking: { phase: "thinking", icon: "◌", label: "Thinking" },
+  userSpeaking: { phase: "userSpeaking", icon: "●", label: "You're speaking" },
+  thinking: { phase: "thinking", icon: "◌", label: "Thinking…" },
+  speaking: { phase: "speaking", icon: "◉", label: "Interviewer speaking" },
+  paused: { phase: "paused", icon: "Ⅱ", label: "Interview paused" },
   muted: { phase: "muted", icon: "⌀", label: "Muted" },
+  error: { phase: "error", icon: "!", label: "Voice connection lost" },
 };
 
-/** Map speaker/connection flags to the voice-rail phase (ux-spec §4 `<VoiceState>`). */
+/** Map speaker/connection/mute/pause flags to the voice-rail phase (ux-spec §12). */
 export function voiceViewFor(input: {
   readonly assistantSpeaking: boolean;
   readonly candidateSpeaking: boolean;
   readonly connection: VoiceConnectionState;
   readonly micBlocked: boolean;
+  readonly muted?: boolean;
+  readonly paused?: boolean;
 }): VoiceView {
-  if (input.micBlocked) {
-    return VOICE_VIEWS["muted"] ?? { phase: "muted", icon: "⌀", label: "Muted" };
-  }
-  if (input.connection === "connecting" || input.connection === "reconnecting") {
-    return VOICE_VIEWS["thinking"] ?? { phase: "thinking", icon: "◌", label: "Thinking" };
-  }
-  if (input.assistantSpeaking) {
-    return VOICE_VIEWS["speaking"] ?? { phase: "speaking", icon: "◉", label: "Speaking" };
-  }
-  void input.candidateSpeaking;
-  return VOICE_VIEWS["listening"] ?? { phase: "listening", icon: "◎", label: "Listening" };
+  const view = (phase: VoicePhase): VoiceView =>
+    VOICE_VIEWS[phase] ?? { phase: phase, icon: "○", label: "Unknown" };
+  if (input.paused) return view("paused");
+  if (input.muted || input.micBlocked) return view("muted");
+  if (input.connection === "failed" || input.connection === "closed") return view("error");
+  if (input.connection === "connecting" || input.connection === "reconnecting") return view("connecting");
+  if (input.assistantSpeaking) return view("speaking");
+  if (input.candidateSpeaking) return view("userSpeaking");
+  return view("listening");
 }
 
 /** Timer is ambient and non-anxiety: Low only under 5 minutes remaining. */

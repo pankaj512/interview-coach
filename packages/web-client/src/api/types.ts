@@ -31,7 +31,7 @@ export type ToolArgs = Record<string, unknown>;
 
 export interface InterviewConfiguration {
   readonly interviewType: "dsa";
-  readonly difficulty?: "Easy" | "Medium" | "Mixed";
+  readonly difficulty?: "Easy" | "Medium" | "Hard" | "Mixed";
   readonly durationMinutes?: number;
   readonly problemCount?: number;
   readonly topicFocus?: string[];

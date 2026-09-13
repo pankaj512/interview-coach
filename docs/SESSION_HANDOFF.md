@@ -332,3 +332,21 @@ Agent scope when unparked:
 Status: untouched. Per HLD, only after DSA voice interviews are stable in prod.
 * Candidate tracks: System Design, Behavioral, Backend, Frontend, ML, Resume-based, Company-specific — all on the shared realtime foundation (frozen planes, tool `call_id` contract, lifecycle unchanged).
 * No design, no code, no migration started. When starting, open a `Phase 9` handoff section with track scope + eval-dimensions delta + problem-repository additions; never relitigate frozen sections without an ADR.
+
+## UX — Spec-first redesign + web-client rebuild (2026-09-13)
+Status: done (verified below). Trigger: `docs/audit/ux-conformance.md` found the shipped client was an engineer's tool, not the spec's practice environment. User directive: UI spec is **normative over the HLD**; design the whole surface in Penpot, then rebuild the client so no further UI work is needed.
+
+Design (Penpot):
+* New page `03 — Hi-Fi v2 (UI Spec)` in the connected file — 21 boards covering every UI-spec section: Cover/index, Flow §43, Dashboard §4, New-Interview §5–§7, Briefing §8, Live §9–§19, Live-States §12, Coaching §18, Text-Mode §16, End-Dialog §20, Evaluating §21, Results §22–§23, Feedback-Detail §24, Transcript §25, History §26, Progress §27–§28, Weak-Areas §29, Settings §30, Mobile-Live/Results §34, Components-v2. Reuses the existing tokens + component library; pages 01/02 untouched.
+
+Client rebuild (`packages/web-client`):
+* Design system: `ds/model.ts` voice phases now Connecting/Listening/You're speaking/Thinking/Interviewer speaking/Paused/Muted/Error (candidate-speaking no longer discarded); new `ds/primitives.tsx` (Card/Eyebrow/Pill/Segmented/RadioCard/ProgressChecklist/Wave/Dialog/StatCard/ScoreRow/Field); `ds/status.tsx` VoiceState takes muted/paused.
+* Shell + routing: new `components/AppShell.tsx` (top bar + sidebar nav); `App.tsx` split into nav views (Dashboard/History/Progress/Settings) and the standalone ritual (Setup → Devices → Briefing → Live → Evaluating → Results → Feedback/Transcript/Weak areas).
+* Screens: Dashboard, Setup (type/difficulty/style/interaction/duration), Briefing, Live (conversation-first + progress checklist + problem/code + optional coaching + text-fallback composer + mute/pause/transcript controls + end dialog), Evaluating, Results (score hero + spec §23 dimension labels + review/practice CTAs), Feedback-Detail, Transcript-Review, History (search/filter/date groups), Progress (trend chart), Weak-Areas, Settings.
+* State: `useLiveInterview` gains mute/pause/rejoin-on-drop/text input; `voice-client` emits assistant transcripts + `sendTextMessage`; `history.ts` stores richer entries (type/difficulty/mode/duration/score/dimensions/weaknesses); new `progress.ts` derives trend/areas; `dimensions.ts` maps HLD keys → spec §23 labels.
+* Difficulty enum unified to `Easy|Medium|Hard|Mixed` (domain `InterviewDifficulty`, backend `configurationSchema`) — closes audit F1/C4-7/I5-2 so the spec's "Hard" is selectable.
+* Removed dead S4 components (InterviewRoom/ResultsPanel/SetupForm/CodeEditor/StatusBar/LobbyScreen).
+
+Verify (2026-09-13): `pnpm typecheck` ok; `pnpm test` 277 passed (36 prior files + new `render-smoke.test.tsx` 15 screen-render checks; `ds-model` extended for the new voice phases); `tsc -b` ok; `vite build` ok (323kB JS / 98kB gzip, 22.5kB CSS).
+Known client-side gaps (backend-bound, not UI): auto-evaluation/scoring-over-runs (F6-2/I5-1) still requires the manual finalize form; History/Progress are browser-local (no listing endpoint); multi-problem progression (F2/I5-3) still single-problem.
+Tag: `session-ux` after commit.

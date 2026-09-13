@@ -28,7 +28,7 @@ export function isTerminalStatus(status: InterviewStatus): boolean {
   return TERMINAL_STATUSES.includes(status);
 }
 
-export type InterviewDifficulty = "Easy" | "Medium" | "Mixed";
+export type InterviewDifficulty = "Easy" | "Medium" | "Hard" | "Mixed";
 
 export interface InterviewConfiguration {
   readonly interviewType: InterviewType;

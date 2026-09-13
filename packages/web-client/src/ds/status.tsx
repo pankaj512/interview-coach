@@ -1,10 +1,8 @@
-// S6 design-system status components (ux-spec §4).
+// Design-system status components (ux-spec §4/§12).
 //
-// chip-status (Connected/Reconnecting/MicBlocked + neutral pre/post states),
-// voice-state (Speaking/Listening/Thinking/Muted, drives the rail),
-// timer (Normal/Low), caption (Assistant/You), diff-pill (Easy/Medium/Hard),
-// score-bar (label + 0..5 value). All state renders icon + label —
-// never color-alone.
+// chip-status, voice-state (Connecting/Listening/You're speaking/Thinking/
+// Interviewer speaking/Paused/Muted/Error), timer, caption, diff-pill,
+// score-bar. All state renders icon + label — never color-alone.
 
 import { chipViewFor, formatClock, timerStatus, voiceViewFor, type ChipState } from "./model.js";
 import type { VoiceConnectionState } from "../voice/voice-client.js";
@@ -32,13 +30,17 @@ export function VoiceState({
   candidateSpeaking,
   connection,
   micBlocked = false,
+  muted = false,
+  paused = false,
 }: {
   readonly assistantSpeaking: boolean;
   readonly candidateSpeaking: boolean;
   readonly connection: VoiceConnectionState;
   readonly micBlocked?: boolean;
+  readonly muted?: boolean;
+  readonly paused?: boolean;
 }) {
-  const view = voiceViewFor({ assistantSpeaking, candidateSpeaking, connection, micBlocked });
+  const view = voiceViewFor({ assistantSpeaking, candidateSpeaking, connection, micBlocked, muted, paused });
   return (
     <span className={`voice-state voice-${view.phase}`} role="status" aria-label={`Voice: ${view.label}`}>
       <span className="voice-icon" aria-hidden="true">
@@ -72,7 +74,7 @@ export function Timer({
 }
 
 export function Caption({ role, text }: { readonly role: "assistant" | "you"; readonly text: string }) {
-  const label = role === "assistant" ? "Assistant" : "You";
+  const label = role === "assistant" ? "Interviewer" : "You";
   return (
     <p className={`caption caption-${role}`}>
       <span className="caption-role">{label}</span>
@@ -95,15 +97,11 @@ export function DiffPill({ level }: { readonly level: string }) {
 
 export type { ChipState };
 
-export function ScoreBar({ label, value }: { readonly label: string; readonly value: number }) {
-  const clamped = Math.min(5, Math.max(0, value));
-  const percent = Math.round((clamped / 5) * 100);
+export function ScoreBar({ label, value, max = 5 }: { readonly label: string; readonly value: number; readonly max?: number }) {
+  const clamped = Math.min(max, Math.max(0, value));
+  const percent = Math.round((clamped / max) * 100);
   return (
-    <div
-      className="score-bar"
-      role="img"
-      aria-label={`${label}: ${clamped} out of 5`}
-    >
+    <div className="score-bar" role="img" aria-label={`${label}: ${clamped} out of ${max}`}>
       <span className="score-label">{label}</span>
       <span className="score-track" aria-hidden="true">
         <span className="score-fill" style={{ width: `${percent}%` }} />

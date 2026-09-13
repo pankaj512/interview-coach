@@ -28,6 +28,11 @@ Phase 9 (product expansion) is unstarted and S8d (prod identity) is parked —
 they are out of audit scope but are flagged as known-open in the relevant
 handoffs.
 
+`ux-conformance.md` is a **separate, spec-first review** of the web client
+against `docs/interview-coach-ui-specification.md`. Unlike phases 0–8, the UI
+specification is **normative** there (it takes precedence over the HLD and the
+frozen docs). It runs independently of the phase chain.
+
 ## Traceability matrix
 
 | Audit | HLD phase | Implemented in | Tag(s) |
@@ -41,6 +46,7 @@ handoffs.
 | 6 | Phase 6 — Code execution & sandbox | S7a + S7b | `session-7a/7b` |
 | 7 | Phase 7 — Security hardening | S8a + S8c | `session-8a/8c` |
 | 8 | Phase 8 — Production deployment | S8b | `session-8b` |
+| UX | UI specification conformance (spec-first) | S4 + S6 + S6.1 | `session-4/6/6-1` |
 
 ## Severity rubric
 

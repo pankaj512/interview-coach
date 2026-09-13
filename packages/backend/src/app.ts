@@ -118,7 +118,7 @@ const VERSION = "0.1.0";
 
 const configurationSchema = z.object({
   interviewType: z.literal("dsa"),
-  difficulty: z.enum(["Easy", "Medium", "Mixed"]).optional(),
+  difficulty: z.enum(["Easy", "Medium", "Hard", "Mixed"]).optional(),
   durationMinutes: z.number().int().positive().max(480).optional(),
   problemCount: z.number().int().positive().max(20).optional(),
   topicFocus: z.array(z.string().min(1).max(120)).max(20).optional(),

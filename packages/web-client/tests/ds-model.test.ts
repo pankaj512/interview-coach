@@ -31,17 +31,41 @@ describe("voiceViewFor", () => {
         .phase,
     ).toBe("speaking");
   });
-  it("connecting maps to thinking", () => {
+  it("connecting maps to connecting", () => {
     expect(
       voiceViewFor({ assistantSpeaking: false, candidateSpeaking: false, connection: "connecting", micBlocked: false })
         .phase,
-    ).toBe("thinking");
+    ).toBe("connecting");
   });
   it("micBlocked maps to muted", () => {
     expect(
       voiceViewFor({ assistantSpeaking: true, candidateSpeaking: true, connection: "connected", micBlocked: true })
         .phase,
     ).toBe("muted");
+  });
+  it("candidate speaking maps to userSpeaking (spec §12)", () => {
+    expect(
+      voiceViewFor({ assistantSpeaking: false, candidateSpeaking: true, connection: "connected", micBlocked: false })
+        .phase,
+    ).toBe("userSpeaking");
+  });
+  it("explicit mute wins over an open mic", () => {
+    expect(
+      voiceViewFor({ assistantSpeaking: false, candidateSpeaking: false, connection: "connected", micBlocked: false, muted: true })
+        .phase,
+    ).toBe("muted");
+  });
+  it("paused wins over everything", () => {
+    expect(
+      voiceViewFor({ assistantSpeaking: true, candidateSpeaking: true, connection: "connected", micBlocked: false, paused: true })
+        .phase,
+    ).toBe("paused");
+  });
+  it("failed connection maps to error", () => {
+    expect(
+      voiceViewFor({ assistantSpeaking: false, candidateSpeaking: false, connection: "failed", micBlocked: false })
+        .phase,
+    ).toBe("error");
   });
   it("idle open mic is listening", () => {
     expect(
