@@ -71,6 +71,15 @@ function str(env: NodeJS.ProcessEnv, name: string, fallback: string): string {
   return raw === undefined || raw.trim() === "" ? fallback : raw.trim();
 }
 
+// CORS_ORIGIN may be a comma-separated list (e.g. localhost + 127.0.0.1, since
+// Vite prints the 127.0.0.1 URL while the backend default allows localhost).
+function origins(env: NodeJS.ProcessEnv, name: string, fallback: string): string | string[] {
+  const raw = str(env, name, fallback);
+  const parts = raw.split(",").map((s) => s.trim()).filter((s) => s !== "");
+  if (parts.length <= 1) return parts[0] ?? fallback;
+  return parts;
+}
+
 // Optional shared secret: empty/absent keeps the historical open local-dev
 // mode (S8a). Production user identity (Entra/OIDC) stays on the S8b track.
 function optSecret(env: NodeJS.ProcessEnv, name: string): string | undefined {
@@ -83,7 +92,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
   return {
     host: str(env, "HOST", "127.0.0.1"),
     port: num(env, "PORT", 3000),
-    corsOrigin: str(env, "CORS_ORIGIN", "http://localhost:5173"),
+    corsOrigin: origins(env, "CORS_ORIGIN", "http://localhost:5173,http://127.0.0.1:5173"),
     authToken: optSecret(env, "API_AUTH_TOKEN"),
     auth: {
       // F7-3: 7-day default (was 30) for the stored bearer session.
