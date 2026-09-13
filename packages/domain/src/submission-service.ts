@@ -46,6 +46,10 @@ export interface SubmissionServiceDeps {
   readonly events: EventRepository;
   readonly executor: CodeExecutor;
   readonly clock?: Clock;
+  // F6-3: sandbox quotas live here (single enforcement point) so the model
+  // tool path cannot bypass what the HTTP routes enforce.
+  readonly maxConcurrentRuns?: number;
+  readonly maxSubmissionsPerInterview?: number;
 }
 
 const SUBMITTABLE = ["ready", "in_progress", "paused", "completing"] as const;
@@ -57,6 +61,9 @@ export class SubmissionService {
   private readonly events: EventRepository;
   private readonly executor: CodeExecutor;
   private readonly clock: Clock;
+  private readonly maxConcurrentRuns: number | undefined;
+  private readonly maxSubmissionsPerInterview: number | undefined;
+  private activeRuns = 0;
 
   constructor(deps: SubmissionServiceDeps) {
     this.interviews = deps.interviews;
@@ -65,6 +72,8 @@ export class SubmissionService {
     this.events = deps.events;
     this.executor = deps.executor;
     this.clock = deps.clock ?? systemClock;
+    this.maxConcurrentRuns = deps.maxConcurrentRuns;
+    this.maxSubmissionsPerInterview = deps.maxSubmissionsPerInterview;
   }
 
   async submit(
@@ -83,6 +92,19 @@ export class SubmissionService {
         ),
       );
     }
+    // F6-3: per-interview submission cap (shared by route and tool path).
+    if (this.maxSubmissionsPerInterview !== undefined) {
+      const existing = await this.submissions.listByInterview(interviewId);
+      if (existing.length >= this.maxSubmissionsPerInterview) {
+        return err(
+          domainError(
+            "RATE_LIMITED",
+            `Submission limit reached (max ${this.maxSubmissionsPerInterview})`,
+            { interviewId },
+          ),
+        );
+      }
+    }
     let problemId: ProblemId | undefined;
     if (args.problemId !== undefined) {
       if (args.problemId.trim() === "") {
@@ -91,6 +113,17 @@ export class SubmissionService {
         );
       }
       problemId = asProblemId(args.problemId);
+      // F6-6: a submission may only reference a problem assigned to this
+      // interview (backend owns truth).
+      if (!state.value.interview.problems.some((p) => p.problemId === problemId)) {
+        return err(
+          domainError(
+            "NOT_FOUND",
+            `Problem ${args.problemId} is not assigned to interview ${interviewId}`,
+            { problemId: args.problemId },
+          ),
+        );
+      }
     }
     const created = createSubmission({
       interviewId,
@@ -158,8 +191,21 @@ export class SubmissionService {
     if (!cases.ok) return cases;
     const limits = parseRunLimits(timeoutMsRaw);
     if (!limits.ok) return limits;
+    // F6-3: process-wide concurrent-run cap (shared by route and tool path).
+    if (
+      this.maxConcurrentRuns !== undefined &&
+      this.activeRuns >= this.maxConcurrentRuns
+    ) {
+      return err(
+        domainError(
+          "RATE_LIMITED",
+          `Code runner busy (${this.activeRuns}/${this.maxConcurrentRuns} running); retry shortly`,
+        ),
+      );
+    }
     const startedAt = Date.now();
     let run: CodeRun;
+    this.activeRuns += 1;
     try {
       const outcome = await this.executor.execute(
         submission,
@@ -175,6 +221,8 @@ export class SubmissionService {
         Date.now() - startedAt,
         this.clock.now(),
       );
+    } finally {
+      this.activeRuns -= 1;
     }
     await this.runs.save(run);
     await this.events.append(

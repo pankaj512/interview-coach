@@ -280,6 +280,16 @@ function zodMessage(error: z.ZodError): string {
   return path === "" ? first.message : `${path}: ${first.message}`;
 }
 
+// F6-3: a transient quota/capacity result from a tool dispatch. Thrown (not
+// returned) so the idempotency store does not cache it as a permanent result;
+// the tool-exec route maps it to 429 retryable:true so the forwarder backs off.
+class RateLimitedToolError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RateLimitedToolError";
+  }
+}
+
 export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const config = deps.config ?? loadConfig();
   const voiceProvider = deps.voiceProvider ?? createVoiceSessionProviderFromEnv();
@@ -314,9 +324,6 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
   // S8a observability (HLD 8.4): in-memory counters, reset on restart.
   const metrics = new BackendMetrics();
-  // S8a sandbox quota: concurrent LocalCodeRunner executions. Node runs the
-  // check + increment synchronously, so no race within one process.
-  let activeCodeRuns = 0;
 
   const interviews = new InterviewService({ ...deps.repos });
   // S8c accounts (HLD 7.1): self-registered local credentials. Social
@@ -337,6 +344,10 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     runs: deps.repos.runs,
     events: deps.repos.events,
     executor: codeRunner,
+    // F6-3: quotas enforced in the service so the model tool path cannot
+    // bypass the HTTP route limits.
+    maxConcurrentRuns: config.sandbox.maxConcurrentRuns,
+    maxSubmissionsPerInterview: config.sandbox.maxSubmissionsPerInterview,
   });
   const tools = new ToolService({
     interviews,
@@ -925,18 +936,8 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
     }
     const id = asInterviewId(params.data.id);
-    // S8a quota: bound stored state per interview (abuse protection).
-    const existing = await submissions.listSubmissions(id);
-    if (existing.ok && existing.value.length >= config.sandbox.maxSubmissionsPerInterview) {
-      return sendApiError(
-        reply,
-        429,
-        "RATE_LIMITED",
-        `Submission quota exceeded for interview ${params.data.id} (max ${config.sandbox.maxSubmissionsPerInterview})`,
-        true,
-      );
-    }
-    if (!existing.ok) return sendDomainError(reply, existing.error);
+    // F6-3: the per-interview submission cap is enforced in SubmissionService
+    // (single point shared with the model tool path).
     const submitted = await submissions.submit(id, {
       language: parsed.data.language,
       code: parsed.data.code,
@@ -996,32 +997,18 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
           false,
         );
       }
-      // S8a quota: concurrent subprocess executions across the process.
-      if (activeCodeRuns >= config.sandbox.maxConcurrentRuns) {
-        return sendApiError(
-          reply,
-          429,
-          "RATE_LIMITED",
-          `Code runner busy (${activeCodeRuns}/${config.sandbox.maxConcurrentRuns} running); retry shortly`,
-          true,
-        );
-      }
-      activeCodeRuns += 1;
-      let run;
-      try {
-        run = await submissions.runTests(
-          submissionId,
-          parsed.data.testCases.map((t) => ({
-            name: t.name,
-            args: t.args,
-            expected: t.expected,
-            ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
-          })),
-          parsed.data.timeoutMs,
-        );
-      } finally {
-        activeCodeRuns -= 1;
-      }
+      // F6-3: concurrency is enforced in SubmissionService (shared with the
+      // model tool path).
+      const run = await submissions.runTests(
+        submissionId,
+        parsed.data.testCases.map((t) => ({
+          name: t.name,
+          args: t.args,
+          expected: t.expected,
+          ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
+        })),
+        parsed.data.timeoutMs,
+      );
       if (!run.ok) return sendDomainError(reply, run.error);
       request.log.info(
         {
@@ -1100,6 +1087,11 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       outcome = await toolIdempotency.execute(callId, interviewId as string, tool, async () => {
         const result = await tools.dispatch(tool, { interviewId, callId }, toolArgs);
         if (result.ok) return { ok: true as const, result: result.value, error: null };
+        // Transient quota/capacity (F6-3): throw so it is not cached and the
+        // route can answer 429 retryable:true.
+        if (result.error.code === "RATE_LIMITED") {
+          throw new RateLimitedToolError(result.error.message);
+        }
         return { ok: false as const, result: null, error: result.error };
       });
     } catch (error) {
@@ -1108,6 +1100,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       }
       if (error instanceof CallIdToolMismatchError) {
         return sendDomainError(reply, error.toDomainError());
+      }
+      if (error instanceof RateLimitedToolError) {
+        return sendApiError(reply, 429, "RATE_LIMITED", error.message, true);
       }
       throw error;
     }

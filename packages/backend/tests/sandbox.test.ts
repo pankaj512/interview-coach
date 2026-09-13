@@ -290,3 +290,84 @@ describe("voice-session sandbox context", () => {
     expect(instructions).toContain("1 submission, not run yet");
   });
 });
+
+describe("P6 sandbox hardening", () => {
+  it("F6-1: candidate code cannot read the backend environment", async () => {
+    const prev = process.env["DATABASE_URL"];
+    process.env["DATABASE_URL"] = "postgres://should-not-leak";
+    try {
+      const b = useBackend();
+      const { id } = await createStartedInterview(b);
+      const subId = await submit(b, id, "function solve() { return String(process.env.DATABASE_URL); }");
+      const { status, json } = await run(b, id, subId, {
+        testCases: [{ name: "env", args: [], expected: "undefined" }],
+      });
+      expect(status).toBe(201);
+      expect(json).toMatchObject({ ok: true, run: { status: "passed", passedCount: 1 } });
+    } finally {
+      if (prev === undefined) delete process.env["DATABASE_URL"];
+      else process.env["DATABASE_URL"] = prev;
+    }
+  }, 30_000);
+
+  it("F6-5: NaN does not compare equal to an expected null", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const subId = await submit(b, id, "function solve() { return NaN; }");
+    const { json } = await run(b, id, subId, {
+      testCases: [{ name: "nan", args: [], expected: null }],
+    });
+    expect(json).toMatchObject({ ok: true, run: { status: "failed", passedCount: 0 } });
+  }, 30_000);
+
+  it("F6-1: the local runner is disabled in production unless explicitly allowed", async () => {
+    const prev = process.env["NODE_ENV"];
+    process.env["NODE_ENV"] = "production";
+    try {
+      const b = useBackend();
+      const { id } = await createStartedInterview(b);
+      const subId = await submit(b, id, JS_SOLVE);
+      const { json } = await run(b, id, subId, { testCases: CASES });
+      expect(json).toMatchObject({ ok: true, run: { status: "error" } });
+      expect(JSON.stringify(json)).toContain("local-dev only");
+    } finally {
+      if (prev === undefined) delete process.env["NODE_ENV"];
+      else process.env["NODE_ENV"] = prev;
+    }
+  }, 30_000);
+
+  it("F6-3: the per-interview submission cap is enforced on the route path", async () => {
+    const prev = process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"];
+    process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"] = "1";
+    try {
+      const b = useBackend();
+      const { id } = await createStartedInterview(b);
+      await submit(b, id);
+      const second = await b.app.inject({
+        method: "POST",
+        url: `/api/interviews/${id}/submissions`,
+        payload: { language: "javascript", code: JS_SOLVE },
+      });
+      expect(second.statusCode).toBe(429);
+      expect(second.json()).toMatchObject({
+        ok: false,
+        error: { code: "RATE_LIMITED", retryable: true },
+      });
+    } finally {
+      if (prev === undefined) delete process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"];
+      else process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"] = prev;
+    }
+  }, 30_000);
+
+  it("F6-6: rejects a problemId not assigned to the interview", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const res = await b.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/submissions`,
+      payload: { language: "javascript", code: JS_SOLVE, problemId: "prob_not_assigned" },
+    });
+    expect(res.statusCode).toBe(404);
+    expect(res.json()).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
+  }, 30_000);
+});

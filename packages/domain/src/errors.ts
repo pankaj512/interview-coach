@@ -3,7 +3,10 @@ export type DomainErrorCode =
   | "NOT_FOUND"
   | "ILLEGAL_TRANSITION"
   | "NO_CURRENT_PROBLEM"
-  | "CONFLICT";
+  | "CONFLICT"
+  // F6-3: quota/capacity limits (retryable) enforced in the service so both
+  // the HTTP routes and the model tool path share one enforcement point.
+  | "RATE_LIMITED";
 
 export interface DomainError {
   readonly code: DomainErrorCode;

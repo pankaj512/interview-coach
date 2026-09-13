@@ -161,6 +161,11 @@ export interface ToolServiceDeps {
   readonly clock?: Clock;
 }
 
+// F6-4: a run started from the model tool path must finish before the browser
+// forwarder's 8s request timeout, so its timeout is capped below that window.
+// The HTTP runs route keeps the full 100ms..30s range.
+const TOOL_RUN_MAX_TIMEOUT_MS = 6000;
+
 const RESPONSE_KINDS: readonly ResponseKind[] = [
   "answer",
   "approach",
@@ -525,10 +530,15 @@ export class ToolService {
       }
       submissionId = latest.value.id;
     }
+    const rawTimeout = args?.["timeoutMs"];
+    const timeoutMs =
+      typeof rawTimeout === "number" && rawTimeout > TOOL_RUN_MAX_TIMEOUT_MS
+        ? TOOL_RUN_MAX_TIMEOUT_MS
+        : rawTimeout;
     const run = await this.submissions.runTests(
       asSubmissionId(submissionId),
       args?.["testCases"],
-      args?.["timeoutMs"],
+      timeoutMs,
     );
     if (!run.ok) return run;
     return ok({

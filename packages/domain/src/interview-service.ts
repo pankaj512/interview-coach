@@ -345,6 +345,20 @@ export class InterviewService {
         ),
       );
     }
+    // F6-6: an explicit problemId must reference a problem assigned to this
+    // interview (backend owns truth); otherwise fall back to the active one.
+    if (
+      args.problemId !== undefined &&
+      !interview.problems.some((p) => p.problemId === args.problemId)
+    ) {
+      return err(
+        domainError(
+          "NOT_FOUND",
+          `Problem ${args.problemId} is not assigned to interview ${id}`,
+          { problemId: args.problemId },
+        ),
+      );
+    }
     const current = currentProblemRef(interview);
     const problemId = args.problemId ?? current?.problemId ?? undefined;
     const created = createCandidateResponse({

@@ -24,6 +24,8 @@ const DOMAIN_HTTP: Record<DomainErrorCode, { status: number; retryable: boolean 
   ILLEGAL_TRANSITION: { status: 409, retryable: false },
   NO_CURRENT_PROBLEM: { status: 409, retryable: false },
   CONFLICT: { status: 409, retryable: false },
+  // Quota/capacity: transient, so the forwarder may back off and retry.
+  RATE_LIMITED: { status: 429, retryable: true },
 };
 
 export function domainErrorBody(error: DomainError): {
