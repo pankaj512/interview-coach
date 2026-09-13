@@ -8,6 +8,7 @@ import type {
 import type { InterviewConfiguration, InterviewStatus } from "./interview.js";
 import type { Problem } from "./problem.js";
 import type { ResponseKind } from "./candidate-response.js";
+import { MAX_RESPONSE_CONTENT_LENGTH } from "./candidate-response.js";
 import type {
   EvaluationRepository,
   EventRepository,
@@ -225,6 +226,15 @@ export class ToolService {
       case "run_code":
         result = await this.runCode(ctx, args);
         break;
+      default: {
+        // Exhaustive guard (audit F8): a future ToolName added without a
+        // handler fails as a domain error instead of a TypeError.
+        const unknown: never = name;
+        result = err(
+          domainError("VALIDATION_ERROR", `Unknown tool: ${String(unknown)}`),
+        );
+        break;
+      }
     }
     if (!result.ok) {
       await this.events.append(
@@ -403,11 +413,11 @@ export class ToolService {
         domainError("VALIDATION_ERROR", "content must be a non-empty string"),
       );
     }
-    if (rawContent.length > 10_000) {
+    if (rawContent.length > MAX_RESPONSE_CONTENT_LENGTH) {
       return err(
         domainError(
           "VALIDATION_ERROR",
-          "content must be at most 10000 characters",
+          `content must be at most ${MAX_RESPONSE_CONTENT_LENGTH} characters`,
         ),
       );
     }

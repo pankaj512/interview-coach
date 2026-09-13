@@ -832,7 +832,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     );
     return reply.status(201).send({
       ok: true,
-      interview: serializeInterview(recorded.value),
+      interview: serializeInterview(recorded.value.interview),
       responseCount: responses.length,
     });
   });

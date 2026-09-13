@@ -69,6 +69,13 @@ function toResponseKind(raw: string): ResponseKind {
   return raw as ResponseKind;
 }
 
+// Concurrency (audit P2-1/F9): the MVP is explicitly single-writer — one
+// backend replica (frozen §5: no Redis/queues; deployment constraint), and the
+// only writers are the request handlers of that process, serialized per
+// interview by the voice session. A compare-and-swap is therefore deferred to
+// the multi-instance promotion (shared tool_call_records + version column);
+// until then `save` is last-write-wins by design, documented here rather than
+// silently assumed. Timestamps are preserved on partial updates (audit P2-8).
 export class DrizzleInterviewRepository implements InterviewRepository {
   constructor(private readonly db: Db) {}
 
@@ -127,8 +134,12 @@ export class DrizzleInterviewRepository implements InterviewRepository {
             },
             currentOrder: interview.currentOrder,
             updatedAt: interview.updatedAt,
-            startedAt: interview.startedAt ?? null,
-            endedAt: interview.endedAt ?? null,
+            // Preserve existing timestamps when a partial update omits them
+            // (audit P2-8); the insert path above still writes nulls.
+            ...(interview.startedAt === undefined
+              ? {}
+              : { startedAt: interview.startedAt }),
+            ...(interview.endedAt === undefined ? {} : { endedAt: interview.endedAt }),
           },
         });
       await tx
@@ -148,18 +159,23 @@ export class DrizzleInterviewRepository implements InterviewRepository {
   }
 
   async findById(id: InterviewId): Promise<Interview | null> {
-    const rows = await this.db
-      .select()
-      .from(schema.interviews)
-      .where(eq(schema.interviews.id, id))
-      .limit(1);
+    // Read the interview row + its assignments in one transaction (audit
+    // P2-6) so a concurrent save's delete+insert cannot yield a torn read.
+    const { rows, assignments } = await this.db.transaction(async (tx) => {
+      const rows = await tx
+        .select()
+        .from(schema.interviews)
+        .where(eq(schema.interviews.id, id))
+        .limit(1);
+      const assignments = await tx
+        .select()
+        .from(schema.interviewProblems)
+        .where(eq(schema.interviewProblems.interviewId, id))
+        .orderBy(asc(schema.interviewProblems.order));
+      return { rows, assignments };
+    });
     const row = rows[0];
     if (row === undefined) return null;
-    const assignments = await this.db
-      .select()
-      .from(schema.interviewProblems)
-      .where(eq(schema.interviewProblems.interviewId, id))
-      .orderBy(asc(schema.interviewProblems.order));
     const rawConfig = row.configuration as {
       interviewType: string;
       difficulty?: "Easy" | "Medium" | "Mixed";
@@ -251,8 +267,12 @@ export class DrizzleProblemRepository implements ProblemRepository {
     return found;
   }
 
+  // Stable order (audit P2-4): deterministic reads regardless of insert order.
   async list(): Promise<readonly Problem[]> {
-    const rows = await this.db.select().from(schema.problems);
+    const rows = await this.db
+      .select()
+      .from(schema.problems)
+      .orderBy(asc(schema.problems.title));
     return rows.map(toProblem);
   }
 }

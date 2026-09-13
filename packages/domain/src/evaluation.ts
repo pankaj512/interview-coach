@@ -70,6 +70,19 @@ export function createEvaluation(
   input: CreateEvaluationInput,
 ): Result<Evaluation> {
   const dimensions = input.dimensions ?? {};
+  for (const rawDim of Object.keys(dimensions)) {
+    // Reject unknown dimension keys (audit F6): only the HLD 5.8 set is
+    // valid, so a typo cannot persist a phantom dimension.
+    if (!(EVALUATION_DIMENSIONS as readonly string[]).includes(rawDim)) {
+      return err(
+        domainError(
+          "VALIDATION_ERROR",
+          `Unknown evaluation dimension: ${rawDim}`,
+          { dimension: rawDim, allowed: EVALUATION_DIMENSIONS },
+        ),
+      );
+    }
+  }
   for (const dim of Object.keys(dimensions) as EvaluationDimension[]) {
     const entry = dimensions[dim];
     if (entry !== undefined && !isValidScore(entry.score)) {

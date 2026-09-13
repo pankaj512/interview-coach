@@ -102,8 +102,10 @@ export class InMemoryProblemRepository implements ProblemRepository {
     return found;
   }
 
+  // Stable order (audit P2-4): matches Drizzle's `order by title` so reads
+  // are deterministic regardless of insertion order.
   async list(): Promise<readonly Problem[]> {
-    return [...this.store.values()];
+    return [...this.store.values()].sort((a, b) => a.title.localeCompare(b.title));
   }
 }
 
@@ -114,10 +116,15 @@ export class InMemoryResponseRepository implements ResponseRepository {
     this.store.set(response.id, response);
   }
 
+  // Oldest-first by createdAt, matching the Drizzle `asc(created_at)` read
+  // (audit P2-3). Array.sort is stable, so equal (injected) timestamps keep
+  // insertion order — the deterministic tie-break Postgres cannot offer.
   async listByInterview(
     interviewId: InterviewId,
   ): Promise<readonly CandidateResponse[]> {
-    return [...this.store.values()].filter((r) => r.interviewId === interviewId);
+    return [...this.store.values()]
+      .filter((r) => r.interviewId === interviewId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 }
 
@@ -128,11 +135,23 @@ export class InMemoryEvaluationRepository implements EvaluationRepository {
     this.store.set(evaluation.id, evaluation);
   }
 
+  // Latest evaluation for the interview (audit F7): matches the Drizzle
+  // implementation, which orders by created_at desc. Ties break on updatedAt
+  // so a hint-accounting update to an existing row still wins.
   async findByInterview(interviewId: InterviewId): Promise<Evaluation | null> {
+    let latest: Evaluation | null = null;
     for (const evaluation of this.store.values()) {
-      if (evaluation.interviewId === interviewId) return evaluation;
+      if (evaluation.interviewId !== interviewId) continue;
+      if (
+        latest === null ||
+        evaluation.createdAt.getTime() > latest.createdAt.getTime() ||
+        (evaluation.createdAt.getTime() === latest.createdAt.getTime() &&
+          evaluation.updatedAt.getTime() >= latest.updatedAt.getTime())
+      ) {
+        latest = evaluation;
+      }
     }
-    return null;
+    return latest;
   }
 }
 
@@ -143,10 +162,14 @@ export class InMemoryEventRepository implements EventRepository {
     this.events.push(event);
   }
 
+  // Oldest-first by occurredAt, matching the Drizzle `asc(occurred_at)` read
+  // (audit P2-3). Stable sort keeps insertion order for equal timestamps.
   async listByInterview(
     interviewId: InterviewId,
   ): Promise<readonly InterviewEvent[]> {
-    return this.events.filter((e) => e.interviewId === interviewId);
+    return this.events
+      .filter((e) => e.interviewId === interviewId)
+      .sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime());
   }
 }
 

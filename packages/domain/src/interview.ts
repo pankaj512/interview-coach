@@ -38,17 +38,48 @@ export interface InterviewConfiguration {
   readonly topicFocus?: readonly string[];
 }
 
+// Runtime validation is the domain boundary, independent of the backend's
+// zod schema: untyped callers (tests, scripts, future transports) must not be
+// able to persist an invalid configuration (audit F4).
+const INTERVIEW_DIFFICULTIES: readonly InterviewDifficulty[] = [
+  "Easy",
+  "Medium",
+  "Hard",
+  "Mixed",
+];
+
 export function validateConfiguration(
   config: InterviewConfiguration,
 ): Result<InterviewConfiguration> {
+  if ((config.interviewType as string) !== "dsa") {
+    return err(
+      domainError(
+        "VALIDATION_ERROR",
+        `Unsupported interviewType: ${String(config.interviewType)}`,
+        { allowed: ["dsa"] },
+      ),
+    );
+  }
+  if (
+    config.difficulty !== undefined &&
+    !INTERVIEW_DIFFICULTIES.includes(config.difficulty)
+  ) {
+    return err(
+      domainError("VALIDATION_ERROR", `Unknown difficulty: ${String(config.difficulty)}`, {
+        allowed: INTERVIEW_DIFFICULTIES,
+      }),
+    );
+  }
   if (
     config.durationMinutes !== undefined &&
-    (!Number.isInteger(config.durationMinutes) || config.durationMinutes <= 0)
+    (!Number.isInteger(config.durationMinutes) ||
+      config.durationMinutes <= 0 ||
+      config.durationMinutes > 480)
   ) {
     return err(
       domainError(
         "VALIDATION_ERROR",
-        "durationMinutes must be a positive integer",
+        "durationMinutes must be an integer 1..480",
       ),
     );
   }
@@ -59,6 +90,23 @@ export function validateConfiguration(
     return err(
       domainError("VALIDATION_ERROR", "problemCount must be a positive integer"),
     );
+  }
+  if (config.topicFocus !== undefined) {
+    if (config.topicFocus.length > 20) {
+      return err(
+        domainError("VALIDATION_ERROR", "topicFocus must have at most 20 entries"),
+      );
+    }
+    for (const topic of config.topicFocus) {
+      if (typeof topic !== "string" || topic.trim() === "" || topic.length > 120) {
+        return err(
+          domainError(
+            "VALIDATION_ERROR",
+            "topicFocus entries must be non-empty strings of at most 120 characters",
+          ),
+        );
+      }
+    }
   }
   return ok(config);
 }

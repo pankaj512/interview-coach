@@ -6,7 +6,7 @@ import type {
 } from "./interview.js";
 import { createInterview, currentProblemRef } from "./interview.js";
 import { transition } from "./lifecycle.js";
-import type { ResponseKind } from "./candidate-response.js";
+import type { CandidateResponse, ResponseKind } from "./candidate-response.js";
 import { createCandidateResponse } from "./candidate-response.js";
 import type { CreateEvaluationInput } from "./evaluation.js";
 import { createEvaluation } from "./evaluation.js";
@@ -47,6 +47,13 @@ export interface InterviewStateSnapshot {
   readonly currentProblem: Problem | null;
   readonly responseCount: number;
   readonly evaluation: Evaluation | null;
+}
+
+// recordResponse returns both the updated interview and the created response
+// (audit F10), so callers do not have to re-list responses to learn the id.
+export interface RecordResponseResult {
+  readonly interview: Interview;
+  readonly response: CandidateResponse;
 }
 
 // Backend-owned interview lifecycle (HLD 1.2/1.3). Every mutation goes
@@ -162,6 +169,19 @@ export class InterviewService {
         ),
       );
     }
+    if (problemIds.length === 0) {
+      return err(
+        domainError("VALIDATION_ERROR", "problemIds must not be empty (audit F3)"),
+      );
+    }
+    // Reject duplicate ids (audit P2-2): the (interview_id, problem_id)
+    // unique index would otherwise surface an uncaught constraint error as a
+    // 500 instead of a clean domain error.
+    if (new Set(problemIds).size !== problemIds.length) {
+      return err(
+        domainError("VALIDATION_ERROR", "problemIds must not contain duplicates"),
+      );
+    }
     const problems = await this.repos.problems.findManyByIds(problemIds);
     if (problems.length !== problemIds.length) {
       const found = new Set(problems.map((p) => p.id));
@@ -242,10 +262,78 @@ export class InterviewService {
     return ok(next);
   }
 
+  // Multi-problem progression (audit F2). Completing or skipping the active
+  // problem marks it terminal and advances to the next assigned problem; when
+  // none remains, currentOrder is cleared. App-only (the model never calls
+  // these); HTTP exposure is a Phase-9/product decision.
+  async completeCurrentProblem(id: InterviewId): Promise<Result<Interview>> {
+    return this.finishCurrentProblem(id, "completed", "problem.completed");
+  }
+
+  async skipProblem(id: InterviewId): Promise<Result<Interview>> {
+    return this.finishCurrentProblem(id, "skipped", "problem.skipped");
+  }
+
+  private async finishCurrentProblem(
+    id: InterviewId,
+    terminalState: "completed" | "skipped",
+    eventType: InterviewEventType,
+  ): Promise<Result<Interview>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    if (
+      interview.status !== "ready" &&
+      interview.status !== "in_progress" &&
+      interview.status !== "paused"
+    ) {
+      return err(
+        domainError(
+          "ILLEGAL_TRANSITION",
+          `Cannot advance problem while interview ${id} is ${interview.status}`,
+          { status: interview.status },
+        ),
+      );
+    }
+    const current = currentProblemRef(interview);
+    if (current === null) {
+      return err(
+        domainError(
+          "NO_CURRENT_PROBLEM",
+          `Interview ${id} has no active problem`,
+          { interviewId: id },
+        ),
+      );
+    }
+    const marked = interview.problems.map((p) =>
+      p.problemId === current.problemId ? { ...p, state: terminalState } : p,
+    );
+    const next = marked.find(
+      (p) => p.order > current.order && p.state === "assigned",
+    );
+    const problems =
+      next === undefined
+        ? marked
+        : marked.map((p) =>
+            p.order === next.order ? { ...p, state: "active" as const } : p,
+          );
+    const updated: Interview = {
+      ...interview,
+      problems,
+      currentOrder: next === undefined ? null : next.order,
+      updatedAt: this.clock.now(),
+    };
+    await this.repos.interviews.save(updated);
+    await this.recordEvent(id, eventType, {
+      problemId: current.problemId,
+      order: current.order,
+    });
+    return ok(updated);
+  }
+
   async recordResponse(
     id: InterviewId,
     args: RecordResponseArgs,
-  ): Promise<Result<Interview>> {
+  ): Promise<Result<RecordResponseResult>> {
     const interview = await this.repos.interviews.findById(id);
     if (interview === null) return err(this.notFound(id));
     if (interview.status !== "in_progress" && interview.status !== "paused") {
@@ -271,7 +359,7 @@ export class InterviewService {
     await this.recordEvent(id, "response.recorded", { kind: args.kind });
     const next: Interview = { ...interview, updatedAt: this.clock.now() };
     await this.repos.interviews.save(next);
-    return ok(next);
+    return ok({ interview: next, response: created.value });
   }
 
   async recordEvaluation(
