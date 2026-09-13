@@ -11,7 +11,6 @@ import { AppShell, type NavKey } from "./components/AppShell.js";
 import { loadHistory, recordHistory, type HistoryEntry } from "./history.js";
 import { BriefingScreen } from "./screens/BriefingScreen.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
-import { DevicesScreen } from "./screens/DevicesScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "./screens/HistoryScreen.js";
@@ -31,7 +30,6 @@ import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-in
 type NavView = Exclude<NavKey, "setup">;
 type Flow =
   | "setup"
-  | "devices"
   | "briefing"
   | "live"
   | "evaluating"
@@ -89,7 +87,8 @@ export function App() {
     setEvents([]);
     setStale(false);
     setNav(null);
-    setFlow("devices");
+    // Straight to the briefing/lobby, which requests the microphone.
+    setFlow("briefing");
   }
 
   const handleFinished = useCallback(
@@ -205,16 +204,13 @@ export function App() {
   return (
     <main className="app">
       {flow === "setup" && <SetupScreen onCreated={handleCreated} onCancel={() => navigate("dashboard")} />}
-      {flow === "devices" && (
-        <DevicesScreen onPassed={() => setFlow("briefing")} onBack={() => setFlow("setup")} />
-      )}
       {flow === "briefing" && interview !== null && setupResult !== null && (
         <BriefingScreen
           interview={interview}
           mode={setupResult.mode}
           interaction={setupResult.interaction}
           onBegin={() => setFlow("live")}
-          onBack={() => setFlow("devices")}
+          onBack={() => setFlow("setup")}
         />
       )}
       {flow === "live" && interview !== null && setupResult !== null && (

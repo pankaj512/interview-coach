@@ -990,6 +990,14 @@ button:focus-visible {
   align-items: center;
   justify-content: center;
   padding: var(--s-32);
+  overflow-y: auto;
+}
+
+.mic-check {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--s-8);
 }
 
 .briefing-card,

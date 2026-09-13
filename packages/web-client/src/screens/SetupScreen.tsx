@@ -77,7 +77,6 @@ export function SetupScreen({
           ← Back
         </button>
         <span className="brand">Interview Coach</span>
-        <span className="hint">Step 1 of 2</span>
       </header>
 
       <form className="setup-layout" onSubmit={submit}>
