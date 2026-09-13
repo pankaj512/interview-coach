@@ -573,6 +573,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.markReady(asInterviewId(params.data.id));
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "ready" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -584,6 +585,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.start(asInterviewId(params.data.id));
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "in_progress" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -628,6 +630,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     if (status === "completing") {
       const done = await interviews.complete(id);
       if (!done.ok) return sendDomainError(reply, done.error);
+      metrics.countInterviewTransition(done.value.status);
       request.log.info({ interviewId: id, to: "completed" }, "interview.lifecycle");
       return reply.send({ ok: true, interview: serializeInterview(done.value), transitioned: true });
     }
@@ -636,6 +639,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       if (!completing.ok) return sendDomainError(reply, completing.error);
       const done = await interviews.complete(id);
       if (!done.ok) return sendDomainError(reply, done.error);
+      metrics.countInterviewTransition(done.value.status);
       request.log.info({ interviewId: id, to: "completed" }, "interview.lifecycle");
       return reply.send({ ok: true, interview: serializeInterview(done.value), transitioned: true });
     }
@@ -659,6 +663,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.pause(asInterviewId(params.data.id));
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "paused" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -670,6 +675,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.resume(asInterviewId(params.data.id));
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "in_progress" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -685,6 +691,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.cancel(asInterviewId(params.data.id), reason.reason);
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "cancelled" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -700,6 +707,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     }
     const next = await interviews.fail(asInterviewId(params.data.id), reason.reason);
     if (!next.ok) return sendDomainError(reply, next.error);
+    metrics.countInterviewTransition(next.value.status);
     request.log.info({ interviewId: next.value.id, to: "failed" }, "interview.lifecycle");
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
@@ -918,6 +926,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       ...(finalized.recommendation === null ? {} : { recommendation: finalized.recommendation }),
     });
     if (!recorded.ok) return sendDomainError(reply, recorded.error);
+    metrics.countEvaluationRecorded();
     request.log.info({ interviewId: params.data.id }, "evaluation.recorded");
     return reply.status(201).send({ ok: true, evaluation: serializeEvaluation(recorded.value) });
   });
@@ -1217,6 +1226,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     if (needsStart) {
       const started = await interviews.start(id);
       if (!started.ok) return sendDomainError(reply, started.error);
+      metrics.countInterviewTransition(started.value.status);
     }
     const endpoint = mint.endpoint !== "" ? mint.endpoint : config.voice.endpoint;
     const model = mint.model !== "" ? mint.model : config.voice.model;

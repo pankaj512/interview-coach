@@ -297,6 +297,10 @@ describe("s8b prometheus exporter", () => {
     expect(res.body).toContain("interview_coach_tool_executions_total 1");
     expect(res.body).toContain('interview_coach_code_runs_total{status="passed"} 0');
     expect(res.body).toContain("interview_coach_active_voice_sessions");
+    // F8-7: lifecycle transitions + evaluation counters.
+    expect(res.body).toContain('interview_coach_interview_transitions_total{status="in_progress"} 1');
+    expect(res.body).toContain('interview_coach_interview_transitions_total{status="ready"} 1');
+    expect(res.body).toContain("interview_coach_evaluations_recorded_total 0");
   });
 
   it("is gated by the service token like the rest of /api", async () => {

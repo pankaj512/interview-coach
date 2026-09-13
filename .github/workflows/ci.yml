@@ -92,13 +92,21 @@ jobs:
 
       - name: Boot stack and probe health
         run: |
-          docker compose up -d db backend
+          docker compose up -d db backend web
           for i in $(seq 1 24); do
             if curl -sf http://127.0.0.1:3000/api/ready > /dev/null; then break; fi
             sleep 5
           done
           curl -sf http://127.0.0.1:3000/api/ready
           curl -sf http://127.0.0.1:3000/api/metrics/prometheus | grep interview_coach_uptime_seconds
+          curl -sf http://127.0.0.1:3000/api/metrics/prometheus | grep interview_coach_interview_transitions_total
+          # F8-10: boot the web image too and assert the SPA + deep-link fallback.
+          for i in $(seq 1 24); do
+            if curl -sf http://127.0.0.1:8080/ > /dev/null; then break; fi
+            sleep 5
+          done
+          curl -sf http://127.0.0.1:8080/ > /dev/null
+          curl -sf http://127.0.0.1:8080/history > /dev/null
 
       - name: Tear down stack
         if: always()

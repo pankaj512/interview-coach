@@ -27,6 +27,9 @@ services:
       db:
         condition: service_healthy
     environment:
+      # F8-6: set at the process level so prod guards (auth fail-safe, runner
+      # gate) see it consistently, not only via the image's Dockerfile.
+      NODE_ENV: ${NODE_ENV:-production}
       HOST: 0.0.0.0
       PORT: 3000
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}

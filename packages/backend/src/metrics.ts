@@ -5,6 +5,8 @@
 // trivially scrapable so S8b can swap in a real exporter without touching
 // call sites. Resets on process restart (documented, not hidden).
 
+import type { InterviewStatus } from "@interview-coach/domain";
+
 // Domain CodeRun.status values (submission.ts): passed/failed/timeout/error.
 export type CodeRunStatus = "passed" | "failed" | "timeout" | "error";
 
@@ -12,6 +14,10 @@ export interface MetricsSnapshot {
   readonly uptimeSeconds: number;
   readonly interviewsCreated: number;
   readonly interviewsDeleted: number;
+  // F8-7: per-status lifecycle transitions make completion/failure rate
+  // derivable (the previous created/deleted counters alone could not).
+  readonly interviewTransitions: Record<InterviewStatus, number>;
+  readonly evaluationsRecorded: number;
   readonly authRegistrations: number;
   readonly authLogins: number;
   readonly authFailures: number;
@@ -30,6 +36,17 @@ export class BackendMetrics {
   private readonly startedAt = Date.now();
   private interviewsCreated = 0;
   private interviewsDeleted = 0;
+  private readonly interviewTransitions: Record<InterviewStatus, number> = {
+    created: 0,
+    ready: 0,
+    in_progress: 0,
+    paused: 0,
+    completing: 0,
+    completed: 0,
+    cancelled: 0,
+    failed: 0,
+  };
+  private evaluationsRecorded = 0;
   private authRegistrations = 0;
   private authLogins = 0;
   private authFailures = 0;
@@ -52,6 +69,14 @@ export class BackendMetrics {
 
   countInterviewDeleted(): void {
     this.interviewsDeleted += 1;
+  }
+
+  countInterviewTransition(status: InterviewStatus): void {
+    this.interviewTransitions[status] += 1;
+  }
+
+  countEvaluationRecorded(): void {
+    this.evaluationsRecorded += 1;
   }
 
   countAuthRegistered(): void {
@@ -93,6 +118,8 @@ export class BackendMetrics {
       uptimeSeconds: Math.floor((Date.now() - this.startedAt) / 1000),
       interviewsCreated: this.interviewsCreated,
       interviewsDeleted: this.interviewsDeleted,
+      interviewTransitions: { ...this.interviewTransitions },
+      evaluationsRecorded: this.evaluationsRecorded,
       authRegistrations: this.authRegistrations,
       authLogins: this.authLogins,
       authFailures: this.authFailures,

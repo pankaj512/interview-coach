@@ -79,6 +79,28 @@ export function renderPrometheusMetrics(snapshot: MetricsSnapshot): string {
       `# HELP interview_coach_code_runs_total Code executions by verdict.\n# TYPE interview_coach_code_runs_total counter\ninterview_coach_code_runs_total{status="${status}"} ${snapshot.codeRuns[status]}\n`,
     );
   }
+  // F8-7: lifecycle transitions make completion/failure rate derivable.
+  for (const status of [
+    "created",
+    "ready",
+    "in_progress",
+    "paused",
+    "completing",
+    "completed",
+    "cancelled",
+    "failed",
+  ] as const) {
+    lines.push(
+      `# HELP interview_coach_interview_transitions_total Interview lifecycle transitions by resulting status.\n# TYPE interview_coach_interview_transitions_total counter\ninterview_coach_interview_transitions_total{status="${status}"} ${snapshot.interviewTransitions[status]}\n`,
+    );
+  }
+  lines.push(
+    counter(
+      "interview_coach_evaluations_recorded_total",
+      "Structured evaluations persisted.",
+      snapshot.evaluationsRecorded,
+    ),
+  );
   lines.push(
     gauge(
       "interview_coach_uptime_seconds",
