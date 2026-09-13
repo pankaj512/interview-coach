@@ -85,3 +85,25 @@ ID | Severity | Evidence (file:line) | HLD ref | Shortcoming | Fix direction
 ```
 
 A phase ends with "Handoff to Phase N+1" listing open/carried-forward items.
+
+## Remediation status (2026-09-13)
+
+Phases 1–8 findings were remediated in order, backend-first, against the
+frozen web client and the product decisions. One commit per phase:
+
+| Phase | Commit | Notes |
+|---|---|---|
+| P1 + P2 | `8ed71dc` | domain + persistence |
+| P3 | `aea3af2` | voice session + idempotency |
+| P4 | `be1a25a` | web-client contract fixes |
+| P5 | `dc6e81b` | interview intelligence |
+| P6 | `51ec9e2` | code sandbox |
+| P7 | `45c985e` | security hardening |
+| P8 | `ba24121` | deployment + monitoring |
+
+See `docs/SESSION_HANDOFF.md` ("Audit remediation P1–P8") for the full mapping.
+Items intentionally deferred (product decision or external dependency):
+F6-2 (scoring model open, product-decisions §17), F8-1 (full container
+isolation; runner is prod-gated off by default), F8-3 (Entra voice mint, S8d),
+F8-5 (registry/deploy target), F7-2 reset/verification (mail transport), and
+P2-1 CAS (single-writer MVP). P0 (freeze) was out of scope.

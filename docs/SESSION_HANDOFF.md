@@ -350,3 +350,25 @@ Client rebuild (`packages/web-client`):
 Verify (2026-09-13): `pnpm typecheck` ok; `pnpm test` 277 passed (36 prior files + new `render-smoke.test.tsx` 15 screen-render checks; `ds-model` extended for the new voice phases); `tsc -b` ok; `vite build` ok (323kB JS / 98kB gzip, 22.5kB CSS).
 Known client-side gaps (backend-bound, not UI): auto-evaluation/scoring-over-runs (F6-2/I5-1) still requires the manual finalize form; History/Progress are browser-local (no listing endpoint); multi-problem progression (F2/I5-3) still single-problem.
 Tag: `session-ux` after commit.
+
+## Audit remediation P1–P8 (2026-09-13)
+Status: done (verified below). User directive: work the build-phase audits in order, fixing the backend to support the frozen front-end and the product decisions; only advance when a phase is fully fixed. P0 (freeze) is out of scope.
+
+Commits (one per phase):
+* `8ed71dc` P1/P2 — domain + persistence. P1: F2 progression (completeCurrentProblem/skipProblem), F3 empty assignment, F4 runtime config validation, F5 shared response cap, F6 unknown dimension keys, F7 latest evaluation, F8 exhaustive dispatch, F10 recordResponse returns {interview,response}. P2: P2-2 duplicate assign ids, P2-3 deterministic ordering, P2-4 stable problem list, P2-5 migration 0003 CHECK constraints, P2-6 transactional read, P2-8 timestamp preservation; P2-1 single-writer documented (CAS deferred); P2-7 event log documented.
+* `aea3af2` P3 — voice session. V3-1 TTL sweep, V3-2 singleflight binding, V3-3 call_id→(interview,tool) binding, V3-4 start only after mint, V3-5 api-key prod guard; F8-4 unconfigured voiceMode.
+* `be1a25a` P4 — web client. C4-2 retryable:true honored, C4-3 pagehide release, C4-5 timer wall-clock, C4-6 status chip; C4-1/4/7 already fixed by the redesign, C4-8 moot (single-problem UI).
+* `dc6e81b` P5 — intelligence. I5-1 downgrade fires on the omitted-hintsUsed path, I5-4 hasEvaluation needs a scored dimension, I5-5 dead type arm dropped, I5-6 voice schema problemId, I5-7 hints running-only.
+* `51ec9e2` P6 — sandbox. F6-1 env scrub + privilege drop + heap cap + prod gate, F6-3 quotas in SubmissionService (+ transient 429), F6-4 tool-path timeout cap, F6-5 NaN/Infinity canon, F6-6 problemId validation. F6-2 deferred (scoring model is an open product decision, §17).
+* `45c985e` P7 — security. F7-1 scrypt N=2^15 + v2 format, F7-2 lockout, F7-3 7-day TTL, F7-4/F8-2 prod auth fail-safe, F7-5 digest compare, F7-6 documented.
+* `ba24121` P8 — deployment. F8-6 process-level NODE_ENV, F8-7 lifecycle/eval metrics, F8-10 web boot probe, `docs/deployment.md` (F8-1/F8-3/F8-5/F8-8/F8-9 + realtime note).
+
+Deferred / known-open (by product decision or external dependency, not silently dropped):
+* F6-2 scoring over run verdicts — product scoring model is explicitly open (`product-decisions.md` §17).
+* F8-1 full container isolation — runner is prod-gated off by default; a dedicated no-network sandbox service is the follow-up.
+* F8-3 Entra ephemeral voice mint — parked S8d (needs Azure resources); compose remains a voice-less demo.
+* F8-5 registry push/deploy target — no registry yet; manual release process documented.
+* F7-2 password reset/verification — needs a mail transport (S8d account management).
+* P2-1 CAS — single-writer MVP documented; shared-state promotion is the multi-instance follow-up.
+
+Verify (2026-09-13): `pnpm typecheck` ok; `pnpm test` 305 passed (37 files, incl. live-Postgres persistence with migration 0003 applied on 5433); `tsc -b` ok; `vite build` ok. New tests cover P1 (progression/validation/caps/ordering), P3 (idempotency binding, TTL sweep, prod voice guard), P4 (retryable 429), P5 (downgrade), P6 (env scrub, NaN, prod gate, caps, problemId), P7 (lockout, prod auth fail-safe), P8 (lifecycle metrics).
