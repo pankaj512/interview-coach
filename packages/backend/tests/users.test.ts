@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { createInMemoryRepositories, normalizeEmail } from "@interview-coach/domain";
 import { buildApp, type BuiltBackend } from "../src/app.js";
 import { loadConfig, type BackendConfig } from "../src/config.js";
-import { hashPassword, verifyPassword } from "../src/users.js";
+import { hashPassword, verifyPassword, UserService } from "../src/users.js";
 import { FakeVoiceSessionProvider } from "../src/voice-session.js";
 import { buildTestBackend, createStartedInterview, type TestBackend } from "./helpers.js";
 
@@ -53,10 +53,11 @@ async function register(
 describe("s8c password hashing", () => {
   it("round-trips and rejects malformed stores", async () => {
     const stored = await hashPassword("s3cret-password");
-    expect(stored.startsWith("scrypt$v1$")).toBe(true);
+    expect(stored.startsWith("scrypt$v2$")).toBe(true);
     expect(await verifyPassword("s3cret-password", stored)).toBe(true);
     expect(await verifyPassword("wrong", stored)).toBe(false);
     expect(await verifyPassword("x", "garbage")).toBe(false);
+    // F7-1: pre-existing v1 hashes are invalidated (rejected).
     expect(await verifyPassword("x", "scrypt$v1$1$2$3$eA==$eA==")).toBe(false);
   });
 });
@@ -248,5 +249,37 @@ describe("s8c per-interview ownership", () => {
     const tb = backend as TestBackend;
     const { id } = await createStartedInterview(tb);
     expect((await tb.app.inject({ method: "GET", url: `/api/interviews/${id}/state` })).statusCode).toBe(200);
+  });
+});
+
+describe("P7 security hardening", () => {
+  it("F7-2: locks an account after repeated failures, then recovers after the window", async () => {
+    const repos = createInMemoryRepositories();
+    let now = new Date("2026-09-13T10:00:00.000Z");
+    const service = new UserService({ users: repos.users, sessions: repos.sessions, now: () => now });
+    await service.register({ email: "lock@example.com", displayName: "Lock", password: "correct-horse-123" });
+    for (let i = 0; i < 5; i += 1) {
+      expect(await service.login("lock@example.com", "wrong")).toBeNull();
+    }
+    // Locked: even the correct password is refused.
+    expect(await service.login("lock@example.com", "correct-horse-123")).toBeNull();
+    // After the lockout window it succeeds again.
+    now = new Date(now.getTime() + 16 * 60_000);
+    expect(await service.login("lock@example.com", "correct-horse-123")).not.toBeNull();
+  });
+
+  it("F7-4: production refuses to boot open without an explicit opt-in", () => {
+    const prevNode = process.env["NODE_ENV"];
+    const prevAllow = process.env["ALLOW_ANONYMOUS"];
+    process.env["NODE_ENV"] = "production";
+    delete process.env["ALLOW_ANONYMOUS"];
+    try {
+      expect(() => customBackend({})).toThrow(/Refusing to start/);
+    } finally {
+      if (prevNode === undefined) delete process.env["NODE_ENV"];
+      else process.env["NODE_ENV"] = prevNode;
+      if (prevAllow === undefined) delete process.env["ALLOW_ANONYMOUS"];
+      else process.env["ALLOW_ANONYMOUS"] = prevAllow;
+    }
   });
 });

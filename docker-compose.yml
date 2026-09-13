@@ -32,6 +32,9 @@ services:
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:8080}
       DATABASE_URL: postgresql://${POSTGRES_USER:-coach}:${POSTGRES_PASSWORD:-coach_dev_only}@db:5432/${POSTGRES_DB:-interview_coach}
       API_AUTH_TOKEN: ${API_AUTH_TOKEN:-}
+      # F7-4/F8-2: production refuses to boot open; the demo stack opts in
+      # explicitly. Set API_AUTH_TOKEN for anything real.
+      ALLOW_ANONYMOUS: ${ALLOW_ANONYMOUS:-true}
       AZURE_VOICE_ENDPOINT: ${AZURE_VOICE_ENDPOINT:-https://interview-coach-voice.services.ai.azure.com}
       AZURE_VOICE_API_KEY: ${AZURE_VOICE_API_KEY:-}
       AZURE_VOICE_MODEL: ${AZURE_VOICE_MODEL:-gpt-realtime-mini}

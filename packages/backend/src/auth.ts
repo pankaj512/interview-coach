@@ -13,6 +13,7 @@
 // auth routes; per-interview authz for OIDC/social (S8d) reuses the same
 // session rows, so no route changes are needed then.
 
+import { createHash, timingSafeEqual as nodeTimingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { asInterviewId, type RepositorySet, type UserId } from "@interview-coach/domain";
 import { sendApiError } from "./http-errors.js";
@@ -44,13 +45,12 @@ export function extractBearerToken(request: FastifyRequest): string | null {
   return token === "" ? null : token;
 }
 
+// F7-5: compare fixed-length SHA-256 digests so the comparison does not leak
+// length (the previous early return on length mismatch was an oracle).
 function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i += 1) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  }
-  return diff === 0;
+  const da = createHash("sha256").update(a, "utf8").digest();
+  const db = createHash("sha256").update(b, "utf8").digest();
+  return nodeTimingSafeEqual(da, db);
 }
 
 export interface AuthGate {
@@ -63,6 +63,17 @@ export interface AuthGate {
 
 export function registerAuthHook(app: FastifyInstance, gate: AuthGate): void {
   if (gate.authToken === undefined) {
+    // F7-4/F8-2: fail closed in production. Open mode is a deliberate opt-in,
+    // never an accident of a missing env var.
+    if (
+      process.env["NODE_ENV"] === "production" &&
+      process.env["ALLOW_ANONYMOUS"] !== "true"
+    ) {
+      throw new Error(
+        "Refusing to start: NODE_ENV=production with no API_AUTH_TOKEN. " +
+          "Configure auth, or set ALLOW_ANONYMOUS=true to run open explicitly.",
+      );
+    }
     app.log.warn("API_AUTH_TOKEN is not set: /api is open (local-dev mode)");
   }
   app.addHook("onRequest", async (request, reply) => {
@@ -96,6 +107,12 @@ export function registerAuthHook(app: FastifyInstance, gate: AuthGate): void {
 // Ownership enforcement (HLD 7.2). Runs as a preHandler so the auth hook has
 // already resolved the caller. Service and anonymous (open-mode) callers pass
 // through; user callers are scoped to their own interviews.
+//
+// F7-6: this re-reads the interview in the hook, and the handler reads it
+// again — an accepted extra round-trip (and a tiny window where the two reads
+// can disagree) in exchange for a single, uniform ownership chokepoint. The
+// resolved entity is not attached to the request; revisit if the read cost
+// matters.
 export function registerOwnershipHook(
   app: FastifyInstance,
   repos: Pick<RepositorySet, "interviews">,

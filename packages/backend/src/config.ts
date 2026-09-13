@@ -86,7 +86,8 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
     corsOrigin: str(env, "CORS_ORIGIN", "http://localhost:5173"),
     authToken: optSecret(env, "API_AUTH_TOKEN"),
     auth: {
-      sessionTtlMs: num(env, "AUTH_SESSION_TTL_HOURS", 720) * 3_600_000,
+      // F7-3: 7-day default (was 30) for the stored bearer session.
+      sessionTtlMs: num(env, "AUTH_SESSION_TTL_HOURS", 168) * 3_600_000,
     },
     voice: {
       endpoint: str(

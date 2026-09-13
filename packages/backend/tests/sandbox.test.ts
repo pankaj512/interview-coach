@@ -322,7 +322,11 @@ describe("P6 sandbox hardening", () => {
 
   it("F6-1: the local runner is disabled in production unless explicitly allowed", async () => {
     const prev = process.env["NODE_ENV"];
+    const prevAnon = process.env["ALLOW_ANONYMOUS"];
     process.env["NODE_ENV"] = "production";
+    // The auth fail-safe (F7-4) would also refuse to boot open; opt in so this
+    // test exercises the runner gate specifically.
+    process.env["ALLOW_ANONYMOUS"] = "true";
     try {
       const b = useBackend();
       const { id } = await createStartedInterview(b);
@@ -333,6 +337,8 @@ describe("P6 sandbox hardening", () => {
     } finally {
       if (prev === undefined) delete process.env["NODE_ENV"];
       else process.env["NODE_ENV"] = prev;
+      if (prevAnon === undefined) delete process.env["ALLOW_ANONYMOUS"];
+      else process.env["ALLOW_ANONYMOUS"] = prevAnon;
     }
   }, 30_000);
 

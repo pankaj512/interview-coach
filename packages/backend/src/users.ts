@@ -25,13 +25,23 @@ import { domainError, type DomainError } from "@interview-coach/domain";
 import type { Result } from "@interview-coach/domain";
 import { err, ok } from "@interview-coach/domain";
 
-export const SESSION_TTL_MS_DEFAULT = 30 * 24 * 60 * 60 * 1000;
+// F7-3: shorter default session lifetime for the stored bearer (was 30 days).
+export const SESSION_TTL_MS_DEFAULT = 7 * 24 * 60 * 60 * 1000;
 
-const SCRYPT_N = 16_384;
+// F7-1: N=2^15 is OWASP's scrypt absolute floor (was 2^14). The hash format
+// version is bumped to v2 so pre-existing v1 hashes are invalidated (pre-prod,
+// no data migration needed).
+const SCRYPT_N = 32_768;
 const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const SALT_BYTES = 32;
 const KEY_BYTES = 64;
+// Node's scrypt default maxmem (32 MiB) is below 128*N*r for N=2^15, r=8.
+const SCRYPT_MAXMEM = 64 * 1024 * 1024;
+
+// F7-2: per-account brute-force lockout (in-memory, single-instance MVP).
+const MAX_FAILED_ATTEMPTS = 5;
+const LOCKOUT_MS = 15 * 60_000;
 
 function b64Encode(raw: Buffer): string {
   return raw.toString("base64");
@@ -49,7 +59,7 @@ function b64Decode(raw: string): Buffer | null {
 
 function scryptAsync(password: string, salt: Buffer): Promise<Buffer> {
   return new Promise((resolve, reject) => {
-    scrypt(password, salt, KEY_BYTES, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P }, (error, derived) => {
+    scrypt(password, salt, KEY_BYTES, { N: SCRYPT_N, r: SCRYPT_R, p: SCRYPT_P, maxmem: SCRYPT_MAXMEM }, (error, derived) => {
       if (error !== undefined && error !== null) reject(error);
       else resolve(derived as Buffer);
     });
@@ -59,12 +69,12 @@ function scryptAsync(password: string, salt: Buffer): Promise<Buffer> {
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(SALT_BYTES);
   const key = await scryptAsync(password, salt);
-  return `scrypt$v1$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${b64Encode(salt)}$${b64Encode(key)}`;
+  return `scrypt$v2$${SCRYPT_N}$${SCRYPT_R}$${SCRYPT_P}$${b64Encode(salt)}$${b64Encode(key)}`;
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
   const parts = stored.split("$");
-  if (parts.length !== 7 || parts[0] !== "scrypt" || parts[1] !== "v1") return false;
+  if (parts.length !== 7 || parts[0] !== "scrypt" || parts[1] !== "v2") return false;
   const n = Number(parts[2]);
   const r = Number(parts[3]);
   const p = Number(parts[4]);
@@ -73,7 +83,7 @@ export async function verifyPassword(password: string, stored: string): Promise<
   if (!Number.isInteger(n) || !Number.isInteger(r) || !Number.isInteger(p)) return false;
   if (salt === null || expected === null || expected.length !== KEY_BYTES) return false;
   const actual = await new Promise<Buffer>((resolve, reject) => {
-    scrypt(password, salt, KEY_BYTES, { N: n, r, p }, (error, derived) => {
+    scrypt(password, salt, KEY_BYTES, { N: n, r, p, maxmem: SCRYPT_MAXMEM }, (error, derived) => {
       if (error !== undefined && error !== null) reject(error);
       else resolve(derived as Buffer);
     });
@@ -118,6 +128,8 @@ export class UserService {
   private readonly sessions: RepositorySet["sessions"];
   private readonly sessionTtlMs: number;
   private readonly clock: () => Date;
+  // email -> failed attempt counter + lockout window (F7-2).
+  private readonly failures = new Map<string, { count: number; lockedUntil: number }>();
 
   constructor(deps: UserServiceDeps) {
     this.users = deps.users;
@@ -161,13 +173,35 @@ export class UserService {
   }
 
   // Unknown email and wrong password are indistinguishable (401 at the
-  // route) so neither signal leaks account existence.
+  // route) so neither signal leaks account existence. Repeated failures lock
+  // the account for a window (F7-2). NOTE: password reset / email verification
+  // remain open (no mail transport); S8d account management owns them.
   async login(email: string, password: string): Promise<AuthenticatedSession | null> {
     if (!validEmail(email) || typeof password !== "string" || password === "") return null;
-    const account = await this.users.findByEmail(normalizeEmail(email));
-    if (account === null) return null;
-    if (!(await verifyPassword(password, account.passwordHash))) return null;
+    const normalized = normalizeEmail(email);
+    const now = this.clock();
+    const locked = this.failures.get(normalized);
+    if (locked !== undefined && locked.lockedUntil > now.getTime()) return null;
+    const account = await this.users.findByEmail(normalized);
+    if (account === null) {
+      this.recordFailure(normalized, now);
+      return null;
+    }
+    if (!(await verifyPassword(password, account.passwordHash))) {
+      this.recordFailure(normalized, now);
+      return null;
+    }
+    this.failures.delete(normalized);
     return this.openSession(account);
+  }
+
+  private recordFailure(email: string, now: Date): void {
+    const current = this.failures.get(email) ?? { count: 0, lockedUntil: 0 };
+    const count = current.count + 1;
+    this.failures.set(email, {
+      count,
+      lockedUntil: count >= MAX_FAILED_ATTEMPTS ? now.getTime() + LOCKOUT_MS : 0,
+    });
   }
 
   async logout(token: string): Promise<boolean> {
