@@ -2,7 +2,11 @@
 
 import { describe, expect, it } from "vitest";
 import { domainError } from "@interview-coach/domain";
-import { CallIdConflictError, IdempotencyStore } from "../src/idempotency.js";
+import {
+  CallIdConflictError,
+  CallIdToolMismatchError,
+  IdempotencyStore,
+} from "../src/idempotency.js";
 
 const okResult = { ok: true as const, result: { status: "in_progress" }, error: null };
 
@@ -66,6 +70,51 @@ describe("IdempotencyStore", () => {
     await expect(
       store.execute("c4", "iv_2", "get_interview_state", async () => okResult),
     ).rejects.toBeInstanceOf(CallIdConflictError);
+    store.close();
+  });
+
+  it("V3-3: rejects a call_id reused with a different tool", async () => {
+    const store = new IdempotencyStore<{ status: string }>({ sweepIntervalMs: 0 });
+    await store.execute("c6", "iv_1", "get_interview_state", async () => okResult);
+    await expect(
+      store.execute("c6", "iv_1", "get_current_problem", async () => okResult),
+    ).rejects.toBeInstanceOf(CallIdToolMismatchError);
+    store.close();
+  });
+
+  it("V3-2: singleflight enforces the interview binding while in flight", async () => {
+    const store = new IdempotencyStore<{ status: string }>({ sweepIntervalMs: 0 });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const p1 = store.execute("c7", "iv_1", "get_interview_state", async () => {
+      await gate;
+      return okResult;
+    });
+    await expect(
+      store.execute("c7", "iv_2", "get_interview_state", async () => okResult),
+    ).rejects.toBeInstanceOf(CallIdConflictError);
+    release();
+    await p1;
+    store.close();
+  });
+
+  it("V3-2: singleflight rejects a different tool while in flight", async () => {
+    const store = new IdempotencyStore<{ status: string }>({ sweepIntervalMs: 0 });
+    let release!: () => void;
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const p1 = store.execute("c8", "iv_1", "get_interview_state", async () => {
+      await gate;
+      return okResult;
+    });
+    await expect(
+      store.execute("c8", "iv_1", "get_current_problem", async () => okResult),
+    ).rejects.toBeInstanceOf(CallIdToolMismatchError);
+    release();
+    await p1;
     store.close();
   });
 

@@ -15,7 +15,11 @@
 
 import type { InterviewId } from "@interview-coach/domain";
 
-export type VoiceCredentialMode = "entra-ephemeral" | "api-key-local-dev" | "test";
+export type VoiceCredentialMode =
+  | "entra-ephemeral"
+  | "api-key-local-dev"
+  | "unconfigured"
+  | "test";
 
 export interface VoiceCredential {
   readonly tokenType: "bearer" | "api-key";
@@ -46,7 +50,9 @@ export class VoiceNotConfiguredError extends Error {
 }
 
 export class UnconfiguredVoiceSessionProvider implements VoiceSessionProvider {
-  readonly mode: VoiceCredentialMode = "entra-ephemeral";
+  // Distinct mode (audit F8-4): /api/ready must not advertise "entra-ephemeral"
+  // when every mint 503s.
+  readonly mode: VoiceCredentialMode = "unconfigured";
 
   async mint(_interviewId: InterviewId): Promise<VoiceSessionMint> {
     throw new VoiceNotConfiguredError();
@@ -109,6 +115,19 @@ export function createVoiceSessionProviderFromEnv(
     ttlRaw === undefined || ttlRaw.trim() === "" ? 600 : Number(ttlRaw);
   const apiKey = env["AZURE_VOICE_API_KEY"]?.trim();
   if (apiKey !== undefined && apiKey !== "") {
+    // V3-5: api-key mode returns the long-lived server key verbatim, so it is
+    // local-dev-only by convention. Enforce it: a production process refuses
+    // to start with the key unless the operator explicitly opts in.
+    if (
+      env["NODE_ENV"] === "production" &&
+      env["ALLOW_INSECURE_VOICE_API_KEY"] !== "true"
+    ) {
+      throw new Error(
+        "AZURE_VOICE_API_KEY (api-key voice mode) is local-dev only. " +
+          "Use Entra ephemeral minting in production, or set " +
+          "ALLOW_INSECURE_VOICE_API_KEY=true to override explicitly.",
+      );
+    }
     return new ApiKeyLocalDevVoiceSessionProvider(apiKey, ttlSeconds);
   }
   return new UnconfiguredVoiceSessionProvider();

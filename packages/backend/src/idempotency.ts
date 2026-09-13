@@ -57,13 +57,44 @@ export class CallIdConflictError extends Error {
   }
 }
 
+// V3-3: a call_id is bound to the (interviewId, tool) pair, not just the id.
+// Reusing it with a different tool name would otherwise replay the first
+// tool's result as the second's.
+export class CallIdToolMismatchError extends Error {
+  readonly callId: string;
+  readonly currentTool: string;
+  readonly attemptedTool: string;
+
+  constructor(callId: string, currentTool: string, attemptedTool: string) {
+    super(`call_id ${callId} was already used by tool ${currentTool}`);
+    this.name = "CallIdToolMismatchError";
+    this.callId = callId;
+    this.currentTool = currentTool;
+    this.attemptedTool = attemptedTool;
+  }
+
+  toDomainError(): DomainError {
+    return domainError("CONFLICT", `call_id is already bound to another tool`, {
+      callId: this.callId,
+      currentTool: this.currentTool,
+      attemptedTool: this.attemptedTool,
+    });
+  }
+}
+
 const DEFAULT_TTL_MS = 30 * 60_000;
 const DEFAULT_MAX_ENTRIES = 2000;
 const DEFAULT_SWEEP_MS = 60_000;
 
 export class IdempotencyStore<T> {
   private readonly records = new Map<string, IdempotentRecord<T>>();
-  private readonly pending = new Map<string, Promise<IdempotentRecord<T>>>();
+  // In-flight executions carry their binding too (V3-2/V3-3): the singleflight
+  // path must enforce the same cross-interview/cross-tool guarantees as the
+  // completed-records path.
+  private readonly pending = new Map<
+    string,
+    { promise: Promise<IdempotentRecord<T>>; interviewId: string; tool: string }
+  >();
   private readonly ttlMs: number;
   private readonly maxEntries: number;
   private readonly sweepTimer: ReturnType<typeof setInterval> | null;
@@ -104,11 +135,20 @@ export class IdempotencyStore<T> {
       if (existing.interviewId !== interviewId) {
         throw new CallIdConflictError(callId, existing.interviewId, interviewId);
       }
+      if (existing.tool !== tool) {
+        throw new CallIdToolMismatchError(callId, existing.tool, tool);
+      }
       return { record: existing, replayed: true };
     }
     const inFlight = this.pending.get(callId);
     if (inFlight !== undefined) {
-      return { record: await inFlight, replayed: true };
+      if (inFlight.interviewId !== interviewId) {
+        throw new CallIdConflictError(callId, inFlight.interviewId, interviewId);
+      }
+      if (inFlight.tool !== tool) {
+        throw new CallIdToolMismatchError(callId, inFlight.tool, tool);
+      }
+      return { record: await inFlight.promise, replayed: true };
     }
     const run = (async (): Promise<IdempotentRecord<T>> => {
       const outcome = await fn();
@@ -124,7 +164,7 @@ export class IdempotencyStore<T> {
       this.put(record);
       return record;
     })();
-    this.pending.set(callId, run);
+    this.pending.set(callId, { promise: run, interviewId, tool });
     try {
       return { record: await run, replayed: false };
     } finally {

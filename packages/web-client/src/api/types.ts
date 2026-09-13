@@ -94,6 +94,7 @@ export interface ApiErrorBody {
 export type VoiceCredentialMode =
   | "entra-ephemeral"
   | "api-key-local-dev"
+  | "unconfigured"
   | "test";
 
 export interface VoiceSessionPayload {

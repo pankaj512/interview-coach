@@ -73,6 +73,7 @@ import { UserService, type AuthenticatedSession } from "./users.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
+  CallIdToolMismatchError,
   IdempotencyStore,
 } from "./idempotency.js";
 import { sendApiError, sendDomainError } from "./http-errors.js";
@@ -290,6 +291,27 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     maxEntries: config.tools.idempotencyMaxEntries,
   });
   const activeVoiceSessions = new Map<string, ActiveVoiceSession>();
+  // V3-1: the media plane is browser<->Voice Live, so the backend receives no
+  // disconnect signal. Expired mints are swept lazily (voice/quota/ready
+  // paths) and by a janitor timer, so an abandoned tab cannot leak a slot
+  // until the map is exhausted.
+  const sweepExpiredVoiceSessions = (now: number = Date.now()): number => {
+    let removed = 0;
+    for (const [key, session] of activeVoiceSessions) {
+      if (Date.parse(session.expiresAt) <= now) {
+        activeVoiceSessions.delete(key);
+        removed += 1;
+      }
+    }
+    return removed;
+  };
+  const voiceSweepTimer = setInterval(() => sweepExpiredVoiceSessions(), 60_000);
+  if (typeof voiceSweepTimer === "object" && "unref" in voiceSweepTimer) {
+    (voiceSweepTimer as unknown as { unref(): void }).unref();
+  }
+  app.addHook("onClose", () => {
+    clearInterval(voiceSweepTimer);
+  });
   // S8a observability (HLD 8.4): in-memory counters, reset on restart.
   const metrics = new BackendMetrics();
   // S8a sandbox quota: concurrent LocalCodeRunner executions. Node runs the
@@ -409,6 +431,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         .status(503)
         .send({ ok: false, error: { code: "NOT_READY", message: "Repository unreachable", retryable: true } });
     }
+    sweepExpiredVoiceSessions();
     return reply.send({
       ok: true,
       ready: true,
@@ -420,6 +443,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
   app.get("/api/metrics", (_request, reply) => {
+    sweepExpiredVoiceSessions();
     return reply.send({
       ok: true,
       metrics: metrics.snapshot(activeVoiceSessions.size, toolIdempotency.size),
@@ -429,6 +453,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   // S8b: Prometheus scrape target (HLD 8.4) over the same snapshot.
   // Auth-gated by the same hook (it lives under /api/).
   app.get("/api/metrics/prometheus", (_request, reply) => {
+    sweepExpiredVoiceSessions();
     return reply
       .header("content-type", "text/plain; version=0.0.4; charset=utf-8")
       .send(renderPrometheusMetrics(metrics.snapshot(activeVoiceSessions.size, toolIdempotency.size)));
@@ -1079,6 +1104,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       if (error instanceof CallIdConflictError) {
         return sendDomainError(reply, error.toDomainError());
       }
+      if (error instanceof CallIdToolMismatchError) {
+        return sendDomainError(reply, error.toDomainError());
+      }
       throw error;
     }
     const elapsedMs = Date.now() - startedAt;
@@ -1153,11 +1181,8 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     const state = await interviews.getState(id);
     if (!state.ok) return sendDomainError(reply, state.error);
     const status = state.value.interview.status;
-    if (status === "ready") {
-      // Opening a voice session starts the interview (app transition, not model).
-      const started = await interviews.start(id);
-      if (!started.ok) return sendDomainError(reply, started.error);
-    } else if (status !== "in_progress" && status !== "paused") {
+    const needsStart = status === "ready";
+    if (!needsStart && status !== "in_progress" && status !== "paused") {
       metrics.countVoiceRejected();
       return sendApiError(
         reply,
@@ -1167,6 +1192,8 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         false,
       );
     }
+    // V3-1: drop expired mints before the quota check.
+    sweepExpiredVoiceSessions();
     // S8a quota: bound the in-memory session map (abuse protection).
     if (!activeVoiceSessions.has(params.data.id) && activeVoiceSessions.size >= config.voice.maxActiveSessions) {
       metrics.countVoiceRejected();
@@ -1187,6 +1214,12 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         return sendApiError(reply, 503, "VOICE_NOT_CONFIGURED", error.message, false);
       }
       throw error;
+    }
+    // V3-4: start only after a successful mint, so a 429/503 does not record
+    // a false start on an interview that never received a session.
+    if (needsStart) {
+      const started = await interviews.start(id);
+      if (!started.ok) return sendDomainError(reply, started.error);
     }
     const endpoint = mint.endpoint !== "" ? mint.endpoint : config.voice.endpoint;
     const model = mint.model !== "" ? mint.model : config.voice.model;

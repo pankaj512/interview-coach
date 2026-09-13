@@ -5,7 +5,9 @@ import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import {
   ApiKeyLocalDevVoiceSessionProvider,
+  FakeVoiceSessionProvider,
   UnconfiguredVoiceSessionProvider,
+  createVoiceSessionProviderFromEnv,
 } from "../src/voice-session.js";
 import { createInMemoryRepositories } from "@interview-coach/domain";
 import { buildTestBackend, createStartedInterview } from "./helpers.js";
@@ -92,6 +94,68 @@ describe("voice-session", () => {
     } finally {
       await built.app.close();
     }
+  });
+
+  it("V3-4: a 503 mint does not start the interview", async () => {
+    const repos = createInMemoryRepositories();
+    const built = buildApp({
+      repos,
+      config: loadConfig({ ...process.env }),
+      voiceProvider: new UnconfiguredVoiceSessionProvider(),
+      logger: false,
+    });
+    try {
+      const created = await built.app.inject({
+        method: "POST",
+        url: "/api/interviews",
+        payload: { candidateId: "user_1", configuration: { interviewType: "dsa" } },
+      });
+      const id = (created.json() as { interview: { id: string } }).interview.id;
+      await built.app.inject({ method: "POST", url: `/api/interviews/${id}/ready` });
+      const res = await built.app.inject({ method: "POST", url: `/api/interviews/${id}/voice-session` });
+      expect(res.statusCode).toBe(503);
+      const state = await built.app.inject({ method: "GET", url: `/api/interviews/${id}/state` });
+      expect((state.json() as { state: { interview: { status: string } } }).state.interview.status).toBe("ready");
+    } finally {
+      await built.app.close();
+    }
+  });
+
+  it("V3-1: expired sessions are swept from the quota map", async () => {
+    const repos = createInMemoryRepositories();
+    const built = buildApp({
+      repos,
+      config: loadConfig({ ...process.env }),
+      voiceProvider: new FakeVoiceSessionProvider(0),
+      logger: false,
+    });
+    try {
+      const created = await built.app.inject({
+        method: "POST",
+        url: "/api/interviews",
+        payload: { candidateId: "user_1", configuration: { interviewType: "dsa" } },
+      });
+      const id = (created.json() as { interview: { id: string } }).interview.id;
+      await built.app.inject({ method: "POST", url: `/api/interviews/${id}/ready` });
+      await built.app.inject({ method: "POST", url: `/api/interviews/${id}/voice-session` });
+      expect(built.activeVoiceSessions.size).toBe(1);
+      await built.app.inject({ method: "GET", url: "/api/ready" });
+      expect(built.activeVoiceSessions.size).toBe(0);
+    } finally {
+      await built.app.close();
+    }
+  });
+
+  it("V3-5: api-key voice mode refuses production without explicit opt-in", () => {
+    const prod = { ...process.env, NODE_ENV: "production", AZURE_VOICE_API_KEY: "sk-prod" };
+    delete (prod as Record<string, string | undefined>)["ALLOW_INSECURE_VOICE_API_KEY"];
+    expect(() => createVoiceSessionProviderFromEnv(prod)).toThrow(/local-dev only/);
+    expect(
+      createVoiceSessionProviderFromEnv({ ...prod, ALLOW_INSECURE_VOICE_API_KEY: "true" }),
+    ).toBeInstanceOf(ApiKeyLocalDevVoiceSessionProvider);
+    expect(
+      createVoiceSessionProviderFromEnv({ ...prod, NODE_ENV: "development" }),
+    ).toBeInstanceOf(ApiKeyLocalDevVoiceSessionProvider);
   });
 
   it("never leaks the server-side api key outside local-dev mode", async () => {
