@@ -33,6 +33,9 @@ export function useBackendClient(): BackendClient {
 }
 
 export function formatApiError(error: unknown): string {
+  // Already-formatted strings pass through (guards against double-formatting,
+  // which previously masked every error as "Unexpected error").
+  if (typeof error === "string") return error;
   if (error instanceof BackendApiError) {
     return `${error.code}: ${error.message}`;
   }

@@ -6,7 +6,7 @@ import type { BackendClient } from "../api/backend-client.js";
 import type { InterviewConfiguration, SerializedInterview } from "../api/types.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
 import { Eyebrow, Pill, RadioCard, Segmented } from "../ds/primitives.js";
-import { formatApiError, useBackendClient, useInterviewSetup } from "../state/use-interview.js";
+import { useBackendClient, useInterviewSetup } from "../state/use-interview.js";
 import { useAuthSession } from "../state/auth-store.js";
 
 export type InterviewMode = "Realistic Interview" | "Guided Coaching";
@@ -180,7 +180,7 @@ export function SetupScreen({
               </PrimaryButton>
               <GhostButton onClick={onCancel}>Cancel</GhostButton>
             </div>
-            {error !== null && <p className="error">{formatApiError(error)}</p>}
+            {error !== null && <p className="error">{error}</p>}
           </div>
 
           <div className="card steps-card">
