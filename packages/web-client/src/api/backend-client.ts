@@ -282,14 +282,16 @@ export class BackendClient {
       };
     }
     if (isErrorEnvelope(parsed)) {
-      // Permanent domain failure: model-facing result, never a retry.
+      // Surface the backend's retryable flag (audit C4-2): 4xx domain errors
+      // are retryable:false (model-facing), while abuse-protection 429s are
+      // retryable:true so the forwarder backs off with the same call_id.
       const record = parsed as { callId?: unknown; tool?: unknown; replayed?: unknown };
       return {
         ok: false,
         status: response.status,
         code: parsed.error.code,
         message: parsed.error.message,
-        retryable: false,
+        retryable: parsed.error.retryable,
         callId: typeof record.callId === "string" ? record.callId : callId,
         tool: typeof record.tool === "string" ? (record.tool as ToolName) : tool,
         replayed: record.replayed === true,

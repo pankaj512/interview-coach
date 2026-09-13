@@ -136,15 +136,17 @@ export interface ToolExecSuccess {
   readonly result: unknown;
   readonly replayed: boolean;
 }
-// POST .../tool-exec permanent failure: deterministic domain error. This IS a
-// model-facing result (forwarded as function_call_output), never retried
-// as-is (frozen section 5: never retry 4xx / retryable:false).
+// POST .../tool-exec failure envelope. `retryable` mirrors the backend's
+// error envelope: deterministic domain errors are retryable:false and are
+// forwarded as function_call_output; abuse-protection 429s are
+// retryable:true and the forwarder backs off with the same call_id
+// (frozen section 5; audit C4-2).
 export interface ToolExecFailure {
   readonly ok: false;
   readonly status: number;
   readonly code: string;
   readonly message: string;
-  readonly retryable: false;
+  readonly retryable: boolean;
   readonly callId: string;
   readonly tool: ToolName;
   readonly replayed: boolean;

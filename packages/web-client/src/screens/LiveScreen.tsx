@@ -146,6 +146,14 @@ export function LiveScreen({
             {mode} · {interaction}
           </span>
         </div>
+        {live.snapshot?.interview.status === "completing" && (
+          <span className="chip-status chip-connecting" role="status">
+            <span className="chip-icon" aria-hidden="true">
+              ◌
+            </span>
+            <span className="chip-label">Wrapping up</span>
+          </span>
+        )}
         <Timer secondsLeft={secondsLeft} elapsedSec={live.elapsedSec} />
         {statusChip}
         <span className="spacer" />

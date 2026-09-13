@@ -54,6 +54,52 @@ describe("forwardToolCall", () => {
     expect(JSON.parse(result.output)).toMatchObject({ call_id: "call_9", error: { code: "ILLEGAL_TRANSITION" } });
   });
 
+  it("C4-2: retries a retryable failure outcome (429) with the same call_id", async () => {
+    const seen: string[] = [];
+    let calls = 0;
+    const exec: ToolExecutor = async (callId) => {
+      calls += 1;
+      seen.push(callId);
+      if (calls < 2) {
+        return {
+          ok: false,
+          status: 429,
+          code: "RATE_LIMITED",
+          message: "slow down",
+          retryable: true,
+          callId,
+          tool: "get_interview_state",
+          replayed: false,
+        };
+      }
+      return success(callId);
+    };
+    const sleeps: number[] = [];
+    const result = await forwardToolCall(exec, "call_429", "get_interview_state", {
+      clocks: immediateClocks(sleeps),
+    });
+    expect(result.attempts).toBe(2);
+    expect(result.retried).toBe(true);
+    expect(seen).toEqual(["call_429", "call_429"]);
+    expect(sleeps).toEqual([300]);
+  });
+
+  it("C4-2: isRetryableFailure honors the outcome retryable flag", () => {
+    expect(isRetryableFailure(new Error("x"), permanent("c"))).toBe(false);
+    expect(
+      isRetryableFailure(new Error("x"), {
+        ok: false,
+        status: 429,
+        code: "RATE_LIMITED",
+        message: "slow down",
+        retryable: true,
+        callId: "c",
+        tool: "get_interview_state",
+        replayed: false,
+      }),
+    ).toBe(true);
+  });
+
   it("retries retryable 503s with the same call_id and frozen backoff", async () => {
     const seen: string[] = [];
     let calls = 0;

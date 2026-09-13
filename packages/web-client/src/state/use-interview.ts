@@ -105,11 +105,15 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const [snapshot, setSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
+  const [liveStarted, setLiveStarted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [finished, setFinished] = useState(false);
   const clientRef = useRef<VoiceInterviewClient | null>(null);
-  const connectedAtRef = useRef<number | null>(null);
+  // Wall-clock start of the interview (audit C4-5): the elapsed timer must
+  // keep counting across reconnect/mic-blocked windows, not freeze when the
+  // connection state changes.
+  const startedAtRef = useRef<number | null>(null);
   const mutedRef = useRef(false);
   const pausedRef = useRef(false);
   const startingRef = useRef(false);
@@ -152,15 +156,16 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
         {
           onConnectionState: (state) => {
             setConnection(state);
-            if (state === "connected" && connectedAtRef.current === null) {
-              connectedAtRef.current = Date.now();
+            if (state === "connected") {
+              if (startedAtRef.current === null) startedAtRef.current = Date.now();
+              setLiveStarted(true);
             }
             // Unexpected close: release the mic and clear the client so the
-            // room's Rejoin can mint a fresh session (C4-1).
+            // room's Rejoin can mint a fresh session (C4-1). The elapsed
+            // clock keeps its original start (C4-5).
             if (state === "closed") {
               const dropped = clientRef.current;
               clientRef.current = null;
-              connectedAtRef.current = null;
               if (dropped !== null) void dropped.disconnect().catch(() => undefined);
             }
           },
@@ -199,7 +204,8 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const hangup = useCallback(async () => {
     const client = clientRef.current;
     clientRef.current = null;
-    connectedAtRef.current = null;
+    startedAtRef.current = null;
+    setLiveStarted(false);
     setAssistantSpeaking(false);
     setCandidateSpeaking(false);
     if (client !== null) {
@@ -287,15 +293,27 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     void hangupRef.current();
   }, []);
 
-  // Elapsed timer while connected.
+  // C4-3: best-effort session release on tab close/navigate-away, so an
+  // abandoned tab does not leak an activeVoiceSessions slot until the TTL
+  // sweep (V3-1). `pagehide` is the reliable cross-browser unload signal.
   useEffect(() => {
-    if (connection !== "connected") return;
+    const onPageHide = () => {
+      void backend.deleteVoiceSession(interview.id).catch(() => undefined);
+    };
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, [backend, interview.id]);
+
+  // Elapsed timer: ticks while the interview is live, independent of the
+  // connection state, so it does not freeze across reconnect/mic-blocked.
+  useEffect(() => {
+    if (!liveStarted) return;
     const timer = setInterval(() => {
-      const since = connectedAtRef.current;
+      const since = startedAtRef.current;
       setElapsedSec(since === null ? 0 : Math.floor((Date.now() - since) / 1000));
     }, 1000);
     return () => clearInterval(timer);
-  }, [connection]);
+  }, [liveStarted]);
 
   // Display snapshot poll (canonical problem display + progress).
   useEffect(() => {

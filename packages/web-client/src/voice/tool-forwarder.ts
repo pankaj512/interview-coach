@@ -66,8 +66,10 @@ export function backoffMs(attempt: number, random: () => number): number {
 }
 
 export function isRetryableFailure(error: unknown, outcome?: ToolExecOutcome): boolean {
-  // Permanent tool results (returned as data) are never retried.
-  if (outcome !== undefined && !outcome.ok) return false;
+  // A failure returned as data is retried only when the backend marks it
+  // retryable (audit C4-2: 429 RATE_LIMITED retryable:true); domain 4xx stay
+  // permanent, model-facing results.
+  if (outcome !== undefined && !outcome.ok) return outcome.retryable === true;
   if (error instanceof BackendApiError) {
     if (error.status === 0) return true; // timeout / network
     if (error.status === 502 || error.status === 503 || error.status === 504) return true;
@@ -116,8 +118,11 @@ export async function forwardToolCall(
     try {
       const outcome = await exec(callId, tool, controller.signal, args);
       clearTimeout(timer);
-      if (!outcome.ok) {
-        return { output: toFunctionCallOutput(callId, outcome), replayed: outcome.replayed, attempts, retried: attempts > 1 };
+      // Back off and retry retryable failures (e.g. 429) with the same
+      // call_id; permanent failures and success are returned as-is.
+      if (!outcome.ok && outcome.retryable && attempts <= maxRetries) {
+        await clocks.sleep(backoffMs(attempts - 1, clocks.random));
+        continue;
       }
       return { output: toFunctionCallOutput(callId, outcome), replayed: outcome.replayed, attempts, retried: attempts > 1 };
     } catch (error) {
