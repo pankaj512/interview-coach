@@ -1,15 +1,16 @@
-// HLD 4.3 — canonical problem display (S4).
+// H-Live left panel (ux-spec §9/§11): the canonical problem.
 //
-// Read-only view of backend-owned problem state (from GET .../state). The
-// client never invents problem content; when no problem is attached the panel
-// says so instead of guessing.
+// Read-only view of backend-owned problem state: title, difficulty,
+// description, constraints, and the sample test case. The client never
+// invents problem content; empty sections say so explicitly.
 
 import type { SerializedStateSnapshot } from "../api/types.js";
+import { DiffPill } from "../ds/status.js";
 
 export function ProblemPanel({ snapshot }: { snapshot: SerializedStateSnapshot | null }) {
   if (snapshot === null) {
     return (
-      <section className="card">
+      <section className="card problem-panel">
         <h3>Problem</h3>
         <p className="hint">Loading interview state…</p>
       </section>
@@ -18,38 +19,55 @@ export function ProblemPanel({ snapshot }: { snapshot: SerializedStateSnapshot |
   const problem = snapshot.currentProblem;
   if (problem === null) {
     return (
-      <section className="card">
+      <section className="card problem-panel">
         <h3>Problem</h3>
-        <p className="hint">
-          No problem attached yet. Ask the interviewer for one, or attach problem ids on the setup screen.
-        </p>
-        <p className="hint">Responses so far: {snapshot.responseCount}</p>
+        <p className="hint">No problem attached yet.</p>
       </section>
     );
   }
+  const example = problem.examples?.[0];
   return (
-    <section className="card">
-      <h3>
-        {problem.title} <span className="badge">{problem.difficulty}</span>
-      </h3>
-      {problem.description !== undefined && problem.description !== "" && <p className="problem-desc">{problem.description}</p>}
+    <section className="card problem-panel" aria-label="Problem">
+      <div className="problem-head">
+        <h3>{problem.title}</h3>
+        <DiffPill level={problem.difficulty} />
+      </div>
+      {problem.description !== undefined && problem.description !== "" ? (
+        <p className="problem-desc">{problem.description}</p>
+      ) : (
+        <p className="hint">No description available for this problem yet.</p>
+      )}
       {problem.constraints !== undefined && problem.constraints.length > 0 && (
         <>
-          <h4>Constraints</h4>
-          <ul>
+          <h4 className="problem-subhead">Constraints</h4>
+          <ul className="plain-list">
             {problem.constraints.map((constraint, i) => (
-              <li key={i}>{constraint}</li>
+              <li key={i}>• {constraint}</li>
             ))}
           </ul>
         </>
       )}
-      {problem.examples !== undefined && problem.examples.length > 0 && (
-        <>
-          <h4>Examples</h4>
-          <pre>{JSON.stringify(problem.examples, null, 2)}</pre>
-        </>
+      <h4 className="problem-subhead">Sample test case</h4>
+      {example !== undefined ? (
+        <div className="sample-case">
+          <div>
+            <span className="sample-label">Input:</span>
+            <code>{example.input}</code>
+          </div>
+          <div>
+            <span className="sample-label">Output:</span>
+            <code>{example.output}</code>
+          </div>
+          {example.explanation !== undefined && example.explanation !== "" && (
+            <div>
+              <span className="sample-label">Explanation:</span>
+              <span className="hint">{example.explanation}</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        <p className="hint">No sample test case available for this problem yet.</p>
       )}
-      <p className="hint">Responses so far: {snapshot.responseCount}</p>
     </section>
   );
 }

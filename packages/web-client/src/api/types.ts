@@ -56,13 +56,19 @@ export interface SerializedInterview {
   readonly endedAt?: string;
 }
 
+export interface ProblemExample {
+  readonly input: string;
+  readonly output: string;
+  readonly explanation?: string;
+}
+
 export interface Problem {
   readonly id: string;
   readonly title: string;
   readonly difficulty: string;
   readonly description?: string;
   readonly constraints?: readonly string[];
-  readonly examples?: readonly unknown[];
+  readonly examples?: readonly ProblemExample[];
 }
 
 export interface SerializedEvaluation {

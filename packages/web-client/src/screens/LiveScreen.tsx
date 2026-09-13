@@ -1,56 +1,20 @@
-// H-Live (ux-spec §9–§19): the interview room — conversation-first, with an
-// interview-progress checklist, problem + code workspace, optional coaching,
-// a text fallback composer, and the mute/pause/end control bar.
+// H-Live (ux-spec §9): the voice-only interview room.
+//
+// Left: the problem (title, description, sample test case). Right: the code
+// editor with a single "Test code" action. Conversation is voice-only — no
+// transcript panel and no text composer.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
-import { CodePanel } from "../components/CodePanel.js";
-import { HintPanel } from "../components/HintPanel.js";
+import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, Dialog, ProgressChecklist, Wave, type ProgressState } from "../ds/primitives.js";
+import { Card, Dialog, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
 import type { Interaction, InterviewMode } from "./SetupScreen.js";
-
-interface Turn {
-  readonly role: "assistant" | "you";
-  readonly text: string;
-}
-
-function turnsFrom(events: readonly LiveEvent[]): readonly Turn[] {
-  const turns: Turn[] = [];
-  for (const event of events) {
-    if (event.kind === "assistant") turns.push({ role: "assistant", text: event.detail });
-    else if (event.kind === "candidate") turns.push({ role: "you", text: event.detail });
-  }
-  return turns;
-}
-
-function progressFrom(
-  interview: SerializedInterview,
-  snapshot: SerializedStateSnapshot | null,
-): readonly { label: string; state: ProgressState }[] {
-  const current = snapshot?.interview.currentOrder ?? interview.currentOrder;
-  const problems = interview.problems;
-  if (problems.length === 0) {
-    return [
-      { label: "Clarify the problem", state: "active" },
-      { label: "Discuss approach", state: "todo" },
-      { label: "Implement", state: "todo" },
-      { label: "Test & complexity", state: "todo" },
-    ];
-  }
-  return problems.map((p, i) => {
-    const state: ProgressState = current === null ? (i === 0 ? "active" : "todo") : i < current ? "done" : i === current ? "active" : "todo";
-    const label = i === current && snapshot?.currentProblem !== null && snapshot?.currentProblem !== undefined
-      ? snapshot.currentProblem.title
-      : `Problem ${i + 1}`;
-    return { label, state };
-  });
-}
 
 export function LiveScreen({
   backend,
@@ -75,10 +39,7 @@ export function LiveScreen({
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
-  const [draft, setDraft] = useState("");
-  const [showActivity, setShowActivity] = useState(false);
   const [started, setStarted] = useState(false);
-  const conversationRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     const onVisibility = () => setTabHidden(document.hidden);
@@ -93,17 +54,10 @@ export function LiveScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const turns = useMemo(() => turnsFrom(live.events), [live.events]);
-  useEffect(() => {
-    const el = conversationRef.current;
-    if (el !== null) el.scrollTop = el.scrollHeight;
-  }, [turns.length]);
-
   const micBlocked = tabHidden;
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
-  const progress = progressFrom(interview, live.snapshot);
-  const hintsUsed = live.snapshot?.evaluation?.hintsUsed ?? 0;
   const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
+  const problem = live.snapshot?.currentProblem ?? null;
 
   async function handleJoin() {
     setJoinError(null);
@@ -118,14 +72,6 @@ export function LiveScreen({
     setConfirmEnd(false);
     const final = await live.finish();
     onFinished(final, live.events, live.elapsedSec);
-  }
-
-  async function submitDraft(event: React.FormEvent) {
-    event.preventDefault();
-    const text = draft.trim();
-    if (text === "") return;
-    setDraft("");
-    await live.sendText(text);
   }
 
   const statusChip = micBlocked ? (
@@ -207,73 +153,16 @@ export function LiveScreen({
           )}
 
           <div className="room-grid">
-            <Card className="conversation-card">
-              <div className="conversation-head">
-                <h3 className="section-title">Conversation</h3>
-                <span className="hint">Interviewer speaks first · auto-scroll</span>
-              </div>
-              <div className="conversation" ref={conversationRef} aria-live="polite">
-                {turns.length === 0 ? (
-                  <p className="hint">The conversation will appear here. Speak any time — the interviewer yields (barge-in).</p>
-                ) : (
-                  turns.map((turn, i) => (
-                    <div key={i} className={`turn turn-${turn.role} ${i === turns.length - 1 ? "turn-latest" : ""}`}>
-                      <span className="turn-role">{turn.role === "assistant" ? "Interviewer" : "You"}</span>
-                      <p className="turn-text">{turn.text}</p>
-                    </div>
-                  ))
-                )}
-              </div>
-              <form className="composer" onSubmit={submitDraft}>
-                <input
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Type your response… (text fallback — interview state unchanged)"
-                  aria-label="Type your response"
-                />
-                <PrimaryButton type="submit" disabled={draft.trim() === ""}>
-                  Send
-                </PrimaryButton>
-              </form>
-            </Card>
-
-            <div className="room-side">
-              <Card>
-                <h3 className="section-title">Interview Progress</h3>
-                <p className="hint">Session progress, not hidden criteria.</p>
-                <ProgressChecklist items={progress} />
-              </Card>
-              <ProblemPanel snapshot={live.snapshot} />
-              <CodePanel
-                backend={backend}
-                interviewId={interview.id}
-                {...(live.snapshot?.currentProblem == null ? {} : { problemId: live.snapshot.currentProblem.id })}
-                onActivity={(detail) => {
-                  live.log("code", detail);
-                  void live.refresh();
-                }}
-              />
-              {mode === "Guided Coaching" && (
-                <HintPanel
-                  backend={backend}
-                  interviewId={interview.id}
-                  initialHintsUsed={hintsUsed}
-                  onHint={() => void live.refresh()}
-                />
-              )}
-              {showActivity && (
-                <Card>
-                  <h3 className="section-title">Session activity</h3>
-                  <ul className="event-log">
-                    {live.events.map((event, i) => (
-                      <li key={i}>
-                        <span className="event-kind">{event.kind}</span> {event.detail}
-                      </li>
-                    ))}
-                  </ul>
-                </Card>
-              )}
-            </div>
+            <ProblemPanel snapshot={live.snapshot} />
+            <CodeWorkspace
+              backend={backend}
+              interviewId={interview.id}
+              problem={problem}
+              onActivity={(detail) => {
+                live.log("code", detail);
+                void live.refresh();
+              }}
+            />
           </div>
 
           <div className="control-bar">
@@ -294,9 +183,6 @@ export function LiveScreen({
               </GhostButton>
               <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
                 {live.paused ? "Resume" : "Pause"}
-              </GhostButton>
-              <GhostButton onClick={() => setShowActivity((v) => !v)}>
-                {showActivity ? "Hide transcript" : "Transcript"}
               </GhostButton>
               <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
                 End interview

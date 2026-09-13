@@ -1081,11 +1081,86 @@ button:focus-visible {
 
 .room-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
+  grid-template-columns: minmax(0, 1fr) 560px;
   gap: var(--s-12);
-  align-items: start;
+  align-items: stretch;
   flex: 1;
   min-height: 0;
+}
+
+/* Voice-only room: problem (left) + editor (right). */
+.problem-panel,
+.code-workspace {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 268px);
+  min-height: 420px;
+  overflow-y: auto;
+}
+
+.problem-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+}
+
+.problem-head h3 {
+  margin: 0;
+}
+
+.problem-subhead {
+  margin: var(--s-24) 0 var(--s-8);
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-faint);
+}
+
+.sample-case {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  background: var(--bg-sunken);
+  border: var(--bw-1) solid var(--line-base);
+  border-radius: var(--r-sm);
+  padding: var(--s-12);
+  font-size: var(--fs-small);
+}
+
+.sample-case code {
+  font-family: ui-monospace, "Cascadia Code", Menlo, monospace;
+  color: var(--ink-base);
+}
+
+.sample-label {
+  color: var(--ink-faint);
+  margin-right: var(--s-8);
+}
+
+.code-head {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--s-12);
+}
+
+.code-workspace textarea.code {
+  flex: 1;
+  min-height: 320px;
+}
+
+.code-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+  margin-top: var(--s-12);
+  flex-wrap: wrap;
+}
+
+.verdict {
+  margin-top: var(--s-12);
+  padding-top: var(--s-12);
+  border-top: var(--bw-1) solid var(--line-base);
 }
 
 .conversation-card {
