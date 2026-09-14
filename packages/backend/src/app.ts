@@ -113,6 +113,7 @@ import {
   type VoiceSessionProvider,
 } from "./voice-session.js";
 import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
+import { assembleSessionContext, type SessionContext } from "./session-context.js";
 import { LocalCodeRunner } from "./code-runner.js";
 
 export interface BuildAppDeps {
@@ -1459,6 +1460,30 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         : latestRun.ok && latestRun.value !== null
           ? `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, latest run ${latestRun.value.status} (${latestRun.value.passedCount}/${latestRun.value.totalCount})`
           : `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, not run yet`;
+    // Phase 7: best-effort learning-loop context (profile/topic/objective/skill)
+    // so the interviewer opens grounded. Only a user session has an owner to
+    // scope the reads; a service/anonymous caller (CLI harness) mints without
+    // it, and any failure degrades to the generic interview rather than
+    // blocking the mint.
+    const caller = request.caller;
+    let sessionContext: SessionContext = {};
+    if (caller !== undefined && caller.kind === "user") {
+      try {
+        const [profile, curriculum, skillSnapshot] = await Promise.all([
+          profiles.get(caller.userId),
+          curricula.getDefault(),
+          skills.getSnapshot(caller.userId),
+        ]);
+        sessionContext = assembleSessionContext({
+          profile,
+          curriculum,
+          skills: skillSnapshot.skills,
+          problem: state.value.currentProblem,
+        });
+      } catch {
+        sessionContext = {};
+      }
+    }
     return reply.status(201).send({
       ok: true,
       session: {
@@ -1478,6 +1503,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
           candidateId: state.value.interview.candidateId as string,
           interviewId: params.data.id,
           configurationSummary: describeConfiguration(state.value.interview.configuration),
+          ...sessionContext,
           ...(state.value.currentProblem === null
             ? {}
             : { problemSummary: describeProblem(state.value.currentProblem) }),

@@ -25,6 +25,7 @@ import { HistoryScreen } from "../src/screens/HistoryScreen.js";
 import { LiveScreen } from "../src/screens/LiveScreen.js";
 import { LobbyScreen } from "../src/screens/LobbyScreen.js";
 import { OnboardingScreen } from "../src/screens/OnboardingScreen.js";
+import { ProblemPanel } from "../src/components/ProblemPanel.js";
 import { ProgressScreen } from "../src/screens/ProgressScreen.js";
 import { CreateAccountScreen } from "../src/screens/CreateAccountScreen.js";
 import { ProfileScreen } from "../src/screens/ProfileScreen.js";
@@ -204,6 +205,11 @@ describe("screen render smoke", () => {
   });
   it("LiveScreen renders the join state", () => {
     expect(renderToString(<LiveScreen backend={backend} interview={interview} mode="Guided Coaching" interaction="Voice" onFinished={noop} onExit={noop} />)).toContain("Joining the interview");
+  });
+  it("ProblemPanel shows the lobby problem before the first snapshot", () => {
+    const html = renderToString(<ProblemPanel snapshot={null} fallbackProblem={dashboardProblem} />);
+    expect(html).toContain("Move Zeroes");
+    expect(html).not.toContain("Loading interview state");
   });
   it("EvaluatingScreen renders", () => {
     expect(renderToString(<EvaluatingScreen />)).toContain("Analyzing Interview");

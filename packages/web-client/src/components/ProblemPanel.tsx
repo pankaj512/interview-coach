@@ -4,24 +4,26 @@
 // description, constraints, and the sample test case. The client never
 // invents problem content; empty sections say so explicitly.
 
-import type { SerializedStateSnapshot } from "../api/types.js";
+import type { Problem, SerializedStateSnapshot } from "../api/types.js";
 import { DiffPill } from "../ds/status.js";
 
-export function ProblemPanel({ snapshot }: { snapshot: SerializedStateSnapshot | null }) {
-  if (snapshot === null) {
-    return (
-      <section className="card problem-panel">
-        <h3>Problem</h3>
-        <p className="hint">Loading interview state…</p>
-      </section>
-    );
-  }
-  const problem = snapshot.currentProblem;
+export function ProblemPanel({
+  snapshot,
+  fallbackProblem = null,
+}: {
+  snapshot: SerializedStateSnapshot | null;
+  /** Phase 7: the recommendation-driven problem carried by the Lobby, shown
+   *  immediately while the first state snapshot is still loading. */
+  fallbackProblem?: Problem | null;
+}) {
+  const problem = snapshot?.currentProblem ?? fallbackProblem;
   if (problem === null) {
     return (
       <section className="card problem-panel">
         <h3>Problem</h3>
-        <p className="hint">No problem attached yet.</p>
+        <p className="hint">
+          {snapshot === null ? "Loading interview state…" : "No problem attached yet."}
+        </p>
       </section>
     );
   }

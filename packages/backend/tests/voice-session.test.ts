@@ -7,10 +7,11 @@ import {
   ApiKeyLocalDevVoiceSessionProvider,
   FakeVoiceSessionProvider,
   UnconfiguredVoiceSessionProvider,
+  buildSessionInstructions,
   createVoiceSessionProviderFromEnv,
 } from "../src/voice-session.js";
 import { createInMemoryRepositories } from "@interview-coach/domain";
-import { buildTestBackend, createStartedInterview } from "./helpers.js";
+import { buildTestBackend, createStartedInterview, seedCurriculum } from "./helpers.js";
 import type { TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
@@ -200,5 +201,95 @@ describe("voice-session", () => {
     } finally {
       await built.app.close();
     }
+  });
+
+  // Phase 7: the injected learning-loop context is rendered into the
+  // instructions and the opening behavior tells the model to state the
+  // problem from context.
+  it("phase 7: renders profile/topic/objective/skill context and states the problem on open", () => {
+    const instructions = buildSessionInstructions({
+      candidateId: "user_1",
+      interviewId: "int_1",
+      profileSummary: "Preparing for Senior Backend Engineer (Data Structures & Algorithms)",
+      topicSummary: "Arrays (module: Arrays & Hashing)",
+      objectiveSummary: "Build fluency with linear scans",
+      skillSummary: "mastery Developing; 2/4 successful attempts",
+      problemSummary: "Move Zeroes (Easy) — two pointers",
+    });
+    expect(instructions).toContain("Learner: Preparing for Senior Backend Engineer");
+    expect(instructions).toContain("Focus topic: Arrays (module: Arrays & Hashing).");
+    expect(instructions).toContain("Learning objective: Build fluency with linear scans.");
+    expect(instructions).toContain("Prior skill state: mastery Developing");
+    expect(instructions).toContain("Current problem: Move Zeroes (Easy)");
+    expect(instructions).toContain("state the current problem from the session context");
+    // No context fields: the generic interview still renders without the lines.
+    const bare = buildSessionInstructions({ candidateId: "user_1", interviewId: "int_1" });
+    expect(bare).not.toContain("Learner:");
+    expect(bare).not.toContain("Focus topic:");
+  });
+
+  // Phase 7: a user-session mint loads the server-owned profile + curriculum +
+  // skill state and injects them; the service/anonymous path stays generic.
+  it("phase 7: injects server-owned context for a signed-in user", async () => {
+    backend = buildTestBackend();
+    await seedCurriculum(backend.repos);
+    const registered = await backend.app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: { email: "ctx@example.com", displayName: "Ctx User", password: "correct-horse-123" },
+    });
+    const token = (registered.json() as { session: { token: string } }).session.token;
+    const auth = { authorization: `Bearer ${token}` };
+    await backend.app.inject({
+      method: "PUT",
+      url: "/api/profile",
+      headers: auth,
+      payload: {
+        interviewTypes: ["dsa"],
+        role: "backend_engineer",
+        level: "senior",
+        goals: "Sharpen arrays",
+      },
+    });
+    const created = await backend.app.inject({
+      method: "POST",
+      url: "/api/interviews",
+      headers: auth,
+      payload: { candidateId: "Ctx User", configuration: { interviewType: "dsa" } },
+    });
+    const id = (created.json() as { interview: { id: string } }).interview.id;
+    await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/problems`,
+      headers: auth,
+      payload: { problemIds: ["prob_move-zeroes"] },
+    });
+    await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/ready`,
+      headers: auth,
+    });
+
+    const res = await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/voice-session`,
+      headers: auth,
+    });
+    expect(res.statusCode).toBe(201);
+    const instructions = (res.json() as { session: { instructions: string } }).session.instructions;
+    expect(instructions).toContain("Learner: Preparing for Senior Backend Engineer");
+    expect(instructions).toContain("Focus topic: Arrays");
+    expect(instructions).toContain("Learning objective:");
+    expect(instructions).toContain("Current problem: Move Zeroes (Easy)");
+
+    // Same interview minted by a service/anonymous caller: no user context.
+    const anon = await backend.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/voice-session`,
+    });
+    expect(anon.statusCode).toBe(201);
+    const anonInstructions = (anon.json() as { session: { instructions: string } }).session.instructions;
+    expect(anonInstructions).not.toContain("Learner:");
+    expect(anonInstructions).toContain("Current problem: Move Zeroes (Easy)");
   });
 });

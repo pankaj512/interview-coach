@@ -425,6 +425,7 @@ export function App() {
           interview={interview}
           mode={sessionPlan.mode as InterviewMode}
           interaction={sessionPlan.interaction as Interaction}
+          problem={sessionPlan.problem}
           onFinished={handleFinished}
           onExit={() => navigate("dashboard")}
         />

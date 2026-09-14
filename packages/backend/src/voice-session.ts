@@ -173,10 +173,11 @@ export const FROZEN_VOICE_SESSION_CONFIG = {
 const BASE_INSTRUCTIONS =
   "You are a DSA interviewer conducting a live technical interview. " +
   "Be concise, supportive, and rigorous. Ask one question at a time. " +
-  "Authoritative interview information (problem, performance, state) must be obtained through tools — do not invent it. " +
+  "The session context below is authoritative backend state: use it to ground the interview. " +
+  "Any interview information not provided there (live progress, deeper history) must be obtained through tools — never invent it. " +
   "Use tools when the candidate asks what problem they are solving, how they performed previously, or for interview-specific context. " +
   "After receiving tool results, reason over them and answer naturally. " +
-  "Opening behavior: when prompted to speak first at session start, greet the candidate, briefly explain this is a DSA technical interview where you will ask questions, evaluate reasoning, and ask follow-ups, tell the candidate they can think aloud and ask clarifying questions, then ask the candidate to introduce themselves and begin.";
+  "Opening behavior: when prompted to speak first at session start, greet the candidate by name if known, briefly explain this is a DSA technical interview where you will ask questions, evaluate reasoning, and ask follow-ups, tell the candidate they can think aloud and ask clarifying questions, then state the current problem from the session context in your own words (title, difficulty, and what it asks) and invite the candidate to introduce themselves and begin. If no problem is in context, ask the candidate to introduce themselves and begin.";
 
 export interface SessionInstructionContext {
   readonly candidateId: string;
@@ -189,6 +190,14 @@ export interface SessionInstructionContext {
   readonly hintsUsed?: number;
   /** S7a sandbox progress: e.g. "2 submissions, latest run failed (1/3)". */
   readonly sandboxSummary?: string;
+  /** Phase 7: who the candidate is preparing to be + stated goal. */
+  readonly profileSummary?: string;
+  /** Phase 7: recommended curriculum topic (+ owning module). */
+  readonly topicSummary?: string;
+  /** Phase 7: topic/module learning objective. */
+  readonly objectiveSummary?: string;
+  /** Phase 7: prior mastery + strengths/focus areas for the topic. */
+  readonly skillSummary?: string;
 }
 
 export function buildSessionInstructions(input: {
@@ -199,6 +208,10 @@ export function buildSessionInstructions(input: {
   responseCount?: number;
   hintsUsed?: number;
   sandboxSummary?: string;
+  profileSummary?: string;
+  topicSummary?: string;
+  objectiveSummary?: string;
+  skillSummary?: string;
 }): string {
   const context: SessionInstructionContext = input;
   const lines = [
@@ -212,13 +225,25 @@ export function buildSessionInstructions(input: {
     "- Read interview rules with get_interview_configuration; read progress with get_candidate_performance.",
     "- Signal done with end_interview only when the candidate has finished; the app finalizes state.",
     "",
-    "Session context (reference only):",
+    "Session context (authoritative backend state):",
     `Candidate: ${context.candidateId}`,
     `Interview: ${context.interviewId}`,
-    "DSA interview — current problem and history are available ONLY via tools. Do not invent them.",
+    "Anything not stated here (live progress, deeper history, problem details) is available ONLY via tools. Do not invent it.",
   ];
+  if (context.profileSummary !== undefined && context.profileSummary !== "") {
+    lines.push(`Learner: ${context.profileSummary}.`);
+  }
   if (context.configurationSummary !== undefined && context.configurationSummary !== "") {
     lines.push(`Configuration: ${context.configurationSummary}`);
+  }
+  if (context.topicSummary !== undefined && context.topicSummary !== "") {
+    lines.push(`Focus topic: ${context.topicSummary}.`);
+  }
+  if (context.objectiveSummary !== undefined && context.objectiveSummary !== "") {
+    lines.push(`Learning objective: ${context.objectiveSummary}.`);
+  }
+  if (context.skillSummary !== undefined && context.skillSummary !== "") {
+    lines.push(`Prior skill state: ${context.skillSummary}.`);
   }
   if (context.problemSummary !== undefined && context.problemSummary !== "") {
     lines.push(`Current problem: ${context.problemSummary}`);

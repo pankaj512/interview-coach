@@ -6,7 +6,7 @@
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
-import type { SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
+import type { Problem, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
@@ -21,6 +21,7 @@ export function LiveScreen({
   interview,
   mode,
   interaction,
+  problem: fallbackProblem = null,
   onFinished,
   onExit,
 }: {
@@ -28,6 +29,9 @@ export function LiveScreen({
   readonly interview: SerializedInterview;
   readonly mode: InterviewMode;
   readonly interaction: Interaction;
+  /** Phase 7: the recommendation-driven problem from the Lobby, displayed
+   *  immediately while the first state snapshot is still loading. */
+  readonly problem?: Problem | null;
   readonly onFinished: (
     snapshot: SerializedStateSnapshot | null,
     events: readonly LiveEvent[],
@@ -57,7 +61,7 @@ export function LiveScreen({
   const micBlocked = tabHidden;
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
   const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
-  const problem = live.snapshot?.currentProblem ?? null;
+  const problem = live.snapshot?.currentProblem ?? fallbackProblem ?? null;
 
   async function handleJoin() {
     setJoinError(null);
@@ -153,7 +157,7 @@ export function LiveScreen({
           )}
 
           <div className="room-grid">
-            <ProblemPanel snapshot={live.snapshot} />
+            <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} />
             <CodeWorkspace
               backend={backend}
               interviewId={interview.id}
