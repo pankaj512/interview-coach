@@ -7,7 +7,7 @@
 import type { ReactNode } from "react";
 import { AccountMenu } from "./AccountMenu.js";
 
-export type NavKey = "dashboard" | "setup" | "history" | "progress" | "settings";
+export type NavKey = "dashboard" | "history" | "progress" | "settings";
 
 const NAV: readonly { key: NavKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },

@@ -8,7 +8,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackendApiError, BackendClient } from "../api/backend-client.js";
 import type {
-  InterviewConfiguration,
   SerializedInterview,
   SerializedStateSnapshot,
   ToolName,
@@ -40,54 +39,6 @@ export function formatApiError(error: unknown): string {
     return `${error.code}: ${error.message}`;
   }
   return error instanceof Error ? error.message : "Unexpected error";
-}
-
-export interface SetupInput {
-  readonly candidateId: string;
-  readonly configuration: InterviewConfiguration;
-  readonly problemIds: readonly string[];
-  /** S5: deterministic backend auto-select instead of manual ids. */
-  readonly autoSelect: boolean;
-}
-
-// HLD 4.1: interview setup — create -> attach problems (manual ids or S5
-// backend auto-select from the configuration) -> ready. The voice session
-// mint (start) happens on the live screen, which auto-starts a ready
-// interview server-side (S3).
-export function useInterviewSetup(backend: BackendClient) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const setup = useCallback(
-    async (input: SetupInput): Promise<SerializedInterview> => {
-      setBusy(true);
-      setError(null);
-      try {
-        const interview = await backend.createInterview({
-          candidateId: input.candidateId,
-          configuration: input.configuration,
-        });
-        if (input.autoSelect) {
-          const selected = await backend.selectProblems(interview.id, {});
-          return await backend.markReady(selected.id);
-        }
-        if (input.problemIds.length > 0) {
-          return await backend.markReady(
-            (await backend.assignProblems(interview.id, input.problemIds)).id,
-          );
-        }
-        return await backend.markReady(interview.id);
-      } catch (e) {
-        setError(formatApiError(e));
-        throw e;
-      } finally {
-        setBusy(false);
-      }
-    },
-    [backend],
-  );
-
-  return { setup, busy, error, clearError: () => setError(null) };
 }
 
 export interface LiveEvent {

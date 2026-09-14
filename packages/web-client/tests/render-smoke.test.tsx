@@ -17,12 +17,13 @@ import type {
 import type { DashboardData } from "../src/state/use-dashboard.js";
 import { AppShell } from "../src/components/AppShell.js";
 import { App } from "../src/App.js";
-import { BriefingScreen } from "../src/screens/BriefingScreen.js";
+import type { SessionPlan } from "../src/flow.js";
 import { DashboardScreen } from "../src/screens/DashboardScreen.js";
 import { EvaluatingScreen } from "../src/screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "../src/screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "../src/screens/HistoryScreen.js";
 import { LiveScreen } from "../src/screens/LiveScreen.js";
+import { LobbyScreen } from "../src/screens/LobbyScreen.js";
 import { OnboardingScreen } from "../src/screens/OnboardingScreen.js";
 import { ProgressScreen } from "../src/screens/ProgressScreen.js";
 import { CreateAccountScreen } from "../src/screens/CreateAccountScreen.js";
@@ -30,7 +31,6 @@ import { ProfileScreen } from "../src/screens/ProfileScreen.js";
 import { ProfileForm } from "../src/components/ProfileForm.js";
 import { ResultsScreen } from "../src/screens/ResultsScreen.js";
 import { SettingsScreen } from "../src/screens/SettingsScreen.js";
-import { SetupScreen } from "../src/screens/SetupScreen.js";
 import { SignInScreen } from "../src/screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "../src/screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "../src/screens/WeakAreasScreen.js";
@@ -139,6 +139,17 @@ const dashboardRecommendation: SerializedRecommendation = {
 
 const dashboardProblem: Problem = { id: "prob_move-zeroes", title: "Move Zeroes", difficulty: "Easy" };
 
+const lobbyPlan: SessionPlan = {
+  interview,
+  recommendation: dashboardRecommendation,
+  problem: dashboardProblem,
+  curriculum: dashboardCurriculum,
+  mode: "Realistic Interview",
+  interaction: "Voice",
+  durationMinutes: 30,
+  difficulty: "Easy",
+};
+
 const dashboardData: DashboardData = {
   state: "ready",
   recommendation: dashboardRecommendation,
@@ -182,11 +193,14 @@ describe("screen render smoke", () => {
     expect(html).toContain("Curriculum progress");
     expect(html).toContain("Senior Backend Engineer");
   });
-  it("SetupScreen renders", () => {
-    expect(renderToString(<SetupScreen onCreated={noop} onCancel={noop} />)).toContain("New Interview");
-  });
-  it("BriefingScreen renders", () => {
-    expect(renderToString(<BriefingScreen interview={interview} mode="Realistic Interview" interaction="Voice" onBegin={noop} onBack={noop} />)).toContain("You will be evaluated on");
+  it("LobbyScreen renders the recommendation and session prep", () => {
+    const html = renderToString(
+      <LobbyScreen backend={backend} plan={lobbyPlan} onBegin={noop} onChangeGoal={noop} onBack={noop} />,
+    );
+    expect(html).toContain("Recommended practice");
+    expect(html).toContain("Move Zeroes");
+    expect(html).toContain("Session prep");
+    expect(html).toContain("Begin interview");
   });
   it("LiveScreen renders the join state", () => {
     expect(renderToString(<LiveScreen backend={backend} interview={interview} mode="Guided Coaching" interaction="Voice" onFinished={noop} onExit={noop} />)).toContain("Joining the interview");

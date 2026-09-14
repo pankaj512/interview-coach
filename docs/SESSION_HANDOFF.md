@@ -484,3 +484,27 @@ Open for Phase 6 (Lobby): final pre-interview step (recommendation + mic + sessi
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB HTTP smoke of the dashboard flow.
 Verified 2026-09-14: typecheck ok, test 382 passed (371 prior + 11 new: 7 dashboard + 4 client; no-DB run), `tsc -b` ok, `vite build` ok (334.28kB JS / 100.52kB gzip; CSS 28.56kB / 5.19kB gzip). Migration 0006 + seed idempotent on dev DB (300 problems, curriculum 12/59). Live HTTP smoke (port 3260, dev DB, LLM unconfigured) mirroring the Dashboard calls: register → `GET profile` null → `PUT profile` → `GET current` null → `POST` fallback (`new_topic` Arrays → `prob_move-zeroes`) → `GET skills` empty → `GET curriculum` 1/12/59 → `GET problem` (Move Zeroes/Easy) → `accept` (`accepted`) → create (candidate from session, body spoof ignored) → assign `prob_move-zeroes` → `ready`. Server stopped after (port 3260).
 Tag: `session-phase5` after commit.
+
+## Phase 6 — Lobby (2026-09-14)
+Status: done (verified below). Roadmap Phase 6, sub-phases 6.1–6.5. Final pre-interview step: the server recommendation + mic check + session prep, with no manual selection. The manual `SetupScreen` and the old `BriefingScreen` are retired; the Dashboard recommendation CTA is the only way into a session.
+
+Done:
+* Shared flow types (`src/flow.ts`): `InterviewMode`/`Interaction`/`Difficulty` + `SessionPlan` (interview + recommendation + resolved problem + curriculum + mode/interaction/duration/difficulty), moved out of the deleted `SetupScreen`.
+* Pure gating (`src/lobby.ts`): `sessionReadinessFromVoiceMode` (only `unconfigured` blocks Start — audit F8-3; blank/missing → `error`), `canBegin(mic, session)` = mic ready && session ready, plus readiness labels.
+* `screens/LobbyScreen.tsx`: shows the recommendation (type badge/source, topic, module, problem + difficulty, objective/reason via `buildRecommendationView`), the session plan (difficulty · duration · mode · interaction), the evaluation criteria, and a **Session prep** checklist (microphone permission + server voice readiness via `GET /api/ready`). "Begin interview" is disabled until both are ready; blocked mic/session offer inline retry; "Change goal" → profile, "Back" → Dashboard.
+* Client (`api/backend-client.ts`, `api/types.ts`): `getReady()` → `GET /api/ready` (open probe) + `ReadyInfo` mirror.
+* Wiring (`App.tsx`, `AppShell.tsx`, `DashboardScreen.tsx`): flow `setup`/`briefing` → `lobby`; `startRecommended(recommendation, problem, curriculum)` still accepts → create → assign → ready, then stores a `SessionPlan` and enters the Lobby; "New practice" (History/Progress/Weak areas) routes to the Dashboard; `NavKey` drops `setup`; `DashboardScreen.onStart` forwards the curriculum so the Lobby can resolve topic/module names. Deleted `SetupScreen.tsx`, `BriefingScreen.tsx` and the now-unused `useInterviewSetup`/`SetupInput` hook.
+* Styles (`styles.css`): `.lobby-recommendation`, `.readiness-list`/`.readiness-item` (reuses the existing briefing/recommendation tokens).
+* Tests: `lobby` (4: voice-mode→readiness mapping incl. blank→error, gating truth table, labels), `backend-client-lobby` (2: `/api/ready` URL/shape, 503 NOT_READY retryable); `render-smoke` swaps the Setup/Briefing cases for a Lobby case.
+
+Decisions locked:
+* **Readiness check, not pre-mint.** `POST .../voice-session` auto-starts the interview (S3), so pre-minting in the Lobby would start it before Begin. The Lobby instead reads `GET /api/ready` → `voiceMode`; `unconfigured` blocks Start with an actionable message (risk F8-3).
+* No topic/difficulty/problem selection anywhere (Setup retired). The system chooses the practice; difficulty comes from the recommended problem, duration/mode/interaction default to 30 min / Realistic / Voice.
+* `SetupResult` is replaced by `SessionPlan`; the Lobby carries the recommendation + resolved problem forward, so the persisted `recommendation_id`/`topic_id` linkage remains Phase 9 (app-level accept → create → assign binding for now).
+* Opening a past interview from History has no recommendation (`SessionPlan.recommendation` null) and the Lobby is never shown for it (goes straight to Results).
+
+Open for Phase 7 (Interview room + Voice Live): extend `buildSessionInstructions` with profile/topic/objective context; the Lobby already carries the recommendation-driven problem into the room.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build`.
+Verified 2026-09-14: typecheck ok, test 387 passed (382 prior − 2 removed Setup/Briefing render cases + 7 new: 4 lobby + 2 client + 1 Lobby render; no-DB warn-and-pass), `tsc -b` ok, `vite build` ok (331.05kB JS / 99.61kB gzip; CSS 28.82kB / 5.22kB gzip). Backend unchanged — `GET /api/ready` is the existing S8a probe (open; covered by `hardening.test.ts`), so no migration or live-DB smoke was required this phase.
+Tag: `session-phase6` after commit.

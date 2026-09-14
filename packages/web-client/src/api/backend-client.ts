@@ -33,6 +33,7 @@ import type {
   SerializedRecommendation,
   SerializedCurriculum,
   SkillSnapshot,
+  ReadyInfo,
 } from "./types.js";
 
 export class BackendApiError extends Error {
@@ -109,6 +110,13 @@ export class BackendClient {
 
   async getHealth(): Promise<{ ok: true; service: string; version: string }> {
     return this.request("GET", "/api/health");
+  }
+
+  // Phase 6: the Lobby gates "Begin interview" on the server's voice readiness
+  // (GET /api/ready → voiceMode). Open probe; a 503 NOT_READY surfaces as a
+  // retryable BackendApiError.
+  async getReady(): Promise<ReadyInfo> {
+    return this.request("GET", "/api/ready");
   }
 
   // S8c accounts (HLD 7.1): self-service register/login return the session

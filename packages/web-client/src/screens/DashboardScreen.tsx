@@ -6,6 +6,7 @@
 
 import type {
   Problem,
+  SerializedCurriculum,
   SerializedRecommendation,
   SerializedUserProfile,
 } from "../api/types.js";
@@ -38,7 +39,11 @@ export function DashboardScreen({
   readonly profile: SerializedUserProfile;
   readonly data: DashboardData;
   readonly starting: boolean;
-  readonly onStart: (recommendation: SerializedRecommendation, problem: Problem | null) => void;
+  readonly onStart: (
+    recommendation: SerializedRecommendation,
+    problem: Problem | null,
+    curriculum: SerializedCurriculum | null,
+  ) => void;
   readonly onProfile: () => void;
 }) {
   if (data.state === "loading") {
@@ -117,7 +122,7 @@ export function DashboardScreen({
           <p className="recommendation-reason">{view.reason}</p>
           <div className="row actions">
             <PrimaryButton
-              onClick={() => onStart(recommendation, data.problem)}
+              onClick={() => onStart(recommendation, data.problem, data.curriculum)}
               disabled={starting || data.busy}
             >
               {starting ? "Starting…" : "Start practice"}

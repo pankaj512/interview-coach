@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { BackendApiError, type BackendClient } from "./api/backend-client.js";
 import type {
   Problem,
+  SerializedCurriculum,
   SerializedInterview,
   SerializedRecommendation,
   SerializedStateSnapshot,
@@ -16,20 +17,20 @@ import type {
 import { AppShell, type NavKey } from "./components/AppShell.js";
 import { GhostButton } from "./ds/buttons.js";
 import { Card } from "./ds/primitives.js";
+import type { Difficulty, Interaction, InterviewMode, SessionPlan } from "./flow.js";
 import { loadHistory, recordHistory, type HistoryEntry } from "./history.js";
-import { BriefingScreen } from "./screens/BriefingScreen.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "./screens/HistoryScreen.js";
 import { LiveScreen } from "./screens/LiveScreen.js";
+import { LobbyScreen } from "./screens/LobbyScreen.js";
 import { OnboardingScreen } from "./screens/OnboardingScreen.js";
 import { ProgressScreen } from "./screens/ProgressScreen.js";
 import { ResultsScreen } from "./screens/ResultsScreen.js";
 import { SettingsScreen } from "./screens/SettingsScreen.js";
 import { CreateAccountScreen } from "./screens/CreateAccountScreen.js";
 import { ProfileScreen } from "./screens/ProfileScreen.js";
-import { SetupScreen, type Interaction, type InterviewMode, type SetupResult } from "./screens/SetupScreen.js";
 import { SignInScreen } from "./screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "./screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "./screens/WeakAreasScreen.js";
@@ -37,10 +38,9 @@ import { clearAuthSession, useAuthSession } from "./state/auth-store.js";
 import { useDashboard } from "./state/use-dashboard.js";
 import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-interview.js";
 
-type NavView = Exclude<NavKey, "setup">;
+type NavView = NavKey;
 type Flow =
-  | "setup"
-  | "briefing"
+  | "lobby"
   | "live"
   | "evaluating"
   | "results"
@@ -52,7 +52,7 @@ type Flow =
   | "profile";
 type ProfileState = "idle" | "loading" | "ready" | "error";
 
-function asDifficulty(value: string | undefined): "Easy" | "Medium" | "Hard" {
+function asDifficulty(value: string | undefined): Difficulty {
   return value === "Easy" || value === "Hard" ? value : "Medium";
 }
 
@@ -68,7 +68,11 @@ function DashboardView({
   readonly backend: BackendClient;
   readonly profile: SerializedUserProfile;
   readonly starting: boolean;
-  readonly onStart: (recommendation: SerializedRecommendation, problem: Problem | null) => void;
+  readonly onStart: (
+    recommendation: SerializedRecommendation,
+    problem: Problem | null,
+    curriculum: SerializedCurriculum | null,
+  ) => void;
   readonly onProfile: () => void;
 }) {
   const data = useDashboard(backend);
@@ -94,7 +98,7 @@ export function App() {
   );
   const [profileNonce, setProfileNonce] = useState(0);
   const [interview, setInterview] = useState<SerializedInterview | null>(null);
-  const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
+  const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [stale, setStale] = useState(false);
@@ -153,11 +157,6 @@ export function App() {
   }, []);
 
   function navigate(key: NavKey) {
-    if (key === "setup") {
-      setNav(null);
-      setFlow("setup");
-      return;
-    }
     setNav(key);
     setFlow(null);
   }
@@ -173,42 +172,46 @@ export function App() {
     navigate("dashboard");
   }
 
-  function handleCreated(result: SetupResult) {
-    setInterview(result.interview);
-    setSetupResult(result);
-    setFinalSnapshot(null);
-    setEvents([]);
-    setStale(false);
-    setNav(null);
-    // Straight to the briefing/lobby, which requests the microphone.
-    setFlow("briefing");
-  }
-
-  // Phase 5: the Dashboard's primary CTA. Accept the recommendation, then
+  // Phase 5/6: the Dashboard's primary CTA. Accept the recommendation, then
   // create + assign + ready an interview bound to the recommended problem so
   // practice starts from server state (the persisted recommendation linkage is
-  // Phase 9; the app-level binding is Phase 6).
+  // Phase 9; the app-level binding is Phase 6). The Lobby is the final
+  // pre-interview step — no manual topic/difficulty/problem selection.
   const startRecommended = useCallback(
-    async (recommendation: SerializedRecommendation, problem: Problem | null) => {
+    async (
+      recommendation: SerializedRecommendation,
+      problem: Problem | null,
+      curriculum: SerializedCurriculum | null,
+    ) => {
       if (session === null) return;
       setDashboardBusy(true);
       setDashboardError(null);
       try {
         await backend.acceptRecommendation(recommendation.id).catch(() => undefined);
         const difficulty = asDifficulty(problem?.difficulty);
+        const durationMinutes = 30;
         const created = await backend.createInterview({
           candidateId: session.displayName || session.email,
-          configuration: { interviewType: "dsa", difficulty, durationMinutes: 30, problemCount: 1 },
+          configuration: { interviewType: "dsa", difficulty, durationMinutes, problemCount: 1 },
         });
         const assigned = await backend.assignProblems(created.id, [recommendation.problemId]);
         const ready = await backend.markReady(assigned.id);
         setInterview(ready);
-        setSetupResult({ interview: ready, mode: "Realistic Interview", interaction: "Voice", durationMinutes: 30, difficulty });
+        setSessionPlan({
+          interview: ready,
+          recommendation,
+          problem,
+          curriculum,
+          mode: "Realistic Interview",
+          interaction: "Voice",
+          durationMinutes,
+          difficulty,
+        });
         setFinalSnapshot(null);
         setEvents([]);
         setStale(false);
         setNav(null);
-        setFlow("briefing");
+        setFlow("lobby");
       } catch (e) {
         setDashboardError(formatApiError(e));
       } finally {
@@ -239,8 +242,8 @@ export function App() {
           status: snapshot?.interview.status ?? "completed",
           at: new Date().toISOString(),
           interviewType: current.configuration.interviewType === "dsa" ? "Coding" : current.configuration.interviewType,
-          difficulty: current.configuration.difficulty ?? setupResult?.difficulty ?? "Medium",
-          mode: setupResult?.mode ?? "Realistic Interview",
+          difficulty: current.configuration.difficulty ?? sessionPlan?.difficulty ?? "Medium",
+          mode: sessionPlan?.mode ?? "Realistic Interview",
           durationMin,
           ...(evaluation?.overallScore === undefined ? {} : { overallScore: evaluation.overallScore }),
           ...(evaluation?.recommendation === undefined ? {} : { recommendation: evaluation.recommendation }),
@@ -252,7 +255,7 @@ export function App() {
       setFlow("evaluating");
       evaluatingTimer.current = window.setTimeout(() => setFlow("results"), 1800);
     },
-    [interview, remember, setupResult],
+    [interview, remember, sessionPlan],
   );
 
   useEffect(() => () => {
@@ -265,7 +268,7 @@ export function App() {
     try {
       const snapshot = await backend.getState(entry.id);
       setInterview(snapshot.interview);
-      setSetupResult(null);
+      setSessionPlan(null);
       setFinalSnapshot(snapshot);
       setEvents([]);
       setStale(false);
@@ -278,14 +281,15 @@ export function App() {
     }
   }
 
+  // "New practice" now routes to the Dashboard, whose recommendation CTA is the
+  // only entry into a session (roadmap Phase 6: Setup retired).
   function startNew() {
     setInterview(null);
-    setSetupResult(null);
+    setSessionPlan(null);
     setFinalSnapshot(null);
     setEvents([]);
     setStale(false);
-    setNav(null);
-    setFlow("setup");
+    navigate("dashboard");
   }
 
   // ---- First-run gate (Phase 2) ----
@@ -406,22 +410,21 @@ export function App() {
   // ---- Interview ritual (standalone) ----
   return (
     <main className="app">
-      {flow === "setup" && <SetupScreen onCreated={handleCreated} onCancel={() => navigate("dashboard")} />}
-      {flow === "briefing" && interview !== null && setupResult !== null && (
-        <BriefingScreen
-          interview={interview}
-          mode={setupResult.mode}
-          interaction={setupResult.interaction}
+      {flow === "lobby" && interview !== null && sessionPlan !== null && (
+        <LobbyScreen
+          backend={backend}
+          plan={sessionPlan}
           onBegin={() => setFlow("live")}
-          onBack={() => setFlow("setup")}
+          onChangeGoal={() => goAuth("profile")}
+          onBack={() => navigate("dashboard")}
         />
       )}
-      {flow === "live" && interview !== null && setupResult !== null && (
+      {flow === "live" && interview !== null && sessionPlan !== null && (
         <LiveScreen
           backend={backend}
           interview={interview}
-          mode={setupResult.mode as InterviewMode}
-          interaction={setupResult.interaction as Interaction}
+          mode={sessionPlan.mode as InterviewMode}
+          interaction={sessionPlan.interaction as Interaction}
           onFinished={handleFinished}
           onExit={() => navigate("dashboard")}
         />

@@ -14,7 +14,7 @@ import { Card, Dialog, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
-import type { Interaction, InterviewMode } from "./SetupScreen.js";
+import type { Interaction, InterviewMode } from "../flow.js";
 
 export function LiveScreen({
   backend,

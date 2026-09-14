@@ -103,6 +103,17 @@ export type VoiceCredentialMode =
   | "unconfigured"
   | "test";
 
+// Phase 6: GET /api/ready probe (S8a). The Lobby reads `voiceMode` to decide
+// whether a session can actually be minted before enabling Start.
+export interface ReadyInfo {
+  readonly ok: true;
+  readonly ready: boolean;
+  readonly service: string;
+  readonly version: string;
+  readonly voiceMode: VoiceCredentialMode;
+  readonly activeVoiceSessions: number;
+}
+
 export interface VoiceSessionPayload {
   readonly websocketUrl: string;
   readonly endpoint: string;
