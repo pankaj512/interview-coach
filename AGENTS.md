@@ -31,7 +31,7 @@ Per-session handoff: `docs/SESSION_HANDOFF.md` (update every session; tag `sessi
 
 - **Backend owns truth; model owns conversation.** Candidate identity, interview status, problems, scores, evaluation, timestamps, persistence live in the backend. Never let model output become canonical state.
 - **Tools are the model/app boundary.** Small domain tools (`get_current_problem`, `get_interview_state`, `get_candidate_performance`, `end_interview`). Never expose generic DB/SQL access.
-- **Realtime path stays minimal.** `interview-agent` (background eval, reports, analytics) does NOT belong in the realtime voice loop. No generic agent framework, custom STT/TTS, or memory system — HLD explicitly defers these.
+- **Realtime path stays minimal.** No generic agent framework, custom STT/TTS, or memory system. Per ADR-002 there is **no separate `interview-agent` service** for v1: recommendation, evaluation, skill update, and curriculum are backend application services that call a server-side LLM, with an in-process background job runner (extractable to a worker later). See `docs/implementation-roadmap.md`.
 - **Every realtime tool call deduplicates by `call_id`.** One model function call can arrive via multiple Voice Live events; execute once.
 - **Azure credentials stay server-side.** Never ship them to the client. API-key mode is local-dev-only.
 

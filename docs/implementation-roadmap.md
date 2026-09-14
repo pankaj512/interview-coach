@@ -161,21 +161,20 @@ rest first). **6** needs **4** + Phase 9's interview-from-recommendation binding
 
 ---
 
-## Open micro-items (confirm before/at the noted phase)
+## Micro-items (resolved 2026-09-14)
 
-1. **Tool surface scope** (Phase 8) — the 4 canonical tools imply the realtime
-   surface no longer exposes hints/code-execution/context as separate tools. Intended
-   interpretation: `get_current_interview` returns interview + configuration +
-   candidate context; `submit_interview_data` covers candidate answers/notes +
-   code submissions; hints become model-driven conversation (no
+1. **Tool surface scope** — accepted: the realtime surface is exactly
+   `get_current_interview` (interview + configuration + candidate context),
+   `get_current_problem`, `submit_interview_data` (candidate answers/notes + code
+   submissions), `end_interview`. Hints are model-driven conversation (no
    `get_problem_hint` tool); code execution stays the client HTTP path
-   (`POST /submissions/:id/runs`). Confirm, or name any tool that must remain
-   first-class.
-2. **Mastery level naming** (Phase 3/11) — thresholds reference "beginner/
-   developing/proficient/strong" while the scale is
-   `not_started/learning/developing/proficient/mastered`. Proposed mapping:
-   `not_started→learning` (1), `learning→developing` (2),
-   `developing→proficient` (3), `proficient→mastered` (3). Confirm names + list.
+   (`POST /submissions/:id/runs`); `get_candidate_performance` /
+   `get_interview_configuration` fold into `get_current_interview`. Old names are
+   deprecated aliases only.
+2. **Mastery level naming** — accepted scale: `not_started → learning →
+   developing → proficient → mastered`; thresholds `not_started→learning` 1,
+   `learning→developing` 2, `developing→proficient` 3, `proficient→mastered` 3
+   (configurable policy; "beginner" ≈ `learning`, "strong" ≈ `mastered`).
 
 ---
 
@@ -547,6 +546,6 @@ rest first). **6** needs **4** + Phase 9's interview-from-recommendation binding
   architecture").
 - Current architecture baseline: `interview-coach-hld-and-implementation-plan.md`,
   `docs/architecture-frozen.md`.
-- Open product decisions: `docs/interview-coach-product-decisions.md` §17.
+- Product decisions (resolved): `docs/interview-coach-product-decisions.md` §17.
 - Build-phase audit (pre-learning-loop): `docs/audit/`.
 - Deployment/ops: `docs/deployment.md`.

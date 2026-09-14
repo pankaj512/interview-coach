@@ -336,9 +336,40 @@ than confirmed product decisions.
 
 ------------------------------------------------------------------------
 
-## 17. Open Product Decisions
+## 17. Product Decisions
 
-These are useful candidates for the next product-decision pass:
+### 17.1 Resolved (2026-09-14 — ADR-002)
+
+The previously-open items below are now decided for v1. Full detail:
+`docs/implementation-roadmap.md` + `docs/adr-002-recommendation-evaluation-llm.md`.
+
+- **Interview types** — **DSA only for v1**; the domain stays extensible (System
+  Design, Behavioral, AI/ML, …) behind a DSA implementation seam. Not implemented
+  now.
+- **Scoring / evaluation** — structured **LLM** evaluation over 7 canonical
+  dimensions (`problem_understanding, approach, communication, coding,
+  testing_debugging, complexity_analysis, independence`), each with score +
+  evidence + feedback. The **backend derives** `overallScore`, success, and
+  progression (no arbitrary LLM overall score; the old "≥3 hints" downgrade rule
+  is removed).
+- **Feedback timing** — post-interview, **asynchronous** (background evaluation
+  job; UI shows `evaluation_in_progress`).
+- **Session persistence** — server-owned (PostgreSQL): profile, interview
+  history, transcript, evaluations, per-topic `UserSkillState`, curriculum
+  progress, recommendations. The browser is never authoritative.
+- **Evaluation of improvement** — per-topic mastery over time + simple trajectory
+  metrics (mastery progression, success vs attempts, recurring weaknesses,
+  recommendation → outcome), not a complex score.
+- **Taxonomy** (domain config, extensible): interview types (`dsa` v1); roles
+  (Frontend Engineer, Backend Engineer, Full Stack Engineer, Mobile Engineer,
+  Data Scientist, ML Engineer, DevOps/SRE, Data Engineer, Software Engineer,
+  Other); levels (Entry, Junior, Mid, Senior, Staff, Principal).
+- **Onboarding** — required on first sign-in, editable later.
+- **Guests** — no anonymous learning loop; sign-in required.
+
+### 17.2 Originally open items (now resolved above)
+
+These were the candidate questions for the product-decision pass:
 
 ### Interview types
 
@@ -381,6 +412,17 @@ The core product principle is:
 
 The system should feel like an intelligent interview partner---not
 merely an LLM wrapped in a CLI.
+
+For the personalized learning loop (ADR-002):
+
+> **The user chooses what kind of interview to prepare for; Interview Coach
+> decides what to practice**, adapting from profile, curriculum, skill state,
+> previous performance, and learning progress.
+
+> **The LLM is not the system of record.** The LLM reasons, evaluates, explains,
+> and proposes recommendations. The backend validates those outputs and owns all
+> persistent user state, curriculum state, mastery state, interview state,
+> scores, and progression (PostgreSQL is the source of truth).
 
 ------------------------------------------------------------------------
 

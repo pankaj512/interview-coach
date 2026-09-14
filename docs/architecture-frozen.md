@@ -2,6 +2,8 @@
 
 Source: `interview-coach-hld-and-implementation-plan.md` (2026-09-11). This file is the immutable pointer. Changes require an ADR + HLD amendment, never a silent refactor.
 
+**Amended by ADR-002 (2026-09-14)** — `docs/adr-002-recommendation-evaluation-llm.md` — for the personalized learning loop (§2 adds a server-side reasoning plane; §8 absorbs `interview-agent`; §9 adds Phase 9). See `docs/implementation-roadmap.md` for the target architecture and phases.
+
 ## 1. Principle
 
 > Backend owns truth; model owns conversation.
@@ -19,6 +21,7 @@ Tool path:     Voice Live --function_call--> Browser --POST /tool-exec--> Fastif
 
 * No backend-proxied realtime audio. Browser↔Voice Live direct with backend-minted ephemeral only.
 * External CLI harness at `/home/pankaj/dev/Projects/InterviewCoachCli` is the regression path; it is NOT duplicated in this repo.
+* **Reasoning plane (added by ADR-002):** backend → server-side Azure AI Foundry LLM for recommendation (synchronous) and evaluation (asynchronous background job), behind `RecommendationModel`/`EvaluationModel`. Separate from the realtime model; credentials server-side only. The LLM proposes; the backend validates and persists.
 
 ## 3. Validated realtime config (reuse as-is)
 
@@ -59,8 +62,10 @@ Tool requirements: narrow scope, authz vs current interview, deterministic where
 
 ## 8. Explicitly out of realtime path
 
-`interview-agent` (background eval/reports/analytics only), generic agent framework, custom STT/TTS, memory system, multi-agent orchestration, code sandbox before Phase 6/7.
+Generic agent framework, custom STT/TTS, memory system, multi-agent orchestration, code sandbox before Phase 6/7. **`interview-agent` as a separate service is NOT required for v1 (ADR-002):** recommendation, evaluation, skill update, and curriculum are backend application services with an in-process background job runner (extractable to a worker later without domain changes).
 
 ## 9. Phase order
 
-0 Freeze (S0) → 1 Domain (S1) → 2 Persistence (S2) → 3 Voice session + idempotency (S3) → 4 Web client (S4, rebuilt S6 per SD3 handoff) → 5 Intelligence/eval (S5a backend + S5b web) → 6 Sandbox (S7) → 7–8 Hardening/deploy (S8).
+0 Freeze (S0) → 1 Domain (S1) → 2 Persistence (S2) → 3 Voice session + idempotency (S3) → 4 Web client (S4, rebuilt S6 per SD3 handoff) → 5 Intelligence/eval (S5a backend + S5b web) → 6 Sandbox (S7) → 7–8 Hardening/deploy (S8) → **9 Personalized learning loop (profile/curriculum/skills/recommendation/evaluation, ADR-002; see `docs/implementation-roadmap.md`)** → 10 Product expansion (interview types).
+
+The learning-loop phases are detailed as Phases 1–16 in `docs/implementation-roadmap.md`; Phase 1 of that document aligns this file and the HLD to the target architecture.
