@@ -1,6 +1,6 @@
 import type { InterviewId, ProblemId } from "./ids.js";
 import { asProblemId, asSubmissionId } from "./ids.js";
-import type { EvaluationRecommendation } from "./evaluation.js";
+import type { Evaluation, EvaluationRecommendation } from "./evaluation.js";
 import type {
   InterviewService,
   InterviewStateSnapshot,
@@ -42,28 +42,64 @@ import { err, ok } from "./result.js";
 // or a named submission against caller-supplied cases). evaluate_solution
 // scoring policy stays open for S7b; runs are persisted and surfaced via
 // get_candidate_performance meanwhile.
-export type ToolName =
+//
+// Phase 8 (ADR-002 decision 11, roadmap micro-item 1) collapses the surface to
+// four canonical tools. New code/docs use only these:
+//   - get_current_interview: interview + configuration + candidate context
+//   - get_current_problem
+//   - submit_interview_data: candidate answers/notes + code submissions
+//   - end_interview
+// The pre-Phase-8 names stay accepted as DEPRECATED ALIASES (CLI-harness
+// compatibility) and keep their original result shapes; they are never
+// advertised to the web model. Hints are model-driven conversation (no
+// get_problem_hint tool) and code execution stays the client HTTP path, but
+// the legacy aliases keep working for the harness.
+export type CanonicalToolName =
+  | "get_current_interview"
   | "get_current_problem"
+  | "submit_interview_data"
+  | "end_interview";
+
+export type DeprecatedToolAlias =
   | "get_interview_state"
   | "get_candidate_performance"
-  | "end_interview"
   | "get_interview_configuration"
   | "get_problem_hint"
   | "record_candidate_answer"
   | "submit_solution"
   | "run_code";
 
-export const TOOL_NAMES: readonly ToolName[] = [
+export type ToolName = CanonicalToolName | DeprecatedToolAlias;
+
+export const CANONICAL_TOOL_NAMES: readonly CanonicalToolName[] = [
+  "get_current_interview",
   "get_current_problem",
+  "submit_interview_data",
+  "end_interview",
+];
+
+export const DEPRECATED_TOOL_ALIASES: readonly DeprecatedToolAlias[] = [
   "get_interview_state",
   "get_candidate_performance",
-  "end_interview",
   "get_interview_configuration",
   "get_problem_hint",
   "record_candidate_answer",
   "submit_solution",
   "run_code",
 ];
+
+export const TOOL_NAMES: readonly ToolName[] = [
+  ...CANONICAL_TOOL_NAMES,
+  ...DEPRECATED_TOOL_ALIASES,
+];
+
+export function isCanonicalToolName(raw: string): raw is CanonicalToolName {
+  return (CANONICAL_TOOL_NAMES as readonly string[]).includes(raw);
+}
+
+export function isDeprecatedToolAlias(raw: string): raw is DeprecatedToolAlias {
+  return (DEPRECATED_TOOL_ALIASES as readonly string[]).includes(raw);
+}
 
 export function isToolName(raw: string): raw is ToolName {
   return (TOOL_NAMES as readonly string[]).includes(raw);
@@ -141,6 +177,47 @@ export interface RunCodeResult {
   readonly totalCount: number;
 }
 
+// Phase 8 canonical read: interview + configuration + candidate context in one
+// round-trip (folds get_interview_state / get_interview_configuration /
+// get_candidate_performance).
+export interface CurrentInterviewResult {
+  readonly interview: {
+    readonly id: string;
+    readonly candidateId: string;
+    readonly status: InterviewStatus;
+    readonly configuration: InterviewConfiguration;
+    readonly problemCount: number;
+    readonly startedAt: string | null;
+    readonly updatedAt: string;
+  };
+  readonly currentProblemId: string | null;
+  readonly responseCount: number;
+  readonly performance: {
+    readonly byKind: Record<ResponseKind, number>;
+    readonly hintsUsed: number;
+    readonly hasEvaluation: boolean;
+    readonly recommendation: EvaluationRecommendation | null;
+    readonly submissionCount: number;
+    readonly lastRunStatus: RunStatus | null;
+  };
+}
+
+// Phase 8 canonical write: a candidate response (answer/approach/code/question/
+// note) OR a code submission. Exactly one shape is recorded per call.
+export type SubmitInterviewDataResult =
+  | {
+      readonly recorded: "response";
+      readonly kind: ResponseKind;
+      readonly responseCount: number;
+    }
+  | {
+      readonly recorded: "code";
+      readonly submissionId: string;
+      readonly language: string;
+      readonly codeLength: number;
+      readonly submissionCount: number;
+    };
+
 export type ToolResult =
   | CurrentProblemResult
   | InterviewStateResult
@@ -150,7 +227,9 @@ export type ToolResult =
   | ProblemHintResult
   | RecordAnswerResult
   | SubmitSolutionResult
-  | RunCodeResult;
+  | RunCodeResult
+  | CurrentInterviewResult
+  | SubmitInterviewDataResult;
 
 export interface ToolServiceDeps {
   readonly interviews: InterviewService;
@@ -231,6 +310,13 @@ export class ToolService {
       case "run_code":
         result = await this.runCode(ctx, args);
         break;
+      // Phase 8 canonical tools.
+      case "get_current_interview":
+        result = await this.getCurrentInterview(ctx);
+        break;
+      case "submit_interview_data":
+        result = await this.submitInterviewData(ctx, args);
+        break;
       default: {
         // Exhaustive guard (audit F8): a future ToolName added without a
         // handler fails as a domain error instead of a TypeError.
@@ -283,6 +369,15 @@ export class ToolService {
   ): Promise<Result<CandidatePerformanceResult>> {
     const state = await this.interviews.getState(ctx.interviewId);
     if (!state.ok) return state;
+    return this.performanceSummary(ctx, state.value.evaluation);
+  }
+
+  // Shared performance assembly for the legacy get_candidate_performance alias
+  // and the canonical get_current_interview tool.
+  private async performanceSummary(
+    ctx: ToolContext,
+    evaluation: Evaluation | null,
+  ): Promise<Result<CandidatePerformanceResult>> {
     const responses = await this.responses.listByInterview(ctx.interviewId);
     const byKind: Record<ResponseKind, number> = {
       answer: 0,
@@ -294,7 +389,6 @@ export class ToolService {
     for (const response of responses) {
       byKind[response.kind] += 1;
     }
-    const evaluation = state.value.evaluation;
     const submissionCount = await this.submissions.submissionCount(
       ctx.interviewId,
     );
@@ -311,6 +405,37 @@ export class ToolService {
       recommendation: evaluation?.recommendation ?? null,
       submissionCount,
       lastRunStatus: latest.value?.status ?? null,
+    });
+  }
+
+  // Phase 8 canonical read: interview + configuration + candidate context in
+  // one round-trip. Folds the legacy get_interview_state,
+  // get_interview_configuration, and get_candidate_performance results.
+  async getCurrentInterview(
+    ctx: ToolContext,
+  ): Promise<Result<CurrentInterviewResult>> {
+    const state = await this.interviews.getState(ctx.interviewId);
+    if (!state.ok) return state;
+    const performance = await this.performanceSummary(
+      ctx,
+      state.value.evaluation,
+    );
+    if (!performance.ok) return performance;
+    const interview = state.value.interview;
+    const { responseCount, ...rest } = performance.value;
+    return ok({
+      interview: {
+        id: interview.id,
+        candidateId: interview.candidateId,
+        status: interview.status,
+        configuration: interview.configuration,
+        problemCount: interview.problems.length,
+        startedAt: interview.startedAt?.toISOString() ?? null,
+        updatedAt: interview.updatedAt.toISOString(),
+      },
+      currentProblemId: state.value.currentProblem?.id ?? null,
+      responseCount,
+      performance: rest,
     });
   }
 
@@ -547,6 +672,38 @@ export class ToolService {
       status: run.value.status,
       passedCount: run.value.passedCount,
       totalCount: run.value.totalCount,
+    });
+  }
+
+  // Phase 8 canonical write (folds record_candidate_answer + submit_solution).
+  // Args are a discriminated shape by presence:
+  //   - { language, code, problemId? }  -> persist a code submission
+  //   - { kind?, content, problemId? }  -> persist a candidate response
+  // A call with any code field takes the submission path; otherwise content is
+  // required. Missing/partial shapes surface the underlying VALIDATION_ERROR.
+  async submitInterviewData(
+    ctx: ToolContext,
+    args?: ToolArgs,
+  ): Promise<Result<SubmitInterviewDataResult>> {
+    const hasCodeFields =
+      args?.["language"] !== undefined || args?.["code"] !== undefined;
+    if (hasCodeFields) {
+      const submitted = await this.submitSolution(ctx, args);
+      if (!submitted.ok) return submitted;
+      return ok({
+        recorded: "code",
+        submissionId: submitted.value.submissionId,
+        language: submitted.value.language,
+        codeLength: submitted.value.codeLength,
+        submissionCount: submitted.value.submissionCount,
+      });
+    }
+    const recorded = await this.recordCandidateAnswer(ctx, args);
+    if (!recorded.ok) return recorded;
+    return ok({
+      recorded: "response",
+      kind: recorded.value.kind,
+      responseCount: recorded.value.responseCount,
     });
   }
 }

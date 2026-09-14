@@ -39,16 +39,11 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
 }
 
 describe("session wire format", () => {
-  it("advertises the nine narrow domain tools (S4 + S5 intelligence + S7a sandbox)", () => {
+  it("advertises the four canonical Phase 8 tools", () => {
     expect(REALTIME_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([
+      "get_current_interview",
       "get_current_problem",
-      "get_interview_state",
-      "get_candidate_performance",
-      "get_interview_configuration",
-      "get_problem_hint",
-      "record_candidate_answer",
-      "submit_solution",
-      "run_code",
+      "submit_interview_data",
       "end_interview",
     ]);
     for (const tool of REALTIME_TOOL_DEFINITIONS) {
@@ -57,16 +52,13 @@ describe("session wire format", () => {
     }
   });
 
-  it("declares argument schemas for the S5 tools", () => {
+  it("declares the submit_interview_data argument schema", () => {
     const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
-    expect(byName.get("get_problem_hint")?.parameters.properties).toHaveProperty("level");
-    expect(byName.get("record_candidate_answer")?.parameters.required).toEqual(["content"]);
-  });
-
-  it("declares argument schemas for the S7a sandbox tools", () => {
-    const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
-    expect(byName.get("submit_solution")?.parameters.required).toEqual(["language", "code"]);
-    expect(byName.get("run_code")?.parameters.required).toEqual(["testCases"]);
+    const submit = byName.get("submit_interview_data");
+    expect(submit?.parameters.properties).toHaveProperty("content");
+    expect(submit?.parameters.properties).toHaveProperty("code");
+    expect(submit?.parameters.properties).toHaveProperty("language");
+    expect(submit?.parameters.required).toEqual([]);
   });
 
   it("builds a CLI-compatible session.update from the mint", () => {
@@ -88,7 +80,7 @@ describe("session wire format", () => {
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
     expect(update.session["tool_choice"]).toBe("auto");
-    expect((update.session["tools"] as unknown[]).length).toBe(9);
+    expect((update.session["tools"] as unknown[]).length).toBe(4);
   });
 
   it("transports api-key credentials as a query parameter (no header support in browsers)", () => {

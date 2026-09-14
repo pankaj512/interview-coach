@@ -139,6 +139,147 @@ describe("tool-exec", () => {
   });
 });
 
+describe("phase 8 canonical tools", () => {
+  it("get_current_interview folds state, configuration, and performance", async () => {
+    backend = buildTestBackend();
+    await seedProblem(backend.repos);
+    const { id } = await createStartedInterview(backend, ["prob_two-sum"]);
+    const { statusCode, json } = await toolExec(backend, id, {
+      call_id: "call_canonical_read_1",
+      tool: "get_current_interview",
+    });
+    expect(statusCode).toBe(200);
+    expect(json).toMatchObject({
+      ok: true,
+      tool: "get_current_interview",
+      result: {
+        interview: { status: "in_progress", configuration: { interviewType: "dsa" }, problemCount: 1 },
+        currentProblemId: "prob_two-sum",
+        responseCount: 0,
+        performance: { submissionCount: 0, lastRunStatus: null },
+      },
+    });
+    // responseCount is top-level on the canonical result, not duplicated in performance.
+    const result = (json as { result: Record<string, unknown> }).result;
+    expect(result).not.toHaveProperty("performance.responseCount");
+  });
+
+  it("submit_interview_data records a response", async () => {
+    backend = buildTestBackend();
+    const { id } = await createStartedInterview(backend);
+    const { statusCode, json } = await toolExec(backend, id, {
+      call_id: "call_canonical_write_1",
+      tool: "submit_interview_data",
+      arguments: { kind: "approach", content: "I would use a hash map." },
+    });
+    expect(statusCode).toBe(200);
+    expect(json).toMatchObject({
+      ok: true,
+      result: { recorded: "response", kind: "approach", responseCount: 1 },
+    });
+  });
+
+  it("submit_interview_data persists a code submission", async () => {
+    backend = buildTestBackend();
+    const { id } = await createStartedInterview(backend);
+    const { statusCode, json } = await toolExec(backend, id, {
+      call_id: "call_canonical_code_1",
+      tool: "submit_interview_data",
+      arguments: { language: "javascript", code: "return 1;" },
+    });
+    expect(statusCode).toBe(200);
+    expect(json).toMatchObject({
+      ok: true,
+      result: { recorded: "code", language: "javascript", submissionCount: 1 },
+    });
+    expect((json as { result: { submissionId: string } }).result.submissionId).toMatch(/^sub_/);
+  });
+
+  it("deduplicates canonical calls by call_id", async () => {
+    backend = buildTestBackend();
+    const { id } = await createStartedInterview(backend);
+    const first = await toolExec(backend, id, {
+      call_id: "call_canonical_dup_1",
+      tool: "submit_interview_data",
+      arguments: { content: "first" },
+    });
+    const second = await toolExec(backend, id, {
+      call_id: "call_canonical_dup_1",
+      tool: "submit_interview_data",
+      arguments: { content: "first" },
+    });
+    expect(first.json).toMatchObject({ ok: true, replayed: false, result: { responseCount: 1 } });
+    expect(second.json).toMatchObject({ ok: true, replayed: true, result: { responseCount: 1 } });
+    const events = await backend.repos.events.listByInterview(asInterviewId(id));
+    expect(events.filter((e) => e.type === "tool.invoked")).toHaveLength(1);
+  });
+
+  it("keeps the deprecated aliases working with their original shapes", async () => {
+    backend = buildTestBackend();
+    await seedProblem(backend.repos);
+    const { id } = await createStartedInterview(backend, ["prob_two-sum"]);
+    const state = await toolExec(backend, id, { call_id: "alias_state", tool: "get_interview_state" });
+    expect(state.json).toMatchObject({ ok: true, result: { status: "in_progress" } });
+    const config = await toolExec(backend, id, { call_id: "alias_config", tool: "get_interview_configuration" });
+    expect(config.json).toMatchObject({ ok: true, result: { configuration: { interviewType: "dsa" } } });
+    const perf = await toolExec(backend, id, { call_id: "alias_perf", tool: "get_candidate_performance" });
+    expect(perf.json).toMatchObject({ ok: true, result: { responseCount: 0 } });
+    const hint = await toolExec(backend, id, { call_id: "alias_hint", tool: "get_problem_hint" });
+    expect(hint.json).toMatchObject({ ok: true, result: { level: 1, revealsSolution: false } });
+    const answer = await toolExec(backend, id, {
+      call_id: "alias_answer",
+      tool: "record_candidate_answer",
+      arguments: { content: "hash map" },
+    });
+    expect(answer.json).toMatchObject({ ok: true, result: { recorded: true, kind: "answer" } });
+    const code = await toolExec(backend, id, {
+      call_id: "alias_code",
+      tool: "submit_solution",
+      arguments: { language: "javascript", code: "return 1;" },
+    });
+    expect(code.json).toMatchObject({ ok: true, result: { language: "javascript" } });
+  });
+
+  it("authorizes tool-exec per interview for user callers", async () => {
+    backend = buildTestBackend();
+    const tb = backend;
+    const owner = await tb.app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: { email: "owner@example.com", displayName: "Owner", password: "correct-horse-123" },
+    });
+    const ownerToken = (owner.json() as { session: { token: string } }).session.token;
+    const created = await tb.app.inject({
+      method: "POST",
+      url: "/api/interviews",
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: { candidateId: "ignored", configuration: { interviewType: "dsa" } },
+    });
+    const id = (created.json() as { interview: { id: string } }).interview.id;
+    const stranger = await tb.app.inject({
+      method: "POST",
+      url: "/api/auth/register",
+      payload: { email: "stranger@example.com", displayName: "Stranger", password: "correct-horse-123" },
+    });
+    const strangerToken = (stranger.json() as { session: { token: string } }).session.token;
+    const denied = await tb.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/tool-exec`,
+      headers: { authorization: `Bearer ${strangerToken}` },
+      payload: { call_id: "authz_1", tool: "get_current_interview" },
+    });
+    expect(denied.statusCode).toBe(404);
+    const allowed = await tb.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/tool-exec`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: { call_id: "authz_2", tool: "get_current_interview" },
+    });
+    expect(allowed.statusCode).toBe(200);
+    expect(allowed.json()).toMatchObject({ ok: true, tool: "get_current_interview" });
+  });
+});
+
 describe("tool-results recovery", () => {
   it("rehydrates a stored result and 404s unknown call_ids", async () => {
     backend = buildTestBackend();

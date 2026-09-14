@@ -15,16 +15,25 @@ export type InterviewStatus =
   | "cancelled"
   | "failed";
 
-export type ToolName =
+// Phase 8: canonical realtime tool contract (ADR-002 decision 11). The web
+// model is advertised only the canonical names; the deprecated aliases stay
+// accepted by the forwarder/backend for CLI-harness compatibility.
+export type CanonicalToolName =
+  | "get_current_interview"
   | "get_current_problem"
+  | "submit_interview_data"
+  | "end_interview";
+
+export type DeprecatedToolAlias =
   | "get_interview_state"
   | "get_candidate_performance"
-  | "end_interview"
   | "get_interview_configuration"
   | "get_problem_hint"
   | "record_candidate_answer"
   | "submit_solution"
   | "run_code";
+
+export type ToolName = CanonicalToolName | DeprecatedToolAlias;
 
 // Raw model- or UI-supplied tool arguments (sent as `arguments` to tool-exec).
 export type ToolArgs = Record<string, unknown>;

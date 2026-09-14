@@ -25,11 +25,20 @@ export interface RealtimeToolDefinition {
   };
 }
 
-// CLI-identical tool surface plus `end_interview` (S1/S3 domain tool), the
-// S5 intelligence tools, and the S7a sandbox tools. The model signals done
-// via end_interview; the app finalizes (completing -> completed) via POST
-// /end — the model never transitions state itself.
+// Phase 8 canonical tool surface (ADR-002 decision 11): four explicit tools.
+// The pre-Phase-8 names remain backend/forwarder aliases for CLI-harness
+// compatibility but are never advertised to the web model. Hints are
+// model-driven conversation (no get_problem_hint tool) and code execution
+// stays the client HTTP path; the model records answers/code via
+// submit_interview_data and reads state via get_current_interview.
 export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
+  {
+    type: "function",
+    name: "get_current_interview",
+    description:
+      "Get the current interview: status, configuration (type, difficulty, duration, problem count, topic focus), current problem id, response counts, hint usage, and candidate performance (including submission count and latest run status). Call this for general interview context, rules, or progress questions.",
+    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+  },
   {
     type: "function",
     name: "get_current_problem",
@@ -39,96 +48,19 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
   },
   {
     type: "function",
-    name: "get_interview_state",
+    name: "submit_interview_data",
     description:
-      "Get the full current interview state including candidate, interview id, current problem, and basic progress. Use for general interview context questions.",
-    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
-  },
-  {
-    type: "function",
-    name: "get_candidate_performance",
-    description:
-      "Get candidate performance including response counts and evaluation status. Call when asked about past performance or how the candidate did before.",
-    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
-  },
-  {
-    type: "function",
-    name: "get_interview_configuration",
-    description:
-      "Get the backend-owned interview configuration (type, difficulty, duration, problem count, topic focus). Call when you need the interview rules instead of guessing them.",
-    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
-  },
-  {
-    type: "function",
-    name: "get_problem_hint",
-    description:
-      "Get a tiered hint for the current problem (level 1: concept nudge, 2: approach scaffold, 3: detailed plan). Omit level for the next appropriate tier. Hints never contain the solution — relay the hint conversationally without revealing final code. Every hint is counted and visible in evaluation.",
-    parameters: {
-      type: "object",
-      properties: { level: { type: "integer", enum: [1, 2, 3] } },
-      required: [],
-      additionalProperties: false,
-    },
-  },
-  {
-    type: "function",
-    name: "record_candidate_answer",
-    description:
-      "Persist what the candidate just said as a backend-owned response (kind: answer, approach, code, question, or note). Call after substantive candidate turns so progress and evaluation stay accurate.",
+      "Persist backend-owned interview data. Provide content (with optional kind) to record what the candidate said, or language + code to persist an implementation. Call after substantive candidate turns so progress and evaluation stay accurate.",
     parameters: {
       type: "object",
       properties: {
         kind: { type: "string", enum: ["answer", "approach", "code", "question", "note"] },
         content: { type: "string" },
-        // I5-6: the backend accepts an optional problemId, so the model must
-        // be able to attach an answer to a specific problem over voice too.
-        problemId: { type: "string" },
-      },
-      required: ["content"],
-      additionalProperties: false,
-    },
-  },
-  {
-    type: "function",
-    name: "submit_solution",
-    description:
-      "Persist the candidate's code as backend-owned state (language: javascript or python, code: source text, problemId optional). Call when the candidate finishes or updates an implementation. Returns a submissionId for run_code.",
-    parameters: {
-      type: "object",
-      properties: {
         language: { type: "string", enum: ["javascript", "python"] },
         code: { type: "string" },
         problemId: { type: "string" },
       },
-      required: ["language", "code"],
-      additionalProperties: false,
-    },
-  },
-  {
-    type: "function",
-    name: "run_code",
-    description:
-      "Execute a submitted solution against test cases (submissionId defaults to the latest submission; testCases: [{name, args, expected, hidden?}]; timeoutMs optional). Timeout and error outcomes are results — discuss them conversationally. Hidden cases report pass/fail only; never invent their contents.",
-    parameters: {
-      type: "object",
-      properties: {
-        submissionId: { type: "string" },
-        testCases: {
-          type: "array",
-          items: {
-            type: "object",
-            properties: {
-              name: { type: "string" },
-              args: { type: "array" },
-              expected: {},
-              hidden: { type: "boolean" },
-            },
-            required: ["name", "args", "expected"],
-          },
-        },
-        timeoutMs: { type: "integer" },
-      },
-      required: ["testCases"],
+      required: [],
       additionalProperties: false,
     },
   },
