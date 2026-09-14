@@ -29,6 +29,13 @@
       "when": 1789290000000,
       "tag": "0003_enum_checks",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789385137932,
+      "tag": "0004_nice_wendell_rand",
+      "breakpoints": true
     }
   ]
 }

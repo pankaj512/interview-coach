@@ -1918,3 +1918,50 @@ textarea.code {
 .profile-card {
   align-items: center;
 }
+
+/* ---------- Onboarding / profile (Phase 2) ---------- */
+.onboarding {
+  width: 520px;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-16);
+}
+
+.onboarding-head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s-8);
+  text-align: center;
+}
+
+.onboarding-card {
+  width: 100%;
+  text-align: left;
+}
+
+.profile-facts {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
+  text-align: left;
+}
+
+.profile-facts div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-facts dt {
+  font-size: var(--fs-micro);
+  color: var(--ink-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.profile-facts dd {
+  color: var(--ink-base);
+}

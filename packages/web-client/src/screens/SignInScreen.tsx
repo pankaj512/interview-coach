@@ -1,4 +1,5 @@
-// H-Sign-In: email + password, link to create account, continue as guest.
+// H-Sign-In (Phase 2): email + password, link to create account. Sign-in is
+// required — there is no anonymous loop, so no guest path.
 
 import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
@@ -11,12 +12,10 @@ export function SignInScreen({
   backend,
   onSuccess,
   onGoCreate,
-  onGuest,
 }: {
   readonly backend: BackendClient;
   readonly onSuccess: () => void;
   readonly onGoCreate: () => void;
-  readonly onGuest: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,6 +40,7 @@ export function SignInScreen({
   return (
     <div className="auth-wrap">
       <form className="card auth-card" onSubmit={submit}>
+        <span className="brand">Interview Coach</span>
         <h1 className="auth-title">Sign in</h1>
         <p className="auth-sub">Welcome back. Sign in to keep your interviews.</p>
         <Field label="Email">
@@ -59,9 +59,6 @@ export function SignInScreen({
             Create one
           </button>
         </p>
-        <button type="button" className="link-button auth-guest" onClick={onGuest}>
-          Continue as guest
-        </button>
       </form>
     </div>
   );

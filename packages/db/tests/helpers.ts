@@ -24,6 +24,8 @@ export async function truncateAll(db: PostgresJsDatabase<typeof schema>): Promis
   await db.delete(schema.interviewProblems);
   await db.delete(schema.interviews);
   await db.delete(schema.problems);
+  await db.delete(schema.userProfiles);
+  await db.delete(schema.userSessions);
   await db.delete(schema.users);
 }
 

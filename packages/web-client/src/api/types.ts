@@ -288,3 +288,22 @@ export interface LoginInput {
   readonly email: string;
   readonly password: string;
 }
+
+// Phase 2 profile: structural mirror of the backend serializer. The taxonomy
+// keys are the wire contract; see src/profile-taxonomy.ts for labels/options.
+export interface SerializedUserProfile {
+  readonly userId: string;
+  readonly interviewTypes: readonly string[];
+  readonly role: string;
+  readonly level: string;
+  readonly goals?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface ProfileInput {
+  readonly interviewTypes: readonly string[];
+  readonly role: string;
+  readonly level: string;
+  readonly goals?: string;
+}

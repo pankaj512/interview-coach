@@ -73,6 +73,11 @@ export function renderPrometheusMetrics(snapshot: MetricsSnapshot): string {
       "Failed logins plus duplicate-registration attempts.",
       snapshot.authFailures,
     ),
+    counter(
+      "interview_coach_profiles_updated_total",
+      "User profiles created or edited via PUT /api/profile.",
+      snapshot.profilesUpdated,
+    ),
   ];
   for (const status of ["passed", "failed", "timeout", "error"] as const) {
     lines.push(

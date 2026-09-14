@@ -28,6 +28,8 @@ import type {
   AuthSessionPayload,
   LoginInput,
   RegisterInput,
+  SerializedUserProfile,
+  ProfileInput,
 } from "./types.js";
 
 export class BackendApiError extends Error {
@@ -129,6 +131,31 @@ export class BackendClient {
 
   async logout(): Promise<void> {
     await this.request<{ ok: true }>("POST", "/api/auth/logout");
+  }
+
+  // Phase 2 profile: null means the signed-in user has not onboarded yet.
+  // The backend scopes both calls to the bearer's user; a missing/invalid
+  // session surfaces as a 401 BackendApiError.
+  async getProfile(): Promise<SerializedUserProfile | null> {
+    const body = await this.request<{
+      ok: true;
+      profile: SerializedUserProfile | null;
+    }>("GET", "/api/profile");
+    return body.profile;
+  }
+
+  async putProfile(input: ProfileInput): Promise<SerializedUserProfile> {
+    const body = await this.request<{ ok: true; profile: SerializedUserProfile }>(
+      "PUT",
+      "/api/profile",
+      {
+        interviewTypes: [...input.interviewTypes],
+        role: input.role,
+        level: input.level,
+        ...(input.goals === undefined ? {} : { goals: input.goals }),
+      },
+    );
+    return body.profile;
   }
 
   async createInterview(input: CreateInterviewInput): Promise<SerializedInterview> {

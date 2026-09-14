@@ -392,3 +392,26 @@ Phase 1 done (2026-09-14): HLD amended (target arch, §5.2/§5.4/§5.5/§5.8/§5
 
 Next step when work resumes: **Phase 2 — User profile / onboarding**. Do not implement recommendation/evaluation as realtime tools; follow the roadmap's locked decisions.
 Tag: `session-roadmap` after commit.
+
+## Phase 2 — User profile / onboarding (2026-09-14)
+Status: done (verified below). Roadmap Phase 2, sub-phases 2.1–2.6. First step of the learning loop: server-owned `UserProfile` + required first-run onboarding. No LLM/voice work (per roadmap).
+
+Done:
+* Domain (`packages/domain/src/profile.ts`; `repositories.ts`/`index.ts`): `UserProfile` (`userId`, `interviewTypes[]`, `role`, `level`, `goals?`, timestamps); taxonomy as domain config (`INTERVIEW_TYPES`/`PROFILE_ROLES`/`PROFILE_LEVELS` + label maps + guards); `createUserProfile`/`updateUserProfile` (non-empty/deduped interview types, taxonomy membership, goals trim/cap 500; edit preserves identity + createdAt). `UserProfileRepository` contract + in-memory impl; `RepositorySet.profiles`.
+* DB (`packages/db`): `user_profiles` table (PK `user_id` FK→`users` cascade, JSONB `interview_types`, `role`/`level` text, `goals` nullable) + `DrizzleUserProfileRepository` (upsert, preserves `createdAt`). Migration `0004_nice_wendell_rand.sql` + CHECK constraints (role/level enums, non-empty `interview_types` array, goals ≤500). `truncateAll` extended.
+* Backend (`packages/backend/src/profile.ts`; `app.ts`/`serializers.ts`/`metrics.ts`/`prometheus.ts`): `ProfileService.get/upsert`; `GET /api/profile` (returns `profile:null` before onboarding) + `PUT /api/profile`, both scoped to `caller.userId` and 401 for anonymous/service callers (profile is per-user; a service token has no user id); zod shape + domain re-validation; `serializeUserProfile`; `profile.updated` log + `profilesUpdated` counter/Prometheus series.
+* Web client: `BackendClient.getProfile/putProfile` + `SerializedUserProfile`/`ProfileInput`; `profile-taxonomy.ts` (single client mirror); `ProfileForm` (shared create/edit); `OnboardingScreen` (required, no cancel); `ProfileScreen` rewritten (identity props + server profile summary + inline edit); App first-run gate (signed-out → sign-in/sign-up only; signed-in without profile → onboarding; profile fetch on session change, 401 clears the session, retryable error state). Removed the guest path from the loop (SignIn/CreateAccount `onGuest` + buttons, `SetupScreen` "Guest" fallback, `AccountSection` guest copy).
+* Tests: domain `profile` (8: taxonomy, create/edit validation, goals normalization/cap); backend `profile` (5: create/edit + createdAt preservation, per-user isolation, anonymous 401, invalid taxonomy 400, metric); web `backend-client-profile` (3: GET null, PUT body/token, 401 surfacing); db `persistence` +1 (profile round-trip, restart survival, upsert preserves createdAt, account-delete cascade); `render-smoke` updated (App → sign-in landing; onboarding/ProfileForm/ProfileScreen added; guest assertions removed).
+
+Decisions locked:
+* `/api/profile` is user-session-only: anonymous (even open local-dev mode) and service callers get 401. Profile identity always comes from the session, never the body.
+* `GET /api/profile` returns 200 `{profile:null}` (not 404) before onboarding — the gate's signal.
+* Onboarding is enforced client-side (the App gate); the backend does not block interview creation without a profile (roadmap Phase 2 scope).
+* Taxonomy keys are canonical snake_case (persisted/wire); labels are presentation-only. Domain is source of truth; the client mirror must be kept in sync.
+* Blank goals normalize to absent (never stored as `""`).
+
+Open for Phase 3 (curriculum & skill state): server-owned curriculum + `UserSkillState`; recommendation/evaluation remain backend operations, never realtime tools.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB (migration 0004) and live HTTP profile smoke.
+Verified 2026-09-14: install ok, typecheck ok, test 323 passed (304 prior + 19 new; no-DB warn-and-pass and live-DB vs postgres:16 port 5433 both 323; db persistence 6/6 live), `tsc -b` ok, `vite build` ok (327.39kB JS / 98.47kB gzip). Migration 0004 applied to dev + `interview_coach_test`. Live HTTP smoke (port 3230, test DB): register → GET null → PUT → GET saved → anonymous 401 → invalid role 400 → metrics `profilesUpdated=1`.
+Tag: `session-phase2` after commit.

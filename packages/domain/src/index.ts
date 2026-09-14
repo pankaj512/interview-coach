@@ -6,6 +6,7 @@ export * from "./result.js";
 export * from "./errors.js";
 export * from "./ids.js";
 export * from "./user.js";
+export * from "./profile.js";
 export * from "./problem.js";
 export * from "./interview.js";
 export * from "./lifecycle.js";

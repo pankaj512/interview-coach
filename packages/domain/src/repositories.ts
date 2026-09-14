@@ -8,6 +8,7 @@ import type {
   UserId,
 } from "./ids.js";
 import type { UserAccount, UserSession } from "./user.js";
+import type { UserProfile } from "./profile.js";
 import type { CandidateResponse } from "./candidate-response.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
@@ -238,6 +239,13 @@ export interface SessionRepository {
   deleteByUserId(userId: UserId): Promise<number>;
 }
 
+// Learning-loop Phase 2: one profile per user, keyed by user id. Save is an
+// upsert (create + edit share the path).
+export interface UserProfileRepository {
+  save(profile: UserProfile): Promise<void>;
+  findByUserId(userId: UserId): Promise<UserProfile | null>;
+}
+
 export class InMemoryUserRepository implements UserRepository {
   private readonly store = new Map<UserId, UserAccount>();
 
@@ -284,6 +292,18 @@ export class InMemorySessionRepository implements SessionRepository {
   }
 }
 
+export class InMemoryUserProfileRepository implements UserProfileRepository {
+  private readonly store = new Map<UserId, UserProfile>();
+
+  async save(profile: UserProfile): Promise<void> {
+    this.store.set(profile.userId, profile);
+  }
+
+  async findByUserId(userId: UserId): Promise<UserProfile | null> {
+    return this.store.get(userId) ?? null;
+  }
+}
+
 export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
@@ -294,6 +314,7 @@ export interface RepositorySet {
   readonly runs: RunRepository;
   readonly users: UserRepository;
   readonly sessions: SessionRepository;
+  readonly profiles: UserProfileRepository;
 }
 
 export function createInMemoryRepositories(): RepositorySet & {
@@ -306,6 +327,7 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly runs: InMemoryRunRepository;
   readonly users: InMemoryUserRepository;
   readonly sessions: InMemorySessionRepository;
+  readonly profiles: InMemoryUserProfileRepository;
 } {
   return {
     interviews: new InMemoryInterviewRepository(),
@@ -317,5 +339,6 @@ export function createInMemoryRepositories(): RepositorySet & {
     runs: new InMemoryRunRepository(),
     users: new InMemoryUserRepository(),
     sessions: new InMemorySessionRepository(),
+    profiles: new InMemoryUserProfileRepository(),
   };
 }

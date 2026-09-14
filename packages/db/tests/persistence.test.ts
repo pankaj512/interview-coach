@@ -4,15 +4,19 @@
 // Warn-and-pass without a DB so plain `pnpm test` stays green.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { eq } from "drizzle-orm";
 import {
   InterviewService,
   SubmissionService,
   asUserId,
   createProblem,
+  createUserProfile,
+  updateUserProfile,
   type Problem,
 } from "@interview-coach/domain";
 import { createDatabase } from "../src/client.js";
 import { createDrizzleRepositories } from "../src/repositories.js";
+import * as schema from "../src/schema.js";
 import { connectTestDb, withDb, type TestContext } from "./helpers.js";
 
 const ctx: { current: TestContext | null } = { current: null };
@@ -248,5 +252,58 @@ describe("postgres persistence", () => {
     expect(await t.repos.problems.findById(p.id)).not.toBeNull();
     // Second delete reports missing.
     expect(await t.repos.interviews.deleteById(id)).toBe(false);
+  }));
+
+  it("round-trips a user profile, survives restart, and cascades with the account", withDb(ctx, async (t) => {
+    const userId = asUserId("user_profile_persist");
+    await t.repos.users.save({
+      id: userId,
+      email: "profile-persist@example.com",
+      displayName: "Profile Persist",
+      passwordHash: "scrypt$v2$1$1$1$eA==$eA==",
+      createdAt: new Date("2026-09-14T00:00:00.000Z"),
+    });
+    const created = createUserProfile({
+      userId,
+      interviewTypes: ["dsa"],
+      role: "backend_engineer",
+      level: "senior",
+      goals: "systems",
+      now: new Date("2026-09-14T10:00:00.000Z"),
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    await t.repos.profiles.save(created.value);
+    expect(await t.repos.profiles.findByUserId(userId)).toEqual(created.value);
+
+    // Restart survival.
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      const afterRestart = await repos.profiles.findByUserId(userId);
+      expect(afterRestart).toEqual(created.value);
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+
+    // Edit is an upsert that preserves createdAt.
+    const edited = updateUserProfile(
+      created.value,
+      { interviewTypes: ["dsa"], role: "ml_engineer", level: "staff" },
+      new Date("2026-09-15T10:00:00.000Z"),
+    );
+    if (!edited.ok) throw new Error(edited.error.message);
+    await reconnected.repos.profiles.save(edited.value);
+    const reread = await reconnected.repos.profiles.findByUserId(userId);
+    expect(reread?.role).toBe("ml_engineer");
+    expect(reread?.createdAt).toEqual(created.value.createdAt);
+    expect(reread?.goals).toBeUndefined();
+
+    // Deleting the account cascades the profile.
+    await reconnected.db.delete(schema.users).where(eq(schema.users.id, userId));
+    expect(await reconnected.repos.profiles.findByUserId(userId)).toBeNull();
   }));
 });

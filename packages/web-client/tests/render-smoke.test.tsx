@@ -9,6 +9,7 @@ import type {
   SerializedEvaluation,
   SerializedInterview,
   SerializedStateSnapshot,
+  SerializedUserProfile,
 } from "../src/api/types.js";
 import { AppShell } from "../src/components/AppShell.js";
 import { App } from "../src/App.js";
@@ -18,9 +19,11 @@ import { EvaluatingScreen } from "../src/screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "../src/screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "../src/screens/HistoryScreen.js";
 import { LiveScreen } from "../src/screens/LiveScreen.js";
+import { OnboardingScreen } from "../src/screens/OnboardingScreen.js";
 import { ProgressScreen } from "../src/screens/ProgressScreen.js";
 import { CreateAccountScreen } from "../src/screens/CreateAccountScreen.js";
 import { ProfileScreen } from "../src/screens/ProfileScreen.js";
+import { ProfileForm } from "../src/components/ProfileForm.js";
 import { ResultsScreen } from "../src/screens/ResultsScreen.js";
 import { SettingsScreen } from "../src/screens/SettingsScreen.js";
 import { SetupScreen } from "../src/screens/SetupScreen.js";
@@ -95,9 +98,21 @@ const entries: readonly HistoryEntry[] = [
 const noop = () => undefined;
 const noopEntry = (_e: HistoryEntry) => undefined;
 
+const profile: SerializedUserProfile = {
+  userId: "user_1",
+  interviewTypes: ["dsa"],
+  role: "backend_engineer",
+  level: "senior",
+  goals: "Get sharper on dynamic programming",
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+};
+
 describe("screen render smoke", () => {
-  it("App renders the dashboard shell", () => {
-    expect(renderToString(<App />)).toContain("Interview Coach");
+  it("App renders the sign-in landing for a signed-out visitor", () => {
+    const html = renderToString(<App />);
+    expect(html).toContain("Interview Coach");
+    expect(html).toContain("Sign in");
   });
   it("AppShell renders navigation + guest account control", () => {
     const html = renderToString(
@@ -152,20 +167,44 @@ describe("screen render smoke", () => {
   it("WeakAreasScreen renders", () => {
     expect(renderToString(<WeakAreasScreen entries={entries} onPractice={noop} onBack={noop} />)).toContain("Recommended practice");
   });
-  it("SettingsScreen renders with a guest account section", () => {
+  it("SettingsScreen renders the account section", () => {
     const html = renderToString(
       <SettingsScreen entries={entries} onHistoryCleared={noop} onSignIn={noop} onCreateAccount={noop} onSignOut={noop} />,
     );
     expect(html).toContain("Settings");
-    expect(html).toContain("Guest");
+    expect(html).toContain("Account");
   });
   it("SignInScreen renders", () => {
-    expect(renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} onGuest={noop} />)).toContain("Create one");
+    expect(renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />)).toContain("Create one");
   });
   it("CreateAccountScreen renders", () => {
-    expect(renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} onGuest={noop} />)).toContain("Create account");
+    expect(renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} />)).toContain("Create account");
   });
-  it("ProfileScreen renders for a guest", () => {
-    expect(renderToString(<ProfileScreen onBack={noop} onSettings={noop} onSignOut={noop} />)).toContain("Profile");
+  it("OnboardingScreen renders the required profile form", () => {
+    const html = renderToString(<OnboardingScreen backend={backend} onComplete={noop} />);
+    expect(html).toContain("Set up your profile");
+    expect(html).toContain("Save and continue");
+  });
+  it("ProfileForm renders for a new user with the taxonomy", () => {
+    const html = renderToString(
+      <ProfileForm submitLabel="Save and continue" busy={false} error={null} onSubmit={noop} />,
+    );
+    expect(html).toContain("Data Structures &amp; Algorithms");
+    expect(html).toContain("Backend Engineer");
+  });
+  it("ProfileScreen renders the saved profile", () => {
+    const html = renderToString(
+      <ProfileScreen
+        backend={backend}
+        identity={{ displayName: "Ada", email: "ada@example.com" }}
+        profile={profile}
+        onSaved={noop}
+        onBack={noop}
+        onSettings={noop}
+        onSignOut={noop}
+      />,
+    );
+    expect(html).toContain("Edit profile");
+    expect(html).toContain("Backend Engineer");
   });
 });

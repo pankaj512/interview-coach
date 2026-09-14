@@ -52,7 +52,10 @@ export function SetupScreen({
   const [interaction, setInteraction] = useState<Interaction>("Voice");
   const [duration, setDuration] = useState(30);
 
-  const candidateId = session?.displayName ?? session?.email ?? "Guest";
+  // Phase 2: sign-in is required (App gate); the backend stamps the real
+  // candidate id from the session for user callers, so this is only a
+  // non-authoritative label fallback.
+  const candidateId = session?.displayName ?? session?.email ?? "user";
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();

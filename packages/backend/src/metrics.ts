@@ -21,6 +21,7 @@ export interface MetricsSnapshot {
   readonly authRegistrations: number;
   readonly authLogins: number;
   readonly authFailures: number;
+  readonly profilesUpdated: number;
   readonly toolExecuted: number;
   readonly toolReplayed: number;
   readonly toolFailed: number;
@@ -50,6 +51,7 @@ export class BackendMetrics {
   private authRegistrations = 0;
   private authLogins = 0;
   private authFailures = 0;
+  private profilesUpdated = 0;
   private toolExecuted = 0;
   private toolReplayed = 0;
   private toolFailed = 0;
@@ -91,6 +93,10 @@ export class BackendMetrics {
     this.authFailures += 1;
   }
 
+  countProfileUpdated(): void {
+    this.profilesUpdated += 1;
+  }
+
   countTool(replayed: boolean, ok: boolean): void {
     if (replayed) this.toolReplayed += 1;
     else this.toolExecuted += 1;
@@ -123,6 +129,7 @@ export class BackendMetrics {
       authRegistrations: this.authRegistrations,
       authLogins: this.authLogins,
       authFailures: this.authFailures,
+      profilesUpdated: this.profilesUpdated,
       toolExecuted: this.toolExecuted,
       toolReplayed: this.toolReplayed,
       toolFailed: this.toolFailed,

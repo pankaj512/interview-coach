@@ -17,6 +17,8 @@ import type {
   SessionRepository,
   SubmissionRepository,
   UserAccount,
+  UserProfile,
+  UserProfileRepository,
   UserRepository,
   UserSession,
 } from "@interview-coach/domain";
@@ -35,6 +37,8 @@ import type {
   InterviewType,
   Problem,
   ProblemDifficulty,
+  ProfileLevel,
+  ProfileRole,
   ResponseKind,
   RunStatus,
 } from "@interview-coach/domain";
@@ -668,10 +672,57 @@ export class DrizzleSessionRepository implements SessionRepository {
   }
 }
 
+// Learning-loop Phase 2: one profile row per user; save is an upsert.
+export class DrizzleUserProfileRepository implements UserProfileRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(profile: UserProfile): Promise<void> {
+    await this.db
+      .insert(schema.userProfiles)
+      .values({
+        userId: profile.userId,
+        interviewTypes: [...profile.interviewTypes],
+        role: profile.role,
+        level: profile.level,
+        goals: profile.goals ?? null,
+        createdAt: profile.createdAt,
+        updatedAt: profile.updatedAt,
+      })
+      .onConflictDoUpdate({
+        target: schema.userProfiles.userId,
+        set: {
+          interviewTypes: [...profile.interviewTypes],
+          role: profile.role,
+          level: profile.level,
+          goals: profile.goals ?? null,
+          updatedAt: profile.updatedAt,
+        },
+      });
+  }
+
+  async findByUserId(userId: UserId): Promise<UserProfile | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.userProfiles)
+      .where(eq(schema.userProfiles.userId, userId))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) return null;
+    return {
+      userId: row.userId as UserId,
+      interviewTypes: row.interviewTypes as readonly InterviewType[],
+      role: row.role as ProfileRole,
+      level: row.level as ProfileLevel,
+      ...(row.goals === null ? {} : { goals: row.goals }),
+      createdAt: row.createdAt,
+      updatedAt: row.updatedAt,
+    };
+  }
+}
+
 function toAccount(
   row: typeof schema.users.$inferSelect | null,
-): UserAccount | null {
-  // Pre-S8c rows have no credentials and are invisible to auth flows.
+): UserAccount | null {  // Pre-S8c rows have no credentials and are invisible to auth flows.
   if (row === null || row.email === null || row.passwordHash === null) return null;
   return {
     id: row.id as UserId,
@@ -693,5 +744,6 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     runs: new DrizzleRunRepository(db),
     users: new DrizzleUserRepository(db),
     sessions: new DrizzleSessionRepository(db),
+    profiles: new DrizzleUserProfileRepository(db),
   };
 }

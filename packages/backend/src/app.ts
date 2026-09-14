@@ -14,6 +14,8 @@
 //   POST   /api/auth/register                     (S8c self-service signup)
 //   POST   /api/auth/login                        (S8c credential login)
 //   POST   /api/auth/logout                       (S8c session revoke)
+//   GET    /api/profile                           (Phase 2: read own profile)
+//   PUT    /api/profile                           (Phase 2: create/edit profile)
 //   POST   /api/interviews
 //   GET    /api/interviews/:id
 //   GET    /api/interviews/:id/state
@@ -70,6 +72,7 @@ import { extractBearerToken, registerAuthHook, registerOwnershipHook } from "./a
 import { BackendMetrics } from "./metrics.js";
 import { renderPrometheusMetrics } from "./prometheus.js";
 import { UserService, type AuthenticatedSession } from "./users.js";
+import { ProfileService } from "./profile.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
@@ -83,6 +86,7 @@ import {
   serializeRun,
   serializeStateSnapshot,
   serializeSubmission,
+  serializeUserProfile,
 } from "./serializers.js";
 import {
   FROZEN_VOICE_SESSION_CONFIG,
@@ -141,6 +145,15 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().min(1).max(254),
   password: z.string().min(1).max(128),
+});
+
+// Phase 2: profile upsert body. Domain re-validates role/level/interviewTypes
+// against the taxonomy; zod guards shape + sizes.
+const profileSchema = z.object({
+  interviewTypes: z.array(z.string().min(1).max(50)).min(1).max(10),
+  role: z.string().min(1).max(80),
+  level: z.string().min(1).max(40),
+  goals: z.string().max(500).optional(),
 });
 
 function serializeSession(session: AuthenticatedSession): {
@@ -333,6 +346,8 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     sessions: deps.repos.sessions,
     sessionTtlMs: config.auth.sessionTtlMs,
   });
+  // Phase 2: server-owned profile (starting context for the learning loop).
+  const profiles = new ProfileService({ profiles: deps.repos.profiles });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
   // a fake via deps.codeRunner; container isolation lands in S8.
   const codeRunner =
@@ -518,6 +533,38 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       return sendApiError(reply, 401, "UNAUTHORIZED", "Missing or invalid bearer token", false);
     }
     return reply.send({ ok: true, revoked: true });
+  });
+
+  // Phase 2 profile (HLD learning loop): user-only surface — the owner is the
+  // authenticated session, never a body field. Anonymous local-dev and service
+  // callers have no user id, so both get 401. GET returns profile:null for a
+  // signed-in user who has not onboarded yet (drives the first-run gate).
+  app.get("/api/profile", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access your profile", false);
+    }
+    const profile = await profiles.get(caller.userId);
+    return reply.send({
+      ok: true,
+      profile: profile === null ? null : serializeUserProfile(profile),
+    });
+  });
+
+  app.put("/api/profile", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access your profile", false);
+    }
+    const parsed = profileSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const saved = await profiles.upsert(caller.userId, parsed.data);
+    if (!saved.ok) return sendDomainError(reply, saved.error);
+    request.log.info({ userId: caller.userId }, "profile.updated");
+    metrics.countProfileUpdated();
+    return reply.send({ ok: true, profile: serializeUserProfile(saved.value) });
   });
 
   app.post("/api/interviews", async (request, reply) => {

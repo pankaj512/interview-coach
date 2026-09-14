@@ -9,6 +9,7 @@ import type {
   InterviewProblem,
   InterviewStateSnapshot,
   Problem,
+  UserProfile,
 } from "@interview-coach/domain";
 
 export interface SerializedInterview {
@@ -93,6 +94,29 @@ export function serializeStateSnapshot(
     responseCount: snapshot.responseCount,
     evaluation:
       snapshot.evaluation === null ? null : serializeEvaluation(snapshot.evaluation),
+  };
+}
+
+// Learning-loop Phase 2: server-owned profile (ISO timestamps like the rest).
+export interface SerializedUserProfile {
+  readonly userId: string;
+  readonly interviewTypes: readonly string[];
+  readonly role: string;
+  readonly level: string;
+  readonly goals?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export function serializeUserProfile(profile: UserProfile): SerializedUserProfile {
+  return {
+    userId: profile.userId,
+    interviewTypes: profile.interviewTypes,
+    role: profile.role,
+    level: profile.level,
+    ...(profile.goals === undefined ? {} : { goals: profile.goals }),
+    createdAt: profile.createdAt.toISOString(),
+    updatedAt: profile.updatedAt.toISOString(),
   };
 }
 

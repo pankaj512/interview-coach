@@ -5,9 +5,15 @@
 // Evaluating → Results → Feedback/Transcript/Weak areas) renders standalone.
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BackendClient } from "./api/backend-client.js";
-import type { SerializedInterview, SerializedStateSnapshot } from "./api/types.js";
+import { BackendApiError, type BackendClient } from "./api/backend-client.js";
+import type {
+  SerializedInterview,
+  SerializedStateSnapshot,
+  SerializedUserProfile,
+} from "./api/types.js";
 import { AppShell, type NavKey } from "./components/AppShell.js";
+import { GhostButton } from "./ds/buttons.js";
+import { Card } from "./ds/primitives.js";
 import { loadHistory, recordHistory, type HistoryEntry } from "./history.js";
 import { BriefingScreen } from "./screens/BriefingScreen.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
@@ -15,6 +21,7 @@ import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "./screens/HistoryScreen.js";
 import { LiveScreen } from "./screens/LiveScreen.js";
+import { OnboardingScreen } from "./screens/OnboardingScreen.js";
 import { ProgressScreen } from "./screens/ProgressScreen.js";
 import { ResultsScreen } from "./screens/ResultsScreen.js";
 import { SettingsScreen } from "./screens/SettingsScreen.js";
@@ -24,7 +31,7 @@ import { SetupScreen, type Interaction, type InterviewMode, type SetupResult } f
 import { SignInScreen } from "./screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "./screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "./screens/WeakAreasScreen.js";
-import { clearAuthSession } from "./state/auth-store.js";
+import { clearAuthSession, useAuthSession } from "./state/auth-store.js";
 import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-interview.js";
 
 type NavView = Exclude<NavKey, "setup">;
@@ -40,11 +47,18 @@ type Flow =
   | "signin"
   | "signup"
   | "profile";
+type ProfileState = "idle" | "loading" | "ready" | "error";
 
 export function App() {
   const backend: BackendClient = useBackendClient();
+  const session = useAuthSession();
   const [nav, setNav] = useState<NavView | null>("dashboard");
   const [flow, setFlow] = useState<Flow | null>(null);
+  const [profile, setProfile] = useState<SerializedUserProfile | null>(null);
+  const [profileState, setProfileState] = useState<ProfileState>(() =>
+    session !== null ? "loading" : "idle",
+  );
+  const [profileNonce, setProfileNonce] = useState(0);
   const [interview, setInterview] = useState<SerializedInterview | null>(null);
   const [setupResult, setSetupResult] = useState<SetupResult | null>(null);
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
@@ -54,6 +68,49 @@ export function App() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const evaluatingTimer = useRef<number | null>(null);
+
+  // Phase 2: load the server-owned profile whenever the signed-in session
+  // changes. A 401 means the session is stale, so drop it (the gate then shows
+  // sign-in); anything else surfaces a retryable error state.
+  useEffect(() => {
+    if (session === null) {
+      setProfile(null);
+      setProfileState("idle");
+      return;
+    }
+    let cancelled = false;
+    setProfileState("loading");
+    backend
+      .getProfile()
+      .then((next) => {
+        if (cancelled) return;
+        setProfile(next);
+        setProfileState("ready");
+      })
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        if (error instanceof BackendApiError && error.status === 401) {
+          clearAuthSession();
+          return;
+        }
+        setProfileState("error");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.token, backend, profileNonce]);
+
+  const handleProfileSaved = useCallback((next: SerializedUserProfile) => {
+    setProfile(next);
+    setProfileState("ready");
+    setFlow(null);
+    setNav("dashboard");
+  }, []);
+
+  function handleAuthSuccess() {
+    setFlow(null);
+    setNav("dashboard");
+  }
 
   const remember = useCallback((entry: HistoryEntry) => {
     setEntries(recordHistory(localStorage, entry));
@@ -161,6 +218,73 @@ export function App() {
     setFlow("setup");
   }
 
+  // ---- First-run gate (Phase 2) ----
+  // No anonymous loop: signed-out users only get the landing/sign-in, and a
+  // signed-in user with no profile is sent to required onboarding.
+  if (session === null) {
+    return (
+      <main className="app">
+        {flow === "signup" ? (
+          <CreateAccountScreen
+            backend={backend}
+            onSuccess={handleAuthSuccess}
+            onGoSignIn={() => setFlow("signin")}
+          />
+        ) : (
+          <SignInScreen
+            backend={backend}
+            onSuccess={handleAuthSuccess}
+            onGoCreate={() => setFlow("signup")}
+          />
+        )}
+      </main>
+    );
+  }
+
+  if (profileState === "loading" || profileState === "idle") {
+    return (
+      <main className="app">
+        <div className="auth-wrap">
+          <p className="hint" role="status">
+            Loading your profile…
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (profileState === "error") {
+    return (
+      <main className="app">
+        <div className="auth-wrap">
+          <Card className="auth-card">
+            <h1 className="auth-title">Couldn&apos;t load your profile</h1>
+            <p className="auth-sub">Check your connection and try again.</p>
+            <div className="row actions">
+              <GhostButton
+                onClick={() => {
+                  setProfileState("loading");
+                  setProfileNonce((n) => n + 1);
+                }}
+              >
+                Retry
+              </GhostButton>
+              <GhostButton onClick={handleSignOut}>Sign out</GhostButton>
+            </div>
+          </Card>
+        </div>
+      </main>
+    );
+  }
+
+  if (profile === null) {
+    return (
+      <main className="app">
+        <OnboardingScreen backend={backend} onComplete={handleProfileSaved} />
+      </main>
+    );
+  }
+
   // ---- Nav views (sidebar shell) ----
   if (nav !== null) {
     return (
@@ -255,24 +379,12 @@ export function App() {
           <WeakAreasScreen entries={entries} onPractice={startNew} onBack={() => navigate("progress")} />
         </div>
       )}
-      {flow === "signin" && (
-        <SignInScreen
-          backend={backend}
-          onSuccess={() => navigate("dashboard")}
-          onGoCreate={() => setFlow("signup")}
-          onGuest={() => navigate("dashboard")}
-        />
-      )}
-      {flow === "signup" && (
-        <CreateAccountScreen
-          backend={backend}
-          onSuccess={() => navigate("dashboard")}
-          onGoSignIn={() => setFlow("signin")}
-          onGuest={() => navigate("dashboard")}
-        />
-      )}
       {flow === "profile" && (
         <ProfileScreen
+          backend={backend}
+          identity={{ displayName: session.displayName, email: session.email }}
+          profile={profile}
+          onSaved={handleProfileSaved}
           onBack={() => navigate("dashboard")}
           onSettings={() => navigate("settings")}
           onSignOut={handleSignOut}

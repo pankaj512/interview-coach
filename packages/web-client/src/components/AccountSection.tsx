@@ -1,7 +1,7 @@
 // Settings > Account section (ux-spec H-Account).
 //
-// Guest state offers sign in / create account; signed-in state shows the
-// account identity and a sign-out action. No combined auth form here.
+// Phase 2: there is no anonymous loop, so the signed-out state just points at
+// sign-in (the App gate normally prevents reaching Settings signed out).
 
 import { Card } from "../ds/primitives.js";
 import { DangerButton, PrimaryButton } from "../ds/buttons.js";
@@ -22,10 +22,7 @@ export function AccountSection({
     return (
       <Card className="settings-section">
         <h3 className="section-title">Account</h3>
-        <div className="account-row">
-          <span className="chip-guest">○ Guest</span>
-          <span className="hint">You&apos;re browsing as a guest. Interviews stay on this browser only.</span>
-        </div>
+        <p className="hint">Sign in to save your interviews and track progress.</p>
         <div className="row actions">
           <PrimaryButton onClick={onSignIn}>Sign in</PrimaryButton>
           <button type="button" className="link-button" onClick={onCreateAccount}>

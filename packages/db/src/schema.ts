@@ -43,6 +43,26 @@ export const userSessions = pgTable(
   (t) => [index("user_sessions_user_id_idx").on(t.userId)],
 );
 
+// Learning-loop Phase 2: one profile per user (starting context for
+// recommendation/evaluation). Keyed by user id; cascade with the account.
+// Role/level/interview-type validity is enforced by CHECK constraints added in
+// migration 0004 (the domain validates first; the DB is the last guard).
+export const userProfiles = pgTable(
+  "user_profiles",
+  {
+    userId: text("user_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    interviewTypes: jsonb("interview_types").notNull().$type<readonly string[]>(),
+    role: text("role").notNull(),
+    level: text("level").notNull(),
+    goals: text("goals"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("user_profiles_role_idx").on(t.role)],
+);
+
 export const problems = pgTable("problems", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
