@@ -372,3 +372,21 @@ Deferred / known-open (by product decision or external dependency, not silently 
 * P2-1 CAS — single-writer MVP documented; shared-state promotion is the multi-instance follow-up.
 
 Verify (2026-09-13): `pnpm typecheck` ok; `pnpm test` 305 passed (37 files, incl. live-Postgres persistence with migration 0003 applied on 5433); `tsc -b` ok; `vite build` ok. New tests cover P1 (progression/validation/caps/ordering), P3 (idempotency binding, TTL sweep, prod voice guard), P4 (retryable 429), P5 (downgrade), P6 (env scrub, NaN, prod gate, caps, problemId), P7 (lockout, prod auth fail-safe), P8 (lifecycle metrics).
+
+## Learning-loop architecture (approved, NOT implemented) — 2026-09-14
+Status: architecture approved; implementation **not started**. The product owner specified the target architecture in 15 parts and resolved all open decisions. The consolidated roadmap lives in **`docs/implementation-roadmap.md`** (read it first). Phases 1–16, dependency-ordered; Phase 16 is integration only.
+
+Locked decisions (summary; full text in the roadmap):
+* Two LLM surfaces: Azure Voice Live (realtime interview, unchanged) vs a **separate server-side Azure AI Foundry text deployment** for recommendation/evaluation, behind `RecommendationModel`/`EvaluationModel` interfaces. Prod auth = Managed Identity/Entra; local dev may use an API key; credential never in the browser.
+* Recommendation = **synchronous**; evaluation = **asynchronous** (interview completes immediately; background job; UI `evaluation_in_progress`). No `interview-agent` service; keep the job abstraction so it can be a separate worker later.
+* Evaluation dimensions (DSA v1, canonical snake_case): `problem_understanding, approach, communication, coding, testing_debugging, complexity_analysis, independence`. Backend derives `overallScore`/success/mastery; the old "≥3 hints = downgrade" rule is **removed**.
+* Per-topic mastery scale `not_started→learning→developing→proficient→mastered`, configurable thresholds (defaults: 2→developing, 3→proficient, 3→mastered); a "successful attempt" is decided by the LLM evaluation.
+* Canonical realtime tools: `get_current_interview`, `get_current_problem`, `submit_interview_data`, `end_interview` (existing names remain deprecated aliases for the CLI harness). Recommendation/evaluation are backend operations, never tools.
+* Transcript = backend-canonical, forwarded by the browser from realtime events; structured only, no raw audio; retention configurable; PII kept out of logs.
+* No anonymous learning loop: sign-in required; remove "Continue as guest" from the loop (landing/sign-in only). Onboarding required + editable; taxonomy as domain config.
+* New HLD principle to add in Phase 1: **"The LLM is not the system of record."**
+
+Two micro-items still to confirm (roadmap "Open micro-items"): (1) the exact realtime tool surface beyond the 4 names (hints/code-exec/context), (2) mastery level naming ("strong" vs "mastered").
+
+Next step when work resumes: **Phase 1 — docs alignment** (HLD + `architecture-frozen.md` + ADR-002 + product-decisions), then Phases 2→16 in order. Do not start Phase 2 before Phase 1; do not implement recommendation/evaluation as realtime tools.
+Tag: `session-roadmap` after commit.

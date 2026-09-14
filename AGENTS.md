@@ -17,6 +17,7 @@ Runners (locked, pnpm-only — never npm/yarn):
 
 Only sources of truth:
 - `interview-coach-hld-and-implementation-plan.md` — architecture baseline (2026-09-11), phased plan. Trust it over guesses.
+- `docs/implementation-roadmap.md` — **approved target architecture for the personalized learning loop** (phases 1–16), superseding the HLD for recommendation/evaluation/profile/curriculum/skills. Read before starting new work; Phase 1 aligns the HLD/frozen docs to it.
 - `dsa-problem-catalog.json` — 59 topics / 300 problems, the canonical problem reference (fields: `title`, `difficulty`, `DSA`, `leetcode`).
 - `dsa-interview-curriculum.json` — pedagogical ordering over the same 300 problems (Learn → Practice → Interview Ready → Mastered). Default progression, not a rigid checklist.
 
