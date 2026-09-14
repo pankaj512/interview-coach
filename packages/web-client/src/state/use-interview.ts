@@ -128,8 +128,20 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
           onToolStart: (callId, tool) => log("tool", `${tool} started (${callId.slice(0, 8)}…)`),
           onToolComplete: (callId, tool, elapsedMs, replayed) =>
             log("tool", `${tool} complete in ${elapsedMs}ms${replayed ? " (replayed)" : ""}`),
-          onTranscript: (text) => log("candidate", text),
-          onAssistantTranscript: (text) => log("assistant", text),
+          onTranscript: (text) => {
+            log("candidate", text);
+            // Phase 9: forward the final turn to the backend transcript
+            // (best-effort; the interview itself is unaffected on failure).
+            void backend
+              .appendTranscript(interview.id, [{ role: "candidate", content: text }])
+              .catch(() => undefined);
+          },
+          onAssistantTranscript: (text) => {
+            log("assistant", text);
+            void backend
+              .appendTranscript(interview.id, [{ role: "interviewer", content: text }])
+              .catch(() => undefined);
+          },
           onMetric: (event, fields) => {
             if (event === "voice.error" || event === "voice.closed_unexpectedly") {
               log("connection", `${event} ${JSON.stringify(fields ?? {})}`);

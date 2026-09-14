@@ -19,6 +19,7 @@ export interface TestContext {
 export async function truncateAll(db: PostgresJsDatabase<typeof schema>): Promise<void> {
   // FK order: children first.
   await db.delete(schema.interviewEvents);
+  await db.delete(schema.interviewMessages);
   await db.delete(schema.candidateResponses);
   await db.delete(schema.evaluations);
   await db.delete(schema.interviewProblems);

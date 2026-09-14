@@ -2,9 +2,9 @@
 
 import { useState } from "react";
 import { AccountSection } from "../components/AccountSection.js";
-import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
+import { GhostButton, PrimaryButton } from "../ds/buttons.js";
 import { Card, Segmented } from "../ds/primitives.js";
-import { clearHistory, type HistoryEntry } from "../history.js";
+import type { HistoryEntry } from "../history.js";
 
 interface Settings {
   theme: "Dark" | "Light";
@@ -215,15 +215,8 @@ export function SettingsScreen({
           </select>
         </div>
         <div className="setting-row">
-          <span>Delete interview history</span>
-          <DangerButton
-            onClick={() => {
-              clearHistory(localStorage);
-              onHistoryCleared();
-            }}
-          >
-            Clear local history
-          </DangerButton>
+          <span>Interview history</span>
+          <GhostButton onClick={onHistoryCleared}>Refresh from server</GhostButton>
         </div>
         <div className="setting-row">
           <span>Export data</span>

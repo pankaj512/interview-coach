@@ -18,7 +18,7 @@ import { AppShell, type NavKey } from "./components/AppShell.js";
 import { GhostButton } from "./ds/buttons.js";
 import { Card } from "./ds/primitives.js";
 import type { Difficulty, Interaction, InterviewMode, SessionPlan } from "./flow.js";
-import { loadHistory, recordHistory, type HistoryEntry } from "./history.js";
+import { historyEntriesFromSummaries, type HistoryEntry } from "./history.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
@@ -102,12 +102,31 @@ export function App() {
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [stale, setStale] = useState(false);
-  const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => loadHistory(localStorage));
+  const [entries, setEntries] = useState<readonly HistoryEntry[]>([]);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [dashboardBusy, setDashboardBusy] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
   const evaluatingTimer = useRef<number | null>(null);
+
+  // Phase 9: history is server-owned. Load the signed-in user's interviews
+  // (newest first) whenever the session changes; the browser keeps no local
+  // index. Errors surface inline rather than inventing entries.
+  const refreshHistory = useCallback(async () => {
+    if (session === null) {
+      setEntries([]);
+      return;
+    }
+    try {
+      setEntries(historyEntriesFromSummaries(await backend.listInterviews()));
+    } catch (e) {
+      setHistoryError(formatApiError(e));
+    }
+  }, [backend, session?.token]);
+
+  useEffect(() => {
+    void refreshHistory();
+  }, [refreshHistory]);
 
   // Phase 2: load the server-owned profile whenever the signed-in session
   // changes. A 401 means the session is stale, so drop it (the gate then shows
@@ -152,9 +171,9 @@ export function App() {
     setNav("dashboard");
   }
 
-  const remember = useCallback((entry: HistoryEntry) => {
-    setEntries(recordHistory(localStorage, entry));
-  }, []);
+  const remember = useCallback(() => {
+    void refreshHistory();
+  }, [refreshHistory]);
 
   function navigate(key: NavKey) {
     setNav(key);
@@ -193,6 +212,9 @@ export function App() {
         const created = await backend.createInterview({
           candidateId: session.displayName || session.email,
           configuration: { interviewType: "dsa", difficulty, durationMinutes, problemCount: 1 },
+          // Phase 9: persist the recommendation/topic linkage on the interview.
+          recommendationId: recommendation.id,
+          topicId: recommendation.topicId,
         });
         const assigned = await backend.assignProblems(created.id, [recommendation.problemId]);
         const ready = await backend.markReady(assigned.id);
@@ -222,40 +244,17 @@ export function App() {
   );
 
   const handleFinished = useCallback(
-    (snapshot: SerializedStateSnapshot | null, roomEvents: readonly LiveEvent[], elapsedSec: number) => {
+    (snapshot: SerializedStateSnapshot | null, roomEvents: readonly LiveEvent[], _elapsedSec: number) => {
       setFinalSnapshot(snapshot);
       setEvents(roomEvents);
       setStale(false);
-      const current = interview;
-      if (current !== null) {
-        const evaluation = snapshot?.evaluation ?? null;
-        const durationMin = Math.max(1, Math.round(elapsedSec / 60));
-        const dimensions: Record<string, number> = {};
-        if (evaluation !== null) {
-          for (const [key, value] of Object.entries(evaluation.dimensions)) {
-            dimensions[key] = typeof value === "number" ? value : value.score;
-          }
-        }
-        remember({
-          id: current.id,
-          candidateId: current.candidateId,
-          status: snapshot?.interview.status ?? "completed",
-          at: new Date().toISOString(),
-          interviewType: current.configuration.interviewType === "dsa" ? "Coding" : current.configuration.interviewType,
-          difficulty: current.configuration.difficulty ?? sessionPlan?.difficulty ?? "Medium",
-          mode: sessionPlan?.mode ?? "Realistic Interview",
-          durationMin,
-          ...(evaluation?.overallScore === undefined ? {} : { overallScore: evaluation.overallScore }),
-          ...(evaluation?.recommendation === undefined ? {} : { recommendation: evaluation.recommendation }),
-          ...(evaluation?.hintsUsed === undefined ? {} : { hintsUsed: evaluation.hintsUsed }),
-          ...(evaluation === null ? {} : { strengths: evaluation.strengths, weaknesses: evaluation.weaknesses }),
-          ...(Object.keys(dimensions).length === 0 ? {} : { dimensions }),
-        });
-      }
+      // Phase 9: the interview + its evaluation are persisted server-side, so
+      // refresh the server-backed history instead of recording a local entry.
+      remember();
       setFlow("evaluating");
       evaluatingTimer.current = window.setTimeout(() => setFlow("results"), 1800);
     },
-    [interview, remember, sessionPlan],
+    [remember],
   );
 
   useEffect(() => () => {
@@ -396,7 +395,7 @@ export function App() {
         {nav === "settings" && (
           <SettingsScreen
             entries={entries}
-            onHistoryCleared={() => setEntries(loadHistory(localStorage))}
+            onHistoryCleared={() => void refreshHistory()}
             onSignIn={() => goAuth("signin")}
             onCreateAccount={() => goAuth("signup")}
             onSignOut={handleSignOut}

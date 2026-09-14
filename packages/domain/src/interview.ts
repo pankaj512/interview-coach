@@ -1,4 +1,4 @@
-import type { InterviewId, ProblemId, UserId } from "./ids.js";
+import type { InterviewId, ProblemId, RecommendationId, TopicId, UserId } from "./ids.js";
 import { newInterviewId } from "./ids.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
@@ -132,15 +132,27 @@ export interface Interview {
   readonly configuration: InterviewConfiguration;
   readonly problems: readonly InterviewProblem[];
   readonly currentOrder: number | null;
+  /** Learning-loop Phase 9: the recommendation this session was started from. */
+  readonly recommendationId?: RecommendationId;
+  /** Learning-loop Phase 9: the curriculum topic the session targets. */
+  readonly topicId?: TopicId;
+  /** Learning-loop Phase 10: async evaluation lifecycle (Phase 9 persists "none"). */
+  readonly evaluationStatus: EvaluationStatus;
   readonly createdAt: Date;
   readonly updatedAt: Date;
   readonly startedAt?: Date;
   readonly endedAt?: Date;
 }
 
+// Phase 10 drives pending -> completed/failed; Phase 9 only ever persists
+// "none" (no evaluation has been requested yet).
+export type EvaluationStatus = "none" | "pending" | "completed" | "failed";
+
 export interface CreateInterviewInput {
   readonly candidateId: UserId;
   readonly configuration: InterviewConfiguration;
+  readonly recommendationId?: RecommendationId;
+  readonly topicId?: TopicId;
   readonly now?: Date;
 }
 
@@ -156,6 +168,11 @@ export function createInterview(input: CreateInterviewInput): Result<Interview> 
     configuration: validated.value,
     problems: [],
     currentOrder: null,
+    ...(input.recommendationId === undefined
+      ? {}
+      : { recommendationId: input.recommendationId }),
+    ...(input.topicId === undefined ? {} : { topicId: input.topicId }),
+    evaluationStatus: "none",
     createdAt: now,
     updatedAt: now,
   });

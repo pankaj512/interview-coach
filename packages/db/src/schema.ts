@@ -238,12 +238,22 @@ export const interviews = pgTable(
       topicFocus?: readonly string[];
     }>(),
     currentOrder: integer("current_order"),
+    // Learning-loop Phase 9: the recommendation this session was started from
+    // and the targeted curriculum topic. Plain text (no FK) for the same reason
+    // as recommendations: a curriculum re-seed must not delete interviews.
+    recommendationId: text("recommendation_id"),
+    topicId: text("topic_id"),
+    // Learning-loop Phase 10 lifecycle; Phase 9 persists "none".
+    evaluationStatus: text("evaluation_status").notNull().default("none"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
     startedAt: timestamp("started_at", { withTimezone: true }),
     endedAt: timestamp("ended_at", { withTimezone: true }),
   },
-  (t) => [index("interviews_candidate_id_idx").on(t.candidateId)],
+  (t) => [
+    index("interviews_candidate_id_idx").on(t.candidateId),
+    index("interviews_recommendation_id_idx").on(t.recommendationId),
+  ],
 );
 
 export const interviewProblems = pgTable(
@@ -281,6 +291,24 @@ export const candidateResponses = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("candidate_responses_interview_id_idx").on(t.interviewId)],
+);
+
+// Learning-loop Phase 9: structured transcript (no raw audio). Cascades with
+// the interview; reads are chronological. role validity is enforced by the
+// domain boundary and a CHECK added in the migration.
+export const interviewMessages = pgTable(
+  "interview_messages",
+  {
+    id: text("id").primaryKey(),
+    interviewId: text("interview_id")
+      .notNull()
+      .references(() => interviews.id, { onDelete: "cascade" }),
+    role: text("role").notNull(),
+    content: text("content").notNull(),
+    problemId: text("problem_id").references(() => problems.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [index("interview_messages_interview_id_idx").on(t.interviewId)],
 );
 
 export const evaluations = pgTable(

@@ -16,6 +16,7 @@ import type { Curriculum } from "./curriculum.js";
 import type { UserCurriculumProgress, UserSkillState } from "./skill.js";
 import type { Recommendation } from "./recommendation.js";
 import type { CandidateResponse } from "./candidate-response.js";
+import type { InterviewMessage } from "./interview-message.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
 import type { Interview } from "./interview.js";
@@ -28,6 +29,8 @@ import type { Problem } from "./problem.js";
 export interface InterviewRepository {
   save(interview: Interview): Promise<void>;
   findById(id: InterviewId): Promise<Interview | null>;
+  // Phase 9: server-backed history listing, newest first (updatedAt desc).
+  listByCandidate(candidateId: UserId, limit?: number): Promise<readonly Interview[]>;
   // S8b retention (HLD 7.4): hard delete. Postgres cascades every
   // interview-scoped row (assignments, responses, evaluations, events,
   // submissions, runs) via onDelete cascade; the catalog is untouched.
@@ -50,6 +53,14 @@ export interface ResponseRepository {
 export interface EvaluationRepository {
   save(evaluation: Evaluation): Promise<void>;
   findByInterview(interviewId: InterviewId): Promise<Evaluation | null>;
+  // Phase 9: batch read for the history list (avoids N+1).
+  listByInterviewIds(interviewIds: readonly InterviewId[]): Promise<readonly Evaluation[]>;
+}
+
+// Phase 9: structured transcript. Append-only; reads are chronological.
+export interface InterviewMessageRepository {
+  append(message: InterviewMessage): Promise<void>;
+  listByInterview(interviewId: InterviewId): Promise<readonly InterviewMessage[]>;
 }
 
 export interface EventRepository {
@@ -82,6 +93,17 @@ export class InMemoryInterviewRepository implements InterviewRepository {
 
   async findById(id: InterviewId): Promise<Interview | null> {
     return this.store.get(id) ?? null;
+  }
+
+  // Newest first by updatedAt (Phase 9 history). Ties keep insertion order.
+  async listByCandidate(
+    candidateId: UserId,
+    limit = 50,
+  ): Promise<readonly Interview[]> {
+    return [...this.store.values()]
+      .filter((i) => i.candidateId === candidateId)
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .slice(0, limit);
   }
 
   async deleteById(id: InterviewId): Promise<boolean> {
@@ -159,6 +181,44 @@ export class InMemoryEvaluationRepository implements EvaluationRepository {
       }
     }
     return latest;
+  }
+
+  async listByInterviewIds(
+    interviewIds: readonly InterviewId[],
+  ): Promise<readonly Evaluation[]> {
+    const wanted = new Set(interviewIds);
+    // One latest evaluation per interview, matching findByInterview.
+    const latest = new Map<InterviewId, Evaluation>();
+    for (const evaluation of this.store.values()) {
+      if (!wanted.has(evaluation.interviewId)) continue;
+      const current = latest.get(evaluation.interviewId);
+      if (
+        current === undefined ||
+        evaluation.createdAt.getTime() > current.createdAt.getTime() ||
+        (evaluation.createdAt.getTime() === current.createdAt.getTime() &&
+          evaluation.updatedAt.getTime() >= current.updatedAt.getTime())
+      ) {
+        latest.set(evaluation.interviewId, evaluation);
+      }
+    }
+    return [...latest.values()];
+  }
+}
+
+export class InMemoryInterviewMessageRepository implements InterviewMessageRepository {
+  private readonly messages: InterviewMessage[] = [];
+
+  async append(message: InterviewMessage): Promise<void> {
+    this.messages.push(message);
+  }
+
+  // Oldest-first by createdAt, matching the Drizzle `asc(created_at)` read.
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly InterviewMessage[]> {
+    return this.messages
+      .filter((m) => m.interviewId === interviewId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 }
 
@@ -477,6 +537,7 @@ export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
   readonly responses: ResponseRepository;
+  readonly messages: InterviewMessageRepository;
   readonly evaluations: EvaluationRepository;
   readonly events: EventRepository;
   readonly submissions: SubmissionRepository;
@@ -494,6 +555,7 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly interviews: InMemoryInterviewRepository;
   readonly problems: InMemoryProblemRepository;
   readonly responses: InMemoryResponseRepository;
+  readonly messages: InMemoryInterviewMessageRepository;
   readonly evaluations: InMemoryEvaluationRepository;
   readonly events: InMemoryEventRepository;
   readonly submissions: InMemorySubmissionRepository;
@@ -510,6 +572,7 @@ export function createInMemoryRepositories(): RepositorySet & {
     interviews: new InMemoryInterviewRepository(),
     problems: new InMemoryProblemRepository(),
     responses: new InMemoryResponseRepository(),
+    messages: new InMemoryInterviewMessageRepository(),
     evaluations: new InMemoryEvaluationRepository(),
     events: new InMemoryEventRepository(),
     submissions: new InMemorySubmissionRepository(),

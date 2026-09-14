@@ -12,6 +12,9 @@ export type EventId = string & { readonly __brand: "EventId" };
 // Learning-loop Phase 4: a persisted recommendation (LLM-proposed, backend-
 // validated). UUID-minted like the other per-user artefacts.
 export type RecommendationId = string & { readonly __brand: "RecommendationId" };
+// Learning-loop Phase 9: a persisted transcript message (structured, no raw
+// audio). UUID-minted like the other per-interview artefacts.
+export type MessageId = string & { readonly __brand: "MessageId" };
 // Learning-loop Phase 3: curriculum is stable seeded config, so these IDs are
 // deterministic slugs (no UUID minting) — see curriculum.ts.
 export type CurriculumId = string & { readonly __brand: "CurriculumId" };
@@ -54,6 +57,10 @@ export function newRecommendationId(): RecommendationId {
   return `rec_${randomUUID()}` as RecommendationId;
 }
 
+export function newMessageId(): MessageId {
+  return `msg_${randomUUID()}` as MessageId;
+}
+
 // Explicit casts for stable/seeded IDs (catalog import, tests, S2 seeding).
 export function asUserId(raw: string): UserId {
   return raw as UserId;
@@ -89,6 +96,10 @@ export function asEventId(raw: string): EventId {
 
 export function asRecommendationId(raw: string): RecommendationId {
   return raw as RecommendationId;
+}
+
+export function asMessageId(raw: string): MessageId {
+  return raw as MessageId;
 }
 
 export function asCurriculumId(raw: string): CurriculumId {

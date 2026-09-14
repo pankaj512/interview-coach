@@ -11,6 +11,7 @@ export * from "./problem.js";
 export * from "./interview.js";
 export * from "./lifecycle.js";
 export * from "./candidate-response.js";
+export * from "./interview-message.js";
 export * from "./evaluation.js";
 export * from "./interview-event.js";
 export * from "./repositories.js";

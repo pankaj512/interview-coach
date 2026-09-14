@@ -7,6 +7,7 @@ import type {
   Curriculum,
   Evaluation,
   Interview,
+  InterviewMessage,
   InterviewProblem,
   InterviewStateSnapshot,
   Problem,
@@ -24,10 +25,29 @@ export interface SerializedInterview {
   readonly configuration: Interview["configuration"];
   readonly problems: readonly InterviewProblem[];
   readonly currentOrder: number | null;
+  /** Learning-loop Phase 9: recommendation/topic linkage. */
+  readonly recommendationId?: string;
+  readonly topicId?: string;
+  readonly evaluationStatus: string;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly startedAt?: string;
   readonly endedAt?: string;
+}
+
+// Phase 9: one history-list row (interview + its latest evaluation summary).
+export interface SerializedInterviewSummary {
+  readonly interview: SerializedInterview;
+  readonly evaluation: SerializedEvaluation | null;
+}
+
+export interface SerializedInterviewMessage {
+  readonly id: string;
+  readonly interviewId: string;
+  readonly role: string;
+  readonly content: string;
+  readonly problemId?: string;
+  readonly createdAt: string;
 }
 
 export interface SerializedStateSnapshot {
@@ -59,6 +79,11 @@ export function serializeInterview(interview: Interview): SerializedInterview {
     configuration: interview.configuration,
     problems: interview.problems,
     currentOrder: interview.currentOrder,
+    ...(interview.recommendationId === undefined
+      ? {}
+      : { recommendationId: interview.recommendationId }),
+    ...(interview.topicId === undefined ? {} : { topicId: interview.topicId }),
+    evaluationStatus: interview.evaluationStatus,
     createdAt: interview.createdAt.toISOString(),
     updatedAt: interview.updatedAt.toISOString(),
     ...(interview.startedAt === undefined
@@ -67,6 +92,30 @@ export function serializeInterview(interview: Interview): SerializedInterview {
     ...(interview.endedAt === undefined
       ? {}
       : { endedAt: interview.endedAt.toISOString() }),
+  };
+}
+
+// Phase 9 history row: the interview + its latest evaluation (if any).
+export function serializeInterviewSummary(
+  interview: Interview,
+  evaluation: Evaluation | null,
+): SerializedInterviewSummary {
+  return {
+    interview: serializeInterview(interview),
+    evaluation: evaluation === null ? null : serializeEvaluation(evaluation),
+  };
+}
+
+export function serializeInterviewMessage(
+  message: InterviewMessage,
+): SerializedInterviewMessage {
+  return {
+    id: message.id,
+    interviewId: message.interviewId,
+    role: message.role,
+    content: message.content,
+    ...(message.problemId === undefined ? {} : { problemId: message.problemId }),
+    createdAt: message.createdAt.toISOString(),
   };
 }
 

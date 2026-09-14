@@ -10,6 +10,7 @@ import type {
   EvaluationRepository,
   EventRepository,
   InterviewRepository,
+  InterviewMessageRepository,
   ProblemRepository,
   RepositorySet,
   ResponseRepository,
@@ -38,10 +39,12 @@ import type {
   CodeSubmission,
   Evaluation,
   EvaluationRecommendation,
+  EvaluationStatus,
   Interview,
   InterviewConfiguration,
   InterviewEvent,
   InterviewEventType,
+  InterviewMessage,
   InterviewProblemState,
   InterviewStatus,
   InterviewType,
@@ -92,6 +95,61 @@ function toResponseKind(raw: string): ResponseKind {
   return raw as ResponseKind;
 }
 
+type InterviewRow = typeof schema.interviews.$inferSelect;
+type InterviewAssignmentRow = typeof schema.interviewProblems.$inferSelect;
+
+// Shared interview row -> domain mapper (findById + listByCandidate).
+function toInterview(
+  row: InterviewRow,
+  assignments: readonly InterviewAssignmentRow[],
+): Interview {
+  const rawConfig = row.configuration as {
+    interviewType: string;
+    difficulty?: "Easy" | "Medium" | "Mixed";
+    durationMinutes?: number;
+    problemCount?: number;
+    topicFocus?: readonly string[];
+  };
+  const configuration: InterviewConfiguration = {
+    interviewType: toInterviewType(rawConfig.interviewType),
+    ...(rawConfig.difficulty === undefined
+      ? {}
+      : { difficulty: rawConfig.difficulty }),
+    ...(rawConfig.durationMinutes === undefined
+      ? {}
+      : { durationMinutes: rawConfig.durationMinutes }),
+    ...(rawConfig.problemCount === undefined
+      ? {}
+      : { problemCount: rawConfig.problemCount }),
+    ...(rawConfig.topicFocus === undefined
+      ? {}
+      : { topicFocus: rawConfig.topicFocus }),
+  };
+  return {
+    id: row.id as InterviewId,
+    candidateId: row.candidateId as Interview["candidateId"],
+    type: toInterviewType(row.type),
+    status: toStatus(row.status),
+    configuration,
+    problems: assignments.map((a) => ({
+      interviewId: a.interviewId as InterviewId,
+      problemId: a.problemId as ProblemId,
+      order: a.order,
+      state: toProblemState(a.state),
+    })),
+    currentOrder: row.currentOrder,
+    ...(row.recommendationId === null
+      ? {}
+      : { recommendationId: row.recommendationId as RecommendationId }),
+    ...(row.topicId === null ? {} : { topicId: row.topicId as TopicId }),
+    evaluationStatus: row.evaluationStatus as EvaluationStatus,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    ...(row.startedAt === null ? {} : { startedAt: row.startedAt }),
+    ...(row.endedAt === null ? {} : { endedAt: row.endedAt }),
+  };
+}
+
 // Concurrency (audit P2-1/F9): the MVP is explicitly single-writer — one
 // backend replica (frozen §5: no Redis/queues; deployment constraint), and the
 // only writers are the request handlers of that process, serialized per
@@ -127,6 +185,9 @@ export class DrizzleInterviewRepository implements InterviewRepository {
               : { topicFocus: [...interview.configuration.topicFocus] }),
           },
           currentOrder: interview.currentOrder,
+          recommendationId: interview.recommendationId ?? null,
+          topicId: interview.topicId ?? null,
+          evaluationStatus: interview.evaluationStatus,
           createdAt: interview.createdAt,
           updatedAt: interview.updatedAt,
           startedAt: interview.startedAt ?? null,
@@ -156,6 +217,9 @@ export class DrizzleInterviewRepository implements InterviewRepository {
                 : { topicFocus: [...interview.configuration.topicFocus] }),
             },
             currentOrder: interview.currentOrder,
+            recommendationId: interview.recommendationId ?? null,
+            topicId: interview.topicId ?? null,
+            evaluationStatus: interview.evaluationStatus,
             updatedAt: interview.updatedAt,
             // Preserve existing timestamps when a partial update omits them
             // (audit P2-8); the insert path above still writes nulls.
@@ -199,46 +263,39 @@ export class DrizzleInterviewRepository implements InterviewRepository {
     });
     const row = rows[0];
     if (row === undefined) return null;
-    const rawConfig = row.configuration as {
-      interviewType: string;
-      difficulty?: "Easy" | "Medium" | "Mixed";
-      durationMinutes?: number;
-      problemCount?: number;
-      topicFocus?: readonly string[];
-    };
-    const configuration: InterviewConfiguration = {
-      interviewType: toInterviewType(rawConfig.interviewType),
-      ...(rawConfig.difficulty === undefined
-        ? {}
-        : { difficulty: rawConfig.difficulty }),
-      ...(rawConfig.durationMinutes === undefined
-        ? {}
-        : { durationMinutes: rawConfig.durationMinutes }),
-      ...(rawConfig.problemCount === undefined
-        ? {}
-        : { problemCount: rawConfig.problemCount }),
-      ...(rawConfig.topicFocus === undefined
-        ? {}
-        : { topicFocus: rawConfig.topicFocus }),
-    };
-    return {
-      id: row.id as InterviewId,
-      candidateId: row.candidateId as Interview["candidateId"],
-      type: toInterviewType(row.type),
-      status: toStatus(row.status),
-      configuration,
-      problems: assignments.map((a) => ({
-        interviewId: a.interviewId as InterviewId,
-        problemId: a.problemId as ProblemId,
-        order: a.order,
-        state: toProblemState(a.state),
-      })),
-      currentOrder: row.currentOrder,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      ...(row.startedAt === null ? {} : { startedAt: row.startedAt }),
-      ...(row.endedAt === null ? {} : { endedAt: row.endedAt }),
-    };
+    return toInterview(row, assignments);
+  }
+
+  // Phase 9 history listing: newest first by updatedAt. Assignments are read
+  // in one query for the whole page (no N+1).
+  async listByCandidate(
+    candidateId: UserId,
+    limit = 50,
+  ): Promise<readonly Interview[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.interviews)
+      .where(eq(schema.interviews.candidateId, candidateId))
+      .orderBy(desc(schema.interviews.updatedAt))
+      .limit(limit);
+    if (rows.length === 0) return [];
+    const assignments = await this.db
+      .select()
+      .from(schema.interviewProblems)
+      .where(
+        inArray(
+          schema.interviewProblems.interviewId,
+          rows.map((r) => r.id),
+        ),
+      )
+      .orderBy(asc(schema.interviewProblems.order));
+    const byInterview = new Map<string, typeof assignments>();
+    for (const assignment of assignments) {
+      const list = byInterview.get(assignment.interviewId) ?? [];
+      list.push(assignment);
+      byInterview.set(assignment.interviewId, list);
+    }
+    return rows.map((row) => toInterview(row, byInterview.get(row.id) ?? []));
   }
 
   async deleteById(id: InterviewId): Promise<boolean> {
@@ -381,6 +438,44 @@ export class DrizzleResponseRepository implements ResponseRepository {
   }
 }
 
+export class DrizzleInterviewMessageRepository implements InterviewMessageRepository {
+  constructor(private readonly db: Db) {}
+
+  async append(message: InterviewMessage): Promise<void> {
+    await this.db
+      .insert(schema.interviewMessages)
+      .values({
+        id: message.id,
+        interviewId: message.interviewId,
+        role: message.role,
+        content: message.content,
+        problemId: message.problemId ?? null,
+        createdAt: message.createdAt,
+      })
+      .onConflictDoNothing({ target: schema.interviewMessages.id });
+  }
+
+  async listByInterview(
+    interviewId: InterviewId,
+  ): Promise<readonly InterviewMessage[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.interviewMessages)
+      .where(eq(schema.interviewMessages.interviewId, interviewId))
+      .orderBy(asc(schema.interviewMessages.createdAt));
+    return rows.map(
+      (r): InterviewMessage => ({
+        id: r.id as InterviewMessage["id"],
+        interviewId: r.interviewId as InterviewId,
+        role: r.role as InterviewMessage["role"],
+        content: r.content,
+        createdAt: r.createdAt,
+        ...(r.problemId === null ? {} : { problemId: r.problemId as ProblemId }),
+      }),
+    );
+  }
+}
+
 export class DrizzleEvaluationRepository implements EvaluationRepository {
   constructor(private readonly db: Db) {}
 
@@ -413,23 +508,43 @@ export class DrizzleEvaluationRepository implements EvaluationRepository {
       .orderBy(desc(schema.evaluations.createdAt))
       .limit(1);
     const row = rows[0];
-    if (row === undefined) return null;
-    const dimensions = row.dimensions as Evaluation["dimensions"];
-    return {
-      id: row.id as Evaluation["id"],
-      interviewId: row.interviewId as InterviewId,
-      dimensions,
-      hintsUsed: row.hintsUsed,
-      strengths: row.strengths,
-      weaknesses: row.weaknesses,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      ...(row.recommendation === null
-        ? {}
-        : { recommendation: row.recommendation as EvaluationRecommendation }),
-      ...(row.overallScore === null ? {} : { overallScore: row.overallScore }),
-    };
+    return row === undefined ? null : toEvaluation(row);
   }
+
+  // Phase 9: latest evaluation per interview for the history page.
+  async listByInterviewIds(
+    interviewIds: readonly InterviewId[],
+  ): Promise<readonly Evaluation[]> {
+    if (interviewIds.length === 0) return [];
+    const rows = await this.db
+      .select()
+      .from(schema.evaluations)
+      .where(inArray(schema.evaluations.interviewId, interviewIds))
+      .orderBy(desc(schema.evaluations.createdAt));
+    const latest = new Map<string, Evaluation>();
+    for (const row of rows) {
+      if (!latest.has(row.interviewId)) latest.set(row.interviewId, toEvaluation(row));
+    }
+    return [...latest.values()];
+  }
+}
+
+function toEvaluation(row: typeof schema.evaluations.$inferSelect): Evaluation {
+  const dimensions = row.dimensions as Evaluation["dimensions"];
+  return {
+    id: row.id as Evaluation["id"],
+    interviewId: row.interviewId as InterviewId,
+    dimensions,
+    hintsUsed: row.hintsUsed,
+    strengths: row.strengths,
+    weaknesses: row.weaknesses,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    ...(row.recommendation === null
+      ? {}
+      : { recommendation: row.recommendation as EvaluationRecommendation }),
+    ...(row.overallScore === null ? {} : { overallScore: row.overallScore }),
+  };
 }
 
 export class DrizzleEventRepository implements EventRepository {
@@ -1178,6 +1293,7 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     interviews: new DrizzleInterviewRepository(db),
     problems: new DrizzleProblemRepository(db),
     responses: new DrizzleResponseRepository(db),
+    messages: new DrizzleInterviewMessageRepository(db),
     evaluations: new DrizzleEvaluationRepository(db),
     events: new DrizzleEventRepository(db),
     submissions: new DrizzleSubmissionRepository(db),

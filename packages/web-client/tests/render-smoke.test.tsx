@@ -57,6 +57,7 @@ const interview: SerializedInterview = {
   configuration: { interviewType: "dsa", difficulty: "Hard", durationMinutes: 30, problemCount: 1 },
   problems: [{ problemId: "prob_3sum", order: 0 }],
   currentOrder: 0,
+  evaluationStatus: "none",
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),
 };

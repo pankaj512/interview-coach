@@ -59,10 +59,28 @@ export interface SerializedInterview {
   readonly configuration: InterviewConfiguration;
   readonly problems: readonly InterviewProblemAssignment[];
   readonly currentOrder: number | null;
+  readonly recommendationId?: string;
+  readonly topicId?: string;
+  readonly evaluationStatus: string;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly startedAt?: string;
   readonly endedAt?: string;
+}
+
+// Phase 9: one server-backed history row (interview + latest evaluation).
+export interface SerializedInterviewSummary {
+  readonly interview: SerializedInterview;
+  readonly evaluation: SerializedEvaluation | null;
+}
+
+export interface SerializedInterviewMessage {
+  readonly id: string;
+  readonly interviewId: string;
+  readonly role: "candidate" | "interviewer" | "system";
+  readonly content: string;
+  readonly problemId?: string;
+  readonly createdAt: string;
 }
 
 export interface ProblemExample {

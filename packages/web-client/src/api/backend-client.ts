@@ -17,6 +17,8 @@ import type {
   RunCodeInput,
   SerializedEvaluation,
   SerializedInterview,
+  SerializedInterviewMessage,
+  SerializedInterviewSummary,
   SerializedRun,
   SerializedStateSnapshot,
   SerializedSubmission,
@@ -90,6 +92,17 @@ function defaultFetch(): FetchFn {
 export interface CreateInterviewInput {
   readonly candidateId: string;
   readonly configuration: InterviewConfiguration;
+  /** Phase 9: bind the session to the recommendation it was started from. */
+  readonly recommendationId?: string;
+  /** Phase 9: the targeted curriculum topic (defaults from the recommendation). */
+  readonly topicId?: string;
+}
+
+// Phase 9: one transcript message sent to / received from the backend.
+export interface TranscriptMessageInput {
+  readonly role: "candidate" | "interviewer" | "system";
+  readonly content: string;
+  readonly problemId?: string;
 }
 
 export class BackendClient {
@@ -219,9 +232,46 @@ export class BackendClient {
     const body = await this.request<{ ok: true; interview: SerializedInterview }>(
       "POST",
       "/api/interviews",
-      { candidateId: input.candidateId, configuration: input.configuration },
+      {
+        candidateId: input.candidateId,
+        configuration: input.configuration,
+        ...(input.recommendationId === undefined
+          ? {}
+          : { recommendationId: input.recommendationId }),
+        ...(input.topicId === undefined ? {} : { topicId: input.topicId }),
+      },
     );
     return body.interview;
+  }
+
+  // Phase 9: server-backed history (user-scoped; newest first).
+  async listInterviews(limit?: number): Promise<readonly SerializedInterviewSummary[]> {
+    const suffix = limit === undefined ? "" : `?limit=${limit}`;
+    const body = await this.request<{ ok: true; interviews: SerializedInterviewSummary[] }>(
+      "GET",
+      `/api/interviews${suffix}`,
+    );
+    return body.interviews;
+  }
+
+  async appendTranscript(
+    id: string,
+    messages: readonly TranscriptMessageInput[],
+  ): Promise<readonly SerializedInterviewMessage[]> {
+    const body = await this.request<{ ok: true; messages: SerializedInterviewMessage[] }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/transcript`,
+      { messages: [...messages] },
+    );
+    return body.messages;
+  }
+
+  async getTranscript(id: string): Promise<readonly SerializedInterviewMessage[]> {
+    const body = await this.request<{ ok: true; messages: SerializedInterviewMessage[] }>(
+      "GET",
+      `/api/interviews/${encodeURIComponent(id)}/transcript`,
+    );
+    return body.messages;
   }
 
   async getInterview(id: string): Promise<SerializedInterview> {

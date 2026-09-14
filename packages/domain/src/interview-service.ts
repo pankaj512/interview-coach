@@ -1,4 +1,4 @@
-import type { InterviewId, ProblemId, UserId } from "./ids.js";
+import type { InterviewId, ProblemId, RecommendationId, TopicId, UserId } from "./ids.js";
 import type {
   Interview,
   InterviewConfiguration,
@@ -8,6 +8,11 @@ import { createInterview, currentProblemRef } from "./interview.js";
 import { transition } from "./lifecycle.js";
 import type { CandidateResponse, ResponseKind } from "./candidate-response.js";
 import { createCandidateResponse } from "./candidate-response.js";
+import type {
+  InterviewMessage,
+  InterviewMessageRole,
+} from "./interview-message.js";
+import { createInterviewMessage } from "./interview-message.js";
 import type { CreateEvaluationInput } from "./evaluation.js";
 import { createEvaluation } from "./evaluation.js";
 import type { Evaluation } from "./evaluation.js";
@@ -34,6 +39,10 @@ export interface InterviewServiceDeps extends RepositorySet {
 export interface CreateInterviewArgs {
   readonly candidateId: UserId;
   readonly configuration: InterviewConfiguration;
+  /** Phase 9: bind the session to the recommendation it was started from. */
+  readonly recommendationId?: RecommendationId;
+  /** Phase 9: the curriculum topic the session targets. */
+  readonly topicId?: TopicId;
 }
 
 export interface RecordResponseArgs {
@@ -41,6 +50,15 @@ export interface RecordResponseArgs {
   readonly kind: ResponseKind;
   readonly content: string;
 }
+
+// Phase 9: one transcript message as supplied by the browser forwarder.
+export interface TranscriptMessageInput {
+  readonly role: InterviewMessageRole;
+  readonly content: string;
+  readonly problemId?: ProblemId;
+}
+
+export const MAX_TRANSCRIPT_BATCH = 100;
 
 export interface InterviewStateSnapshot {
   readonly interview: Interview;
@@ -74,12 +92,70 @@ export class InterviewService {
     const created = createInterview({
       candidateId: args.candidateId,
       configuration: args.configuration,
+      ...(args.recommendationId === undefined
+        ? {}
+        : { recommendationId: args.recommendationId }),
+      ...(args.topicId === undefined ? {} : { topicId: args.topicId }),
       now: this.clock.now(),
     });
     if (!created.ok) return created;
     await this.repos.interviews.save(created.value);
     await this.recordEvent(created.value.id, "interview.created");
     return created;
+  }
+
+  // Phase 9: server-backed history listing, newest first.
+  async listInterviews(
+    candidateId: UserId,
+    limit = 50,
+  ): Promise<readonly Interview[]> {
+    return this.repos.interviews.listByCandidate(candidateId, limit);
+  }
+
+  // Phase 9: append a batch of structured transcript messages. Each message is
+  // validated at the domain boundary; the whole batch is persisted before any
+  // is returned, so a rejected batch appends nothing.
+  async appendMessages(
+    id: InterviewId,
+    inputs: readonly TranscriptMessageInput[],
+  ): Promise<Result<readonly InterviewMessage[]>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    if (inputs.length === 0) {
+      return err(
+        domainError("VALIDATION_ERROR", "Transcript batch must not be empty"),
+      );
+    }
+    if (inputs.length > MAX_TRANSCRIPT_BATCH) {
+      return err(
+        domainError(
+          "VALIDATION_ERROR",
+          `Transcript batch must have at most ${MAX_TRANSCRIPT_BATCH} messages`,
+        ),
+      );
+    }
+    const built: InterviewMessage[] = [];
+    for (const input of inputs) {
+      const message = createInterviewMessage({
+        interviewId: id,
+        role: input.role,
+        content: input.content,
+        ...(input.problemId === undefined ? {} : { problemId: input.problemId }),
+        now: this.clock.now(),
+      });
+      if (!message.ok) return message;
+      built.push(message.value);
+    }
+    for (const message of built) {
+      await this.repos.messages.append(message);
+    }
+    return ok(built);
+  }
+
+  async listMessages(id: InterviewId): Promise<Result<readonly InterviewMessage[]>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    return ok(await this.repos.messages.listByInterview(id));
   }
 
   async markReady(id: InterviewId): Promise<Result<Interview>> {

@@ -14,6 +14,7 @@ import {
   SubmissionService,
   asCurriculumId,
   asProblemId,
+  asRecommendationId,
   asTopicId,
   asUserId,
   createProblem,
@@ -266,6 +267,71 @@ describe("postgres persistence", () => {
     expect(await t.repos.problems.findById(p.id)).not.toBeNull();
     // Second delete reports missing.
     expect(await t.repos.interviews.deleteById(id)).toBe(false);
+  }));
+
+  it("persists transcript messages + interview linkage, lists by candidate, and cascades", withDb(ctx, async (t) => {
+    const service = new InterviewService({ ...t.repos });
+    const candidateId = asUserId("user_phase9_persist");
+    const created = await service.createInterview({
+      candidateId,
+      configuration: { interviewType: "dsa" },
+      recommendationId: asRecommendationId("rec_phase9_persist"),
+      topicId: asTopicId("topic_arrays"),
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    const id = created.value.id;
+
+    const appended = await service.appendMessages(id, [
+      { role: "interviewer", content: "Welcome to the interview." },
+      { role: "candidate", content: "Thanks, ready." },
+    ]);
+    if (!appended.ok) throw new Error(appended.error.message);
+    const messages = await service.listMessages(id);
+    if (!messages.ok) throw new Error(messages.error.message);
+    expect(messages.value.map((m) => m.role)).toEqual(["interviewer", "candidate"]);
+    expect(messages.value.map((m) => m.content)).toEqual([
+      "Welcome to the interview.",
+      "Thanks, ready.",
+    ]);
+
+    // Linkage + evaluationStatus round-trip.
+    const fetched = await t.repos.interviews.findById(id);
+    expect(fetched).toMatchObject({
+      recommendationId: "rec_phase9_persist",
+      topicId: "topic_arrays",
+      evaluationStatus: "none",
+    });
+
+    // listByCandidate includes it (newest first).
+    const listed = await t.repos.interviews.listByCandidate(candidateId);
+    expect(listed.map((i) => i.id)).toEqual([id]);
+
+    // Restart survival.
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      const afterRestart = await repos.messages.listByInterview(id);
+      expect(afterRestart.map((m) => m.content)).toEqual([
+        "Welcome to the interview.",
+        "Thanks, ready.",
+      ]);
+      const interviewAfter = await repos.interviews.findById(id);
+      expect(interviewAfter).toMatchObject({
+        recommendationId: "rec_phase9_persist",
+        topicId: "topic_arrays",
+      });
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+
+    // Hard delete cascades the transcript.
+    const deleted = await reconnected.repos.interviews.deleteById(id);
+    expect(deleted).toBe(true);
+    expect(await reconnected.repos.messages.listByInterview(id)).toHaveLength(0);
   }));
 
   it("round-trips a user profile, survives restart, and cascades with the account", withDb(ctx, async (t) => {

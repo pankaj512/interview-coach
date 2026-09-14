@@ -71,10 +71,12 @@ import {
   type CodeExecutor,
   type InterviewConfiguration,
   type InterviewId,
+  type RecommendationId,
   type RecommendationModel,
   type RepositorySet,
   type ToolName,
   type ToolResult,
+  type TopicId,
 } from "@interview-coach/domain";
 import { loadConfig, type BackendConfig } from "./config.js";
 import { extractBearerToken, registerAuthHook, registerOwnershipHook } from "./auth.js";
@@ -97,6 +99,8 @@ import {
   serializeEvaluation,
   serializeCurriculum,
   serializeInterview,
+  serializeInterviewMessage,
+  serializeInterviewSummary,
   serializeRecommendation,
   serializeRun,
   serializeStateSnapshot,
@@ -152,6 +156,10 @@ const configurationSchema = z.object({
 const createInterviewSchema = z.object({
   candidateId: z.string().min(1).max(200),
   configuration: configurationSchema,
+  // Phase 9: bind the session to the recommendation it was started from and
+  // the targeted curriculum topic. Validated against the caller below.
+  recommendationId: z.string().min(1).max(200).optional(),
+  topicId: z.string().min(1).max(200).optional(),
 });
 
 // S8c credential endpoints (HLD 7.1). Fine-grained rules (password length,
@@ -229,6 +237,26 @@ const recordResponseSchema = z.object({
   kind: z.enum(RESPONSE_KINDS_TUPLE).default("answer"),
   content: z.string().min(1).max(10_000),
   problemId: z.string().min(1).max(200).optional(),
+});
+
+// Phase 9: structured transcript append (browser forwards Voice Live turns).
+const transcriptSchema = z.object({
+  messages: z
+    .array(
+      z.object({
+        role: z.enum(["candidate", "interviewer", "system"]),
+        content: z.string().min(1).max(10_000),
+        problemId: z.string().min(1).max(200).optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+// Phase 9: server-backed history listing.
+const listInterviewsQuerySchema = z.object({
+  candidateId: z.string().min(1).max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
 const dimensionScoreSchema = z.object({
@@ -741,14 +769,81 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       caller !== undefined && caller.kind === "user"
         ? caller.userId
         : asUserId(parsed.data.candidateId);
+    // Phase 9: a user caller may bind the session to a recommendation they own
+    // (foreign/unknown ids read as 404, no ownership oracle). The topic is
+    // taken from the recommendation unless the caller supplies one.
+    let recommendationId: RecommendationId | undefined;
+    let topicId: TopicId | undefined;
+    if (parsed.data.recommendationId !== undefined) {
+      const recommendation = await deps.repos.recommendations.findById(
+        asRecommendationId(parsed.data.recommendationId),
+      );
+      if (
+        recommendation === null ||
+        (caller !== undefined &&
+          caller.kind === "user" &&
+          recommendation.userId !== caller.userId)
+      ) {
+        return sendApiError(
+          reply,
+          404,
+          "NOT_FOUND",
+          `Recommendation ${parsed.data.recommendationId} does not exist`,
+          false,
+        );
+      }
+      recommendationId = recommendation.id;
+      topicId = asTopicId(recommendation.topicId);
+    }
+    if (parsed.data.topicId !== undefined) {
+      topicId = asTopicId(parsed.data.topicId);
+    }
     const created = await interviews.createInterview({
       candidateId,
       configuration: toDomainConfiguration(parsed.data.configuration),
+      ...(recommendationId === undefined ? {} : { recommendationId }),
+      ...(topicId === undefined ? {} : { topicId }),
     });
     if (!created.ok) return sendDomainError(reply, created.error);
     request.log.info({ interviewId: created.value.id }, "interview.created");
     metrics.countInterviewCreated();
     return reply.status(201).send({ ok: true, interview: serializeInterview(created.value) });
+  });
+
+  // Phase 9: server-backed history. User callers list their own interviews;
+  // service/anonymous callers must name a candidateId (open local-dev + CLI).
+  app.get("/api/interviews", async (request, reply) => {
+    const parsed = listInterviewsQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const caller = request.caller;
+    const candidateId =
+      caller !== undefined && caller.kind === "user"
+        ? caller.userId
+        : parsed.data.candidateId === undefined
+          ? undefined
+          : asUserId(parsed.data.candidateId);
+    if (candidateId === undefined) {
+      return sendApiError(
+        reply,
+        400,
+        "VALIDATION_ERROR",
+        "candidateId is required for service/anonymous callers",
+        false,
+      );
+    }
+    const list = await interviews.listInterviews(candidateId, parsed.data.limit);
+    const evaluations = await deps.repos.evaluations.listByInterviewIds(
+      list.map((interview) => interview.id),
+    );
+    const byInterview = new Map(evaluations.map((evaluation) => [evaluation.interviewId, evaluation]));
+    return reply.send({
+      ok: true,
+      interviews: list.map((interview) =>
+        serializeInterviewSummary(interview, byInterview.get(interview.id) ?? null),
+      ),
+    });
   });
 
   app.get("/api/interviews/:id", async (request, reply) => {
@@ -771,6 +866,52 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     const state = await interviews.getState(asInterviewId(params.data.id));
     if (!state.ok) return sendDomainError(reply, state.error);
     return reply.send({ ok: true, state: serializeStateSnapshot(state.value) });
+  });
+
+  // Phase 9: structured transcript. The browser forwards Voice Live turns; the
+  // backend validates and persists them (roadmap locked decision 6). Ownership
+  // is enforced by the preHandler hook for user callers.
+  app.post("/api/interviews/:id/transcript", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = transcriptSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const appended = await interviews.appendMessages(
+      asInterviewId(params.data.id),
+      parsed.data.messages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        ...(message.problemId === undefined
+          ? {}
+          : { problemId: asProblemId(message.problemId) }),
+      })),
+    );
+    if (!appended.ok) return sendDomainError(reply, appended.error);
+    request.log.info(
+      { interviewId: params.data.id, count: appended.value.length },
+      "transcript.appended",
+    );
+    return reply.status(201).send({
+      ok: true,
+      messages: appended.value.map(serializeInterviewMessage),
+    });
+  });
+
+  app.get("/api/interviews/:id/transcript", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const messages = await interviews.listMessages(asInterviewId(params.data.id));
+    if (!messages.ok) return sendDomainError(reply, messages.error);
+    return reply.send({
+      ok: true,
+      messages: messages.value.map(serializeInterviewMessage),
+    });
   });
 
   app.post("/api/interviews/:id/ready", async (request, reply) => {
