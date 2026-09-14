@@ -8,7 +8,6 @@ FROM node:24-slim AS build
 RUN npm install -g pnpm@12.3.4
 WORKDIR /repo
 COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
-COPY dsa-interview-curriculum.json ./dsa-interview-curriculum.json
 COPY packages/web-client/package.json packages/web-client/package.json
 RUN pnpm install --frozen-lockfile --filter @interview-coach/web-client
 COPY packages/web-client ./packages/web-client

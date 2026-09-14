@@ -1,7 +1,6 @@
-// S6 history + curriculum helper tests.
+// S6 history helper tests.
 
 import { describe, expect, it } from "vitest";
-import { nextPractice } from "../src/curriculum.js";
 import { loadHistory, recordHistory, type HistoryStorage } from "../src/history.js";
 
 function memoryStorage(seed?: string): HistoryStorage & { writes: number } {
@@ -37,17 +36,5 @@ describe("history store", () => {
     const entries = loadHistory(storage);
     expect(entries).toHaveLength(20);
     expect(entries[0]?.id).toBe("int_24");
-  });
-});
-
-describe("nextPractice", () => {
-  it("suggests a foundations default without signals", () => {
-    const suggestion = nextPractice({ weaknesses: [], topicFocus: [] });
-    expect(suggestion.label).toContain("01");
-    expect(suggestion.sampleProblems.length).toBeGreaterThan(0);
-  });
-  it("matches topic focus to a curriculum module", () => {
-    const suggestion = nextPractice({ weaknesses: [], topicFocus: ["Arrays"] });
-    expect(suggestion.label.toLowerCase()).toContain("linear");
   });
 });

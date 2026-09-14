@@ -63,19 +63,135 @@ export const userProfiles = pgTable(
   (t) => [index("user_profiles_role_idx").on(t.role)],
 );
 
-export const problems = pgTable("problems", {
+export const problems = pgTable(
+  "problems",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    difficulty: text("difficulty").notNull(),
+    // Learning-loop Phase 3: canonical curriculum topic. Plain text (no FK):
+    // the catalog seeds before the curriculum and topic IDs are validated by
+    // the domain importer; the FK would also force a seed ordering that the
+    // standalone `db:seed` (problems-only) cannot guarantee.
+    topicId: text("topic_id"),
+    description: text("description"),
+    constraints: jsonb("constraints").$type<readonly string[]>(),
+    examples: jsonb("examples").$type<
+      readonly { input: string; output: string; explanation?: string }[]
+    >(),
+    expectedConcepts: jsonb("expected_concepts").$type<readonly string[]>(),
+    sourceLinks: jsonb("source_links").$type<{ DSA?: string; leetcode?: string }>(),
+    evaluationCriteria: jsonb("evaluation_criteria").$type<readonly string[]>(),
+  },
+  (t) => [index("problems_topic_id_idx").on(t.topicId)],
+);
+
+// Learning-loop Phase 3: server-owned curriculum (static seeded config).
+// curricula -> modules -> topics -> topic-problems, all cascade on delete so
+// a curriculum re-seed replaces the tree cleanly. The topic-problem join
+// preserves the curriculum's within-topic pedagogical order.
+export const curricula = pgTable("curricula", {
   id: text("id").primaryKey(),
-  title: text("title").notNull(),
-  difficulty: text("difficulty").notNull(),
-  description: text("description"),
-  constraints: jsonb("constraints").$type<readonly string[]>(),
-  examples: jsonb("examples").$type<
-    readonly { input: string; output: string; explanation?: string }[]
-  >(),
-  expectedConcepts: jsonb("expected_concepts").$type<readonly string[]>(),
-  sourceLinks: jsonb("source_links").$type<{ DSA?: string; leetcode?: string }>(),
-  evaluationCriteria: jsonb("evaluation_criteria").$type<readonly string[]>(),
+  interviewType: text("interview_type").notNull(),
+  name: text("name").notNull(),
+  version: integer("version").notNull(),
 });
+
+export const curriculumModules = pgTable(
+  "curriculum_modules",
+  {
+    id: text("id").primaryKey(),
+    curriculumId: text("curriculum_id")
+      .notNull()
+      .references(() => curricula.id, { onDelete: "cascade" }),
+    order: integer("order").notNull(),
+    name: text("name").notNull(),
+    objective: text("objective"),
+  },
+  (t) => [index("curriculum_modules_curriculum_id_idx").on(t.curriculumId)],
+);
+
+export const curriculumTopics = pgTable(
+  "curriculum_topics",
+  {
+    id: text("id").primaryKey(),
+    curriculumId: text("curriculum_id")
+      .notNull()
+      .references(() => curricula.id, { onDelete: "cascade" }),
+    moduleId: text("module_id")
+      .notNull()
+      .references(() => curriculumModules.id, { onDelete: "cascade" }),
+    order: integer("order").notNull(),
+    name: text("name").notNull(),
+  },
+  (t) => [
+    index("curriculum_topics_curriculum_id_idx").on(t.curriculumId),
+    index("curriculum_topics_module_id_idx").on(t.moduleId),
+  ],
+);
+
+export const curriculumTopicProblems = pgTable(
+  "curriculum_topic_problems",
+  {
+    topicId: text("topic_id")
+      .notNull()
+      .references(() => curriculumTopics.id, { onDelete: "cascade" }),
+    problemId: text("problem_id")
+      .notNull()
+      .references(() => problems.id, { onDelete: "cascade" }),
+    order: integer("order").notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.topicId, t.problemId] }),
+    index("curriculum_topic_problems_topic_id_idx").on(t.topicId),
+  ],
+);
+
+// Learning-loop Phase 3: per-user, per-topic mastery. Unique key
+// (user_id, curriculum_id, topic_id); curriculum_id equals the interview type
+// for v1 ("dsa"). topic_id is plain text by design: a re-seed replaces
+// curriculum_topics rows, and a hard FK would cascade-delete user progress.
+// Validity is enforced by the domain/service layer; users cascade.
+export const userSkillStates = pgTable(
+  "user_skill_states",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    curriculumId: text("curriculum_id").notNull(),
+    topicId: text("topic_id").notNull(),
+    masteryLevel: text("mastery_level").notNull(),
+    successfulAttempts: integer("successful_attempts").notNull(),
+    totalAttempts: integer("total_attempts").notNull(),
+    lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
+    lastOutcome: text("last_outcome"),
+    strengths: jsonb("strengths").notNull().$type<readonly string[]>(),
+    weaknesses: jsonb("weaknesses").notNull().$type<readonly string[]>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.curriculumId, t.topicId] }),
+    index("user_skill_states_user_id_idx").on(t.userId),
+  ],
+);
+
+export const userCurriculumProgress = pgTable(
+  "user_curriculum_progress",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    curriculumId: text("curriculum_id").notNull(),
+    currentTopicId: text("current_topic_id"),
+    completedTopicIds: jsonb("completed_topic_ids")
+      .notNull()
+      .$type<readonly string[]>(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.curriculumId] })],
+);
 
 export const interviews = pgTable(
   "interviews",

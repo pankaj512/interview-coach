@@ -4,14 +4,25 @@
 // Warn-and-pass without a DB so plain `pnpm test` stays green.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import {
+  DSA_CURRICULUM_ID,
   InterviewService,
   SubmissionService,
+  asCurriculumId,
+  asTopicId,
   asUserId,
   createProblem,
+  createUserCurriculumProgress,
   createUserProfile,
+  createUserSkillState,
+  importCatalogTopics,
+  importCurriculum,
   updateUserProfile,
+  type CurriculumRaw,
   type Problem,
 } from "@interview-coach/domain";
 import { createDatabase } from "../src/client.js";
@@ -305,5 +316,144 @@ describe("postgres persistence", () => {
     // Deleting the account cascades the profile.
     await reconnected.db.delete(schema.users).where(eq(schema.users.id, userId));
     expect(await reconnected.repos.profiles.findByUserId(userId)).toBeNull();
+  }));
+
+  it("persists the imported curriculum tree and survives restart", withDb(ctx, async (t) => {
+    const here = dirname(fileURLToPath(import.meta.url));
+    const catalogJson = JSON.parse(
+      readFileSync(resolve(here, "../../../dsa-problem-catalog.json"), "utf8"),
+    ) as { topics: { topic: string; problems: { title: string; difficulty: string }[] }[] };
+    const curriculumJson = JSON.parse(
+      readFileSync(resolve(here, "../../../dsa-interview-curriculum.json"), "utf8"),
+    ) as CurriculumRaw;
+
+    const { problems, errors } = importCatalogTopics(catalogJson.topics);
+    expect(errors).toEqual([]);
+    for (const problem of problems) await t.repos.problems.save(problem);
+
+    const { curriculum, errors: curriculumErrors } = importCurriculum(curriculumJson, {
+      knownProblemTitles: new Set(problems.map((p) => p.title)),
+    });
+    expect(curriculumErrors).toEqual([]);
+    await t.repos.curricula.save(curriculum);
+
+    const loaded = await t.repos.curricula.findById(curriculum.id);
+    expect(loaded?.modules).toHaveLength(12);
+    expect(loaded?.topics).toHaveLength(59);
+    expect(loaded?.topics.reduce((sum, topic) => sum + topic.problemIds.length, 0)).toBe(300);
+    // Order + within-topic problem order are preserved.
+    expect(loaded?.topics.map((topic) => topic.order)).toEqual(
+      Array.from({ length: 59 }, (_, i) => i + 1),
+    );
+    expect(loaded?.topics[0]?.problemIds[0]).toBe(curriculum.topics[0]?.problemIds[0]);
+
+    // Re-save replaces the tree without duplicating rows.
+    await t.repos.curricula.save(curriculum);
+    const resaved = await t.repos.curricula.findById(curriculum.id);
+    expect(resaved?.topics).toHaveLength(59);
+    expect(resaved?.topics.reduce((sum, topic) => sum + topic.problemIds.length, 0)).toBe(300);
+
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      const afterRestart = await repos.curricula.findById(curriculum.id);
+      expect(afterRestart?.topics).toHaveLength(59);
+      expect(afterRestart?.topics[0]?.problemIds).toEqual(
+        curriculum.topics[0]?.problemIds,
+      );
+      expect((await repos.curricula.list()).length).toBeGreaterThanOrEqual(1);
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+  }));
+
+  it("persists skill state + curriculum progress and cascades with the account", withDb(ctx, async (t) => {
+    const userId = asUserId("user_skill_persist");
+    await t.repos.users.save({
+      id: userId,
+      email: "skill-persist@example.com",
+      displayName: "Skill Persist",
+      passwordHash: "scrypt$v2$1$1$1$eA==$eA==",
+      createdAt: new Date("2026-09-14T00:00:00.000Z"),
+    });
+    const arrays = asTopicId("topic_arrays");
+    const strings = asTopicId("topic_strings");
+
+    const created = createUserSkillState({
+      userId,
+      curriculumId: DSA_CURRICULUM_ID,
+      topicId: arrays,
+      masteryLevel: "developing",
+      successfulAttempts: 2,
+      totalAttempts: 3,
+      lastOutcome: "success",
+      strengths: ["two pointers"],
+      weaknesses: ["complexity"],
+      now: new Date("2026-09-14T10:00:00.000Z"),
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    await t.repos.skillStates.save(created.value);
+
+    const progress = createUserCurriculumProgress({
+      userId,
+      curriculumId: DSA_CURRICULUM_ID,
+      currentTopicId: arrays,
+      completedTopicIds: [strings],
+      now: new Date("2026-09-14T10:00:00.000Z"),
+    });
+    if (!progress.ok) throw new Error(progress.error.message);
+    await t.repos.curriculumProgress.save(progress.value);
+
+    expect(await t.repos.skillStates.findByTopic(userId, DSA_CURRICULUM_ID, arrays)).toEqual(
+      created.value,
+    );
+    expect(await t.repos.skillStates.findByUser(userId, DSA_CURRICULUM_ID)).toHaveLength(1);
+    expect(await t.repos.skillStates.findByUser(userId, asCurriculumId("other"))).toHaveLength(0);
+    expect(await t.repos.curriculumProgress.findByUser(userId, DSA_CURRICULUM_ID)).toEqual(
+      progress.value,
+    );
+
+    // Same (user, curriculum, topic) is an upsert, not a duplicate.
+    const advanced = createUserSkillState({
+      userId,
+      curriculumId: DSA_CURRICULUM_ID,
+      topicId: arrays,
+      masteryLevel: "proficient",
+      successfulAttempts: 3,
+      totalAttempts: 4,
+      lastOutcome: "success",
+      now: new Date("2026-09-15T10:00:00.000Z"),
+    });
+    if (!advanced.ok) throw new Error(advanced.error.message);
+    await t.repos.skillStates.save(advanced.value);
+    const all = await t.repos.skillStates.findByUser(userId);
+    expect(all).toHaveLength(1);
+    expect(all[0]?.masteryLevel).toBe("proficient");
+
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      expect((await repos.skillStates.findByTopic(userId, DSA_CURRICULUM_ID, arrays))?.masteryLevel).toBe(
+        "proficient",
+      );
+      expect((await repos.curriculumProgress.findByUser(userId, DSA_CURRICULUM_ID))?.currentTopicId).toBe(
+        arrays,
+      );
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+
+    // Deleting the account cascades skill state + progress.
+    await reconnected.db.delete(schema.users).where(eq(schema.users.id, userId));
+    expect(await reconnected.repos.skillStates.findByUser(userId)).toHaveLength(0);
+    expect(await reconnected.repos.curriculumProgress.findByUser(userId, DSA_CURRICULUM_ID)).toBeNull();
   }));
 });

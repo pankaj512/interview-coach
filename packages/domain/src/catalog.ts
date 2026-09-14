@@ -1,5 +1,5 @@
-import type { ProblemId } from "./ids.js";
-import { asProblemId } from "./ids.js";
+import type { ProblemId, TopicId } from "./ids.js";
+import { asProblemId, asTopicId } from "./ids.js";
 import type { Problem } from "./problem.js";
 import { createProblem, parseDifficulty, slugifyTitle } from "./problem.js";
 import type { Result } from "./result.js";
@@ -37,6 +37,13 @@ export function problemIdForTitle(title: string): ProblemId {
   return asProblemId(`prob_${slugifyTitle(title)}`);
 }
 
+// Stable curriculum topic ID from the catalog/curriculum topic name (Phase 3).
+// Topic names are unique across the canonical curriculum (59 topics), so the
+// slug is collision-free; seeded rows keep the same ID across restarts.
+export function topicIdForName(name: string): TopicId {
+  return asTopicId(`topic_${slugifyTitle(name)}`);
+}
+
 export function importCatalogProblem(
   topic: string,
   raw: CatalogProblemRaw,
@@ -54,6 +61,7 @@ export function importCatalogProblem(
     id: problemIdForTitle(raw.title),
     title: raw.title,
     difficulty: difficulty.value,
+    topicId: topicIdForName(topic),
     expectedConcepts: [topic],
     ...(raw.DSA === undefined && raw.leetcode === undefined
       ? {}

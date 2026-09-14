@@ -16,6 +16,9 @@
 //   POST   /api/auth/logout                       (S8c session revoke)
 //   GET    /api/profile                           (Phase 2: read own profile)
 //   PUT    /api/profile                           (Phase 2: create/edit profile)
+//   GET    /api/curriculum                        (Phase 3: server-owned curriculum)
+//   GET    /api/curriculum/topics/:id             (Phase 3: topic + problems)
+//   GET    /api/skills                            (Phase 3: own skill state)
 //   POST   /api/interviews
 //   GET    /api/interviews/:id
 //   GET    /api/interviews/:id/state
@@ -56,6 +59,7 @@ import {
   asProblemId,
   asRunId,
   asSubmissionId,
+  asTopicId,
   asUserId,
   finalizeEvaluation,
   selectProblems,
@@ -73,6 +77,8 @@ import { BackendMetrics } from "./metrics.js";
 import { renderPrometheusMetrics } from "./prometheus.js";
 import { UserService, type AuthenticatedSession } from "./users.js";
 import { ProfileService } from "./profile.js";
+import { CurriculumService } from "./curriculum.js";
+import { SkillService } from "./skills.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
@@ -82,11 +88,14 @@ import {
 import { sendApiError, sendDomainError } from "./http-errors.js";
 import {
   serializeEvaluation,
+  serializeCurriculum,
   serializeInterview,
   serializeRun,
   serializeStateSnapshot,
   serializeSubmission,
+  serializeUserCurriculumProgress,
   serializeUserProfile,
+  serializeUserSkillState,
 } from "./serializers.js";
 import {
   FROZEN_VOICE_SESSION_CONFIG,
@@ -154,6 +163,11 @@ const profileSchema = z.object({
   role: z.string().min(1).max(80),
   level: z.string().min(1).max(40),
   goals: z.string().max(500).optional(),
+});
+
+// Phase 3: optional curriculum filter (v1 has one curriculum per interview type).
+const curriculumQuerySchema = z.object({
+  interviewType: z.enum(["dsa"]).optional(),
 });
 
 function serializeSession(session: AuthenticatedSession): {
@@ -348,6 +362,12 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
   // Phase 2: server-owned profile (starting context for the learning loop).
   const profiles = new ProfileService({ profiles: deps.repos.profiles });
+  // Phase 3: server-owned curriculum + per-user skill state.
+  const curricula = new CurriculumService({ curricula: deps.repos.curricula });
+  const skills = new SkillService({
+    skillStates: deps.repos.skillStates,
+    curriculumProgress: deps.repos.curriculumProgress,
+  });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
   // a fake via deps.codeRunner; container isolation lands in S8.
   const codeRunner =
@@ -565,6 +585,55 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     request.log.info({ userId: caller.userId }, "profile.updated");
     metrics.countProfileUpdated();
     return reply.send({ ok: true, profile: serializeUserProfile(saved.value) });
+  });
+
+  // Phase 3 curriculum (HLD learning loop): server-owned static config. Any
+  // authenticated caller may read it; it is never user-scoped.
+  app.get("/api/curriculum", async (request, reply) => {
+    const parsed = curriculumQuerySchema.safeParse(request.query);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const list = await curricula.list(parsed.data.interviewType);
+    return reply.send({ ok: true, curricula: list.map(serializeCurriculum) });
+  });
+
+  app.get("/api/curriculum/topics/:id", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const lookup = await curricula.findTopic(asTopicId(params.data.id));
+    if (lookup === null) {
+      return sendApiError(reply, 404, "NOT_FOUND", `Topic ${params.data.id} does not exist`, false);
+    }
+    const problems = await deps.repos.problems.findManyByIds(lookup.topic.problemIds);
+    return reply.send({
+      ok: true,
+      curriculumId: lookup.curriculum.id,
+      topic: serializeCurriculum(lookup.curriculum).topics.find(
+        (topic) => topic.id === lookup.topic.id,
+      ),
+      problems,
+    });
+  });
+
+  // Phase 3 skills: per-user mastery + curriculum pointer. User-only, like the
+  // profile: the owner comes from the session, never the body.
+  app.get("/api/skills", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access your skills", false);
+    }
+    const snapshot = await skills.getSnapshot(caller.userId);
+    return reply.send({
+      ok: true,
+      skills: snapshot.skills.map(serializeUserSkillState),
+      progress:
+        snapshot.progress === null
+          ? null
+          : serializeUserCurriculumProgress(snapshot.progress),
+    });
   });
 
   app.post("/api/interviews", async (request, reply) => {

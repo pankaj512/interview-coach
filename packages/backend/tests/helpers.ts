@@ -1,9 +1,15 @@
 // Shared S3 backend test harness: in-memory repos + fake voice provider.
 // No DB required, so `pnpm test` stays green without Postgres.
 
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import {
   asProblemId,
   createInMemoryRepositories,
+  importCatalogTopics,
+  importCurriculum,
+  type CurriculumRaw,
   type RepositorySet,
 } from "@interview-coach/domain";
 import { buildApp, type BuiltBackend } from "../src/app.js";
@@ -40,6 +46,24 @@ export async function seedProblem(
     title,
     difficulty: "Easy",
   });
+}
+
+// Phase 3: load the real catalog + curriculum into in-memory repos so the
+// curriculum routes serve the same data Postgres seeds.
+export async function seedCurriculum(repos: RepositorySet): Promise<void> {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const catalog = JSON.parse(
+    readFileSync(resolve(here, "../../../dsa-problem-catalog.json"), "utf8"),
+  ) as { topics: { topic: string; problems: { title: string; difficulty: string }[] }[] };
+  const raw = JSON.parse(
+    readFileSync(resolve(here, "../../../dsa-interview-curriculum.json"), "utf8"),
+  ) as CurriculumRaw;
+  const { problems } = importCatalogTopics(catalog.topics);
+  for (const problem of problems) await repos.problems.save(problem);
+  const { curriculum } = importCurriculum(raw, {
+    knownProblemTitles: new Set(problems.map((p) => p.title)),
+  });
+  await repos.curricula.save(curriculum);
 }
 
 export interface StartedInterview {

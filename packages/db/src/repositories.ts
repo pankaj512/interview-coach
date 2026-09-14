@@ -4,7 +4,7 @@
 // Transaction boundary: InterviewRepository.save writes the interview row +
 // its problem assignments atomically.
 
-import { asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type {
   EvaluationRepository,
@@ -21,6 +21,14 @@ import type {
   UserProfileRepository,
   UserRepository,
   UserSession,
+  CurriculumRepository,
+  UserSkillStateRepository,
+  UserCurriculumProgressRepository,
+  Curriculum,
+  CurriculumModule,
+  CurriculumTopic,
+  UserCurriculumProgress,
+  UserSkillState,
 } from "@interview-coach/domain";
 import type {
   CandidateResponse,
@@ -35,18 +43,23 @@ import type {
   InterviewProblemState,
   InterviewStatus,
   InterviewType,
+  MasteryLevel,
   Problem,
   ProblemDifficulty,
   ProfileLevel,
   ProfileRole,
   ResponseKind,
   RunStatus,
+  SkillOutcome,
 } from "@interview-coach/domain";
 import type {
+  CurriculumId,
   InterviewId,
+  ModuleId,
   ProblemId,
   RunId,
   SubmissionId,
+  TopicId,
   UserId,
 } from "@interview-coach/domain";
 import * as schema from "./schema.js";
@@ -288,6 +301,7 @@ function toProblemRow(problem: Problem) {
     id: problem.id,
     title: problem.title,
     difficulty: problem.difficulty,
+    topicId: problem.topicId ?? null,
     description: problem.description ?? null,
     constraints: problem.constraints === undefined ? null : [...problem.constraints],
     examples:
@@ -309,6 +323,7 @@ function toProblem(row: ProblemRow): Problem {
     id: row.id as ProblemId,
     title: row.title,
     difficulty: toProblemDifficulty(row.difficulty),
+    ...(row.topicId === null ? {} : { topicId: row.topicId as TopicId }),
     ...(row.description === null ? {} : { description: row.description }),
     ...(row.constraints === null ? {} : { constraints: row.constraints }),
     ...(row.examples === null ? {} : { examples: row.examples }),
@@ -720,6 +735,323 @@ export class DrizzleUserProfileRepository implements UserProfileRepository {
   }
 }
 
+// Learning-loop Phase 3: static curriculum tree behind the domain contract.
+// `save` replaces the curriculum's modules/topics/topic-problems atomically
+// (idempotent re-seed); user progress is intentionally not FK-linked to
+// curriculum_topics, so replacing the tree never touches user state.
+export class DrizzleCurriculumRepository implements CurriculumRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(curriculum: Curriculum): Promise<void> {
+    await this.db.transaction(async (tx) => {
+      await tx
+        .insert(schema.curricula)
+        .values({
+          id: curriculum.id,
+          interviewType: curriculum.interviewType,
+          name: curriculum.name,
+          version: curriculum.version,
+        })
+        .onConflictDoUpdate({
+          target: schema.curricula.id,
+          set: {
+            interviewType: curriculum.interviewType,
+            name: curriculum.name,
+            version: curriculum.version,
+          },
+        });
+      // Children first; deleting topics cascades topic-problem rows.
+      await tx
+        .delete(schema.curriculumTopics)
+        .where(eq(schema.curriculumTopics.curriculumId, curriculum.id));
+      await tx
+        .delete(schema.curriculumModules)
+        .where(eq(schema.curriculumModules.curriculumId, curriculum.id));
+
+      if (curriculum.modules.length > 0) {
+        await tx.insert(schema.curriculumModules).values(
+          curriculum.modules.map((module) => ({
+            id: module.id,
+            curriculumId: module.curriculumId,
+            order: module.order,
+            name: module.name,
+            objective: module.objective ?? null,
+          })),
+        );
+      }
+      if (curriculum.topics.length > 0) {
+        await tx.insert(schema.curriculumTopics).values(
+          curriculum.topics.map((topic) => ({
+            id: topic.id,
+            curriculumId: topic.curriculumId,
+            moduleId: topic.moduleId,
+            order: topic.order,
+            name: topic.name,
+          })),
+        );
+        const rows = curriculum.topics.flatMap((topic) =>
+          topic.problemIds.map((problemId, index) => ({
+            topicId: topic.id,
+            problemId,
+            order: index + 1,
+          })),
+        );
+        if (rows.length > 0) {
+          await tx.insert(schema.curriculumTopicProblems).values(rows);
+        }
+      }
+    });
+  }
+
+  async findById(id: CurriculumId): Promise<Curriculum | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.curricula)
+      .where(eq(schema.curricula.id, id))
+      .limit(1);
+    const row = rows[0];
+    if (row === undefined) return null;
+
+    const moduleRows = await this.db
+      .select()
+      .from(schema.curriculumModules)
+      .where(eq(schema.curriculumModules.curriculumId, id))
+      .orderBy(asc(schema.curriculumModules.order));
+    const topicRows = await this.db
+      .select()
+      .from(schema.curriculumTopics)
+      .where(eq(schema.curriculumTopics.curriculumId, id))
+      .orderBy(asc(schema.curriculumTopics.order));
+
+    const topicIds = topicRows.map((t) => t.id);
+    const problemRows =
+      topicIds.length === 0
+        ? []
+        : await this.db
+            .select()
+            .from(schema.curriculumTopicProblems)
+            .where(inArray(schema.curriculumTopicProblems.topicId, topicIds))
+            .orderBy(
+              asc(schema.curriculumTopicProblems.topicId),
+              asc(schema.curriculumTopicProblems.order),
+            );
+    const problemsByTopic = new Map<string, ProblemId[]>();
+    for (const problem of problemRows) {
+      const list = problemsByTopic.get(problem.topicId) ?? [];
+      list.push(problem.problemId as ProblemId);
+      problemsByTopic.set(problem.topicId, list);
+    }
+
+    const topics: CurriculumTopic[] = topicRows.map((topic) => ({
+      id: topic.id as TopicId,
+      curriculumId: row.id as CurriculumId,
+      moduleId: topic.moduleId as ModuleId,
+      order: topic.order,
+      name: topic.name,
+      problemIds: problemsByTopic.get(topic.id) ?? [],
+    }));
+    const modules: CurriculumModule[] = moduleRows.map((module) => ({
+      id: module.id as ModuleId,
+      curriculumId: row.id as CurriculumId,
+      order: module.order,
+      name: module.name,
+      ...(module.objective === null ? {} : { objective: module.objective }),
+      topicIds: topics
+        .filter((topic) => topic.moduleId === module.id)
+        .map((topic) => topic.id),
+    }));
+
+    return {
+      id: row.id as CurriculumId,
+      interviewType: toInterviewType(row.interviewType),
+      name: row.name,
+      version: row.version,
+      modules,
+      topics,
+    };
+  }
+
+  async list(): Promise<readonly Curriculum[]> {
+    const rows = await this.db
+      .select({ id: schema.curricula.id })
+      .from(schema.curricula)
+      .orderBy(asc(schema.curricula.id));
+    const out: Curriculum[] = [];
+    for (const row of rows) {
+      const curriculum = await this.findById(row.id as CurriculumId);
+      if (curriculum !== null) out.push(curriculum);
+    }
+    return out;
+  }
+}
+
+type UserSkillStateRow = typeof schema.userSkillStates.$inferSelect;
+
+function toUserSkillState(row: UserSkillStateRow): UserSkillState {
+  return {
+    userId: row.userId as UserId,
+    curriculumId: row.curriculumId as CurriculumId,
+    topicId: row.topicId as TopicId,
+    masteryLevel: row.masteryLevel as MasteryLevel,
+    successfulAttempts: row.successfulAttempts,
+    totalAttempts: row.totalAttempts,
+    ...(row.lastAttemptAt === null ? {} : { lastAttemptAt: row.lastAttemptAt }),
+    ...(row.lastOutcome === null
+      ? {}
+      : { lastOutcome: row.lastOutcome as SkillOutcome }),
+    strengths: row.strengths,
+    weaknesses: row.weaknesses,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export class DrizzleUserSkillStateRepository
+  implements UserSkillStateRepository
+{
+  constructor(private readonly db: Db) {}
+
+  async save(state: UserSkillState): Promise<void> {
+    const values = {
+      userId: state.userId,
+      curriculumId: state.curriculumId,
+      topicId: state.topicId,
+      masteryLevel: state.masteryLevel,
+      successfulAttempts: state.successfulAttempts,
+      totalAttempts: state.totalAttempts,
+      lastAttemptAt: state.lastAttemptAt ?? null,
+      lastOutcome: state.lastOutcome ?? null,
+      strengths: [...state.strengths],
+      weaknesses: [...state.weaknesses],
+      createdAt: state.createdAt,
+      updatedAt: state.updatedAt,
+    };
+    await this.db
+      .insert(schema.userSkillStates)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [
+          schema.userSkillStates.userId,
+          schema.userSkillStates.curriculumId,
+          schema.userSkillStates.topicId,
+        ],
+        set: {
+          masteryLevel: values.masteryLevel,
+          successfulAttempts: values.successfulAttempts,
+          totalAttempts: values.totalAttempts,
+          lastAttemptAt: values.lastAttemptAt,
+          lastOutcome: values.lastOutcome,
+          strengths: values.strengths,
+          weaknesses: values.weaknesses,
+          updatedAt: values.updatedAt,
+        },
+      });
+  }
+
+  async findByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly UserSkillState[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.userSkillStates)
+      .where(
+        curriculumId === undefined
+          ? eq(schema.userSkillStates.userId, userId)
+          : and(
+              eq(schema.userSkillStates.userId, userId),
+              eq(schema.userSkillStates.curriculumId, curriculumId),
+            ),
+      )
+      .orderBy(asc(schema.userSkillStates.topicId));
+    return rows.map(toUserSkillState);
+  }
+
+  async findByTopic(
+    userId: UserId,
+    curriculumId: CurriculumId,
+    topicId: TopicId,
+  ): Promise<UserSkillState | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.userSkillStates)
+      .where(
+        and(
+          eq(schema.userSkillStates.userId, userId),
+          eq(schema.userSkillStates.curriculumId, curriculumId),
+          eq(schema.userSkillStates.topicId, topicId),
+        ),
+      )
+      .limit(1);
+    return rows[0] === undefined ? null : toUserSkillState(rows[0]);
+  }
+}
+
+type UserCurriculumProgressRow = typeof schema.userCurriculumProgress.$inferSelect;
+
+function toUserCurriculumProgress(
+  row: UserCurriculumProgressRow,
+): UserCurriculumProgress {
+  return {
+    userId: row.userId as UserId,
+    curriculumId: row.curriculumId as CurriculumId,
+    ...(row.currentTopicId === null
+      ? {}
+      : { currentTopicId: row.currentTopicId as TopicId }),
+    completedTopicIds: row.completedTopicIds.map((id) => id as TopicId),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export class DrizzleUserCurriculumProgressRepository
+  implements UserCurriculumProgressRepository
+{
+  constructor(private readonly db: Db) {}
+
+  async save(progress: UserCurriculumProgress): Promise<void> {
+    const values = {
+      userId: progress.userId,
+      curriculumId: progress.curriculumId,
+      currentTopicId: progress.currentTopicId ?? null,
+      completedTopicIds: [...progress.completedTopicIds],
+      createdAt: progress.createdAt,
+      updatedAt: progress.updatedAt,
+    };
+    await this.db
+      .insert(schema.userCurriculumProgress)
+      .values(values)
+      .onConflictDoUpdate({
+        target: [
+          schema.userCurriculumProgress.userId,
+          schema.userCurriculumProgress.curriculumId,
+        ],
+        set: {
+          currentTopicId: values.currentTopicId,
+          completedTopicIds: values.completedTopicIds,
+          updatedAt: values.updatedAt,
+        },
+      });
+  }
+
+  async findByUser(
+    userId: UserId,
+    curriculumId: CurriculumId,
+  ): Promise<UserCurriculumProgress | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.userCurriculumProgress)
+      .where(
+        and(
+          eq(schema.userCurriculumProgress.userId, userId),
+          eq(schema.userCurriculumProgress.curriculumId, curriculumId),
+        ),
+      )
+      .limit(1);
+    return rows[0] === undefined ? null : toUserCurriculumProgress(rows[0]);
+  }
+}
+
 function toAccount(
   row: typeof schema.users.$inferSelect | null,
 ): UserAccount | null {  // Pre-S8c rows have no credentials and are invisible to auth flows.
@@ -745,5 +1077,8 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     users: new DrizzleUserRepository(db),
     sessions: new DrizzleSessionRepository(db),
     profiles: new DrizzleUserProfileRepository(db),
+    curricula: new DrizzleCurriculumRepository(db),
+    skillStates: new DrizzleUserSkillStateRepository(db),
+    curriculumProgress: new DrizzleUserCurriculumProgressRepository(db),
   };
 }

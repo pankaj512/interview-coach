@@ -4,12 +4,15 @@
 import type {
   CodeRun,
   CodeSubmission,
+  Curriculum,
   Evaluation,
   Interview,
   InterviewProblem,
   InterviewStateSnapshot,
   Problem,
+  UserCurriculumProgress,
   UserProfile,
+  UserSkillState,
 } from "@interview-coach/domain";
 
 export interface SerializedInterview {
@@ -117,6 +120,120 @@ export function serializeUserProfile(profile: UserProfile): SerializedUserProfil
     ...(profile.goals === undefined ? {} : { goals: profile.goals }),
     createdAt: profile.createdAt.toISOString(),
     updatedAt: profile.updatedAt.toISOString(),
+  };
+}
+
+// Learning-loop Phase 3: curriculum + per-user skill state. Curriculum is
+// static config (string IDs only); skill/progress carry ISO timestamps.
+export interface SerializedCurriculumModule {
+  readonly id: string;
+  readonly curriculumId: string;
+  readonly order: number;
+  readonly name: string;
+  readonly objective?: string;
+  readonly topicIds: readonly string[];
+}
+
+export interface SerializedCurriculumTopic {
+  readonly id: string;
+  readonly curriculumId: string;
+  readonly moduleId: string;
+  readonly order: number;
+  readonly name: string;
+  readonly problemIds: readonly string[];
+}
+
+export interface SerializedCurriculum {
+  readonly id: string;
+  readonly interviewType: string;
+  readonly name: string;
+  readonly version: number;
+  readonly modules: readonly SerializedCurriculumModule[];
+  readonly topics: readonly SerializedCurriculumTopic[];
+}
+
+export function serializeCurriculum(curriculum: Curriculum): SerializedCurriculum {
+  return {
+    id: curriculum.id,
+    interviewType: curriculum.interviewType,
+    name: curriculum.name,
+    version: curriculum.version,
+    modules: curriculum.modules.map((module) => ({
+      id: module.id,
+      curriculumId: module.curriculumId,
+      order: module.order,
+      name: module.name,
+      ...(module.objective === undefined ? {} : { objective: module.objective }),
+      topicIds: module.topicIds,
+    })),
+    topics: curriculum.topics.map((topic) => ({
+      id: topic.id,
+      curriculumId: topic.curriculumId,
+      moduleId: topic.moduleId,
+      order: topic.order,
+      name: topic.name,
+      problemIds: topic.problemIds,
+    })),
+  };
+}
+
+export interface SerializedUserSkillState {
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly topicId: string;
+  readonly masteryLevel: string;
+  readonly successfulAttempts: number;
+  readonly totalAttempts: number;
+  readonly lastAttemptAt?: string;
+  readonly lastOutcome?: string;
+  readonly strengths: readonly string[];
+  readonly weaknesses: readonly string[];
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export function serializeUserSkillState(
+  state: UserSkillState,
+): SerializedUserSkillState {
+  return {
+    userId: state.userId,
+    curriculumId: state.curriculumId,
+    topicId: state.topicId,
+    masteryLevel: state.masteryLevel,
+    successfulAttempts: state.successfulAttempts,
+    totalAttempts: state.totalAttempts,
+    ...(state.lastAttemptAt === undefined
+      ? {}
+      : { lastAttemptAt: state.lastAttemptAt.toISOString() }),
+    ...(state.lastOutcome === undefined ? {} : { lastOutcome: state.lastOutcome }),
+    strengths: state.strengths,
+    weaknesses: state.weaknesses,
+    createdAt: state.createdAt.toISOString(),
+    updatedAt: state.updatedAt.toISOString(),
+  };
+}
+
+export interface SerializedUserCurriculumProgress {
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly currentTopicId?: string;
+  readonly completedTopicIds: readonly string[];
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export function serializeUserCurriculumProgress(
+  progress: UserCurriculumProgress,
+): SerializedUserCurriculumProgress {
+  return {
+    userId: progress.userId,
+    curriculumId: progress.curriculumId,
+    ...(progress.currentTopicId === undefined
+      ? {}
+      : { currentTopicId: progress.currentTopicId }),
+    completedTopicIds: progress.completedTopicIds,
+    createdAt: progress.createdAt.toISOString(),
+    updatedAt: progress.updatedAt.toISOString(),
   };
 }
 

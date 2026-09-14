@@ -6,9 +6,13 @@ import type {
   RunId,
   SubmissionId,
   UserId,
+  CurriculumId,
+  TopicId,
 } from "./ids.js";
 import type { UserAccount, UserSession } from "./user.js";
 import type { UserProfile } from "./profile.js";
+import type { Curriculum } from "./curriculum.js";
+import type { UserCurriculumProgress, UserSkillState } from "./skill.js";
 import type { CandidateResponse } from "./candidate-response.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
@@ -246,6 +250,38 @@ export interface UserProfileRepository {
   findByUserId(userId: UserId): Promise<UserProfile | null>;
 }
 
+// Learning-loop Phase 3: the curriculum is static seeded config. Save writes
+// the whole tree atomically (curriculum + modules + topics + topic problems),
+// mirroring InterviewRepository.save; reads reassemble it.
+export interface CurriculumRepository {
+  save(curriculum: Curriculum): Promise<void>;
+  findById(id: CurriculumId): Promise<Curriculum | null>;
+  list(): Promise<readonly Curriculum[]>;
+}
+
+// Per-user, per-topic mastery. Unique key: (userId, curriculumId, topicId).
+export interface UserSkillStateRepository {
+  save(state: UserSkillState): Promise<void>;
+  findByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly UserSkillState[]>;
+  findByTopic(
+    userId: UserId,
+    curriculumId: CurriculumId,
+    topicId: TopicId,
+  ): Promise<UserSkillState | null>;
+}
+
+// One progress pointer per (user, curriculum).
+export interface UserCurriculumProgressRepository {
+  save(progress: UserCurriculumProgress): Promise<void>;
+  findByUser(
+    userId: UserId,
+    curriculumId: CurriculumId,
+  ): Promise<UserCurriculumProgress | null>;
+}
+
 export class InMemoryUserRepository implements UserRepository {
   private readonly store = new Map<UserId, UserAccount>();
 
@@ -304,6 +340,78 @@ export class InMemoryUserProfileRepository implements UserProfileRepository {
   }
 }
 
+export class InMemoryCurriculumRepository implements CurriculumRepository {
+  private readonly store = new Map<CurriculumId, Curriculum>();
+
+  async save(curriculum: Curriculum): Promise<void> {
+    this.store.set(curriculum.id, curriculum);
+  }
+
+  async findById(id: CurriculumId): Promise<Curriculum | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  async list(): Promise<readonly Curriculum[]> {
+    return [...this.store.values()].sort((a, b) => a.id.localeCompare(b.id));
+  }
+}
+
+export class InMemoryUserSkillStateRepository
+  implements UserSkillStateRepository
+{
+  private readonly store = new Map<string, UserSkillState>();
+
+  private key(userId: UserId, curriculumId: CurriculumId, topicId: TopicId): string {
+    return `${userId}\u0000${curriculumId}\u0000${topicId}`;
+  }
+
+  async save(state: UserSkillState): Promise<void> {
+    this.store.set(this.key(state.userId, state.curriculumId, state.topicId), state);
+  }
+
+  async findByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly UserSkillState[]> {
+    return [...this.store.values()]
+      .filter(
+        (s) =>
+          s.userId === userId &&
+          (curriculumId === undefined || s.curriculumId === curriculumId),
+      )
+      .sort((a, b) => a.topicId.localeCompare(b.topicId));
+  }
+
+  async findByTopic(
+    userId: UserId,
+    curriculumId: CurriculumId,
+    topicId: TopicId,
+  ): Promise<UserSkillState | null> {
+    return this.store.get(this.key(userId, curriculumId, topicId)) ?? null;
+  }
+}
+
+export class InMemoryUserCurriculumProgressRepository
+  implements UserCurriculumProgressRepository
+{
+  private readonly store = new Map<string, UserCurriculumProgress>();
+
+  private key(userId: UserId, curriculumId: CurriculumId): string {
+    return `${userId}\u0000${curriculumId}`;
+  }
+
+  async save(progress: UserCurriculumProgress): Promise<void> {
+    this.store.set(this.key(progress.userId, progress.curriculumId), progress);
+  }
+
+  async findByUser(
+    userId: UserId,
+    curriculumId: CurriculumId,
+  ): Promise<UserCurriculumProgress | null> {
+    return this.store.get(this.key(userId, curriculumId)) ?? null;
+  }
+}
+
 export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
@@ -315,6 +423,9 @@ export interface RepositorySet {
   readonly users: UserRepository;
   readonly sessions: SessionRepository;
   readonly profiles: UserProfileRepository;
+  readonly curricula: CurriculumRepository;
+  readonly skillStates: UserSkillStateRepository;
+  readonly curriculumProgress: UserCurriculumProgressRepository;
 }
 
 export function createInMemoryRepositories(): RepositorySet & {
@@ -328,6 +439,9 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly users: InMemoryUserRepository;
   readonly sessions: InMemorySessionRepository;
   readonly profiles: InMemoryUserProfileRepository;
+  readonly curricula: InMemoryCurriculumRepository;
+  readonly skillStates: InMemoryUserSkillStateRepository;
+  readonly curriculumProgress: InMemoryUserCurriculumProgressRepository;
 } {
   return {
     interviews: new InMemoryInterviewRepository(),
@@ -340,5 +454,8 @@ export function createInMemoryRepositories(): RepositorySet & {
     users: new InMemoryUserRepository(),
     sessions: new InMemorySessionRepository(),
     profiles: new InMemoryUserProfileRepository(),
+    curricula: new InMemoryCurriculumRepository(),
+    skillStates: new InMemoryUserSkillStateRepository(),
+    curriculumProgress: new InMemoryUserCurriculumProgressRepository(),
   };
 }

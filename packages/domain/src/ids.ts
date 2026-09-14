@@ -9,6 +9,11 @@ export type SubmissionId = string & { readonly __brand: "SubmissionId" };
 export type RunId = string & { readonly __brand: "RunId" };
 export type EvaluationId = string & { readonly __brand: "EvaluationId" };
 export type EventId = string & { readonly __brand: "EventId" };
+// Learning-loop Phase 3: curriculum is stable seeded config, so these IDs are
+// deterministic slugs (no UUID minting) — see curriculum.ts.
+export type CurriculumId = string & { readonly __brand: "CurriculumId" };
+export type ModuleId = string & { readonly __brand: "ModuleId" };
+export type TopicId = string & { readonly __brand: "TopicId" };
 
 export function newUserId(): UserId {
   return `user_${randomUUID()}` as UserId;
@@ -73,4 +78,16 @@ export function asEvaluationId(raw: string): EvaluationId {
 
 export function asEventId(raw: string): EventId {
   return raw as EventId;
+}
+
+export function asCurriculumId(raw: string): CurriculumId {
+  return raw as CurriculumId;
+}
+
+export function asModuleId(raw: string): ModuleId {
+  return raw as ModuleId;
+}
+
+export function asTopicId(raw: string): TopicId {
+  return raw as TopicId;
 }

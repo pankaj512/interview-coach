@@ -1,4 +1,4 @@
-import type { ProblemId } from "./ids.js";
+import type { ProblemId, TopicId } from "./ids.js";
 import { newProblemId } from "./ids.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
@@ -24,6 +24,8 @@ export interface Problem {
   readonly id: ProblemId;
   readonly title: string;
   readonly difficulty: ProblemDifficulty;
+  /** Curriculum topic this problem belongs to (learning-loop Phase 3). */
+  readonly topicId?: TopicId;
   readonly description?: string;
   readonly constraints?: readonly string[];
   readonly examples?: readonly ProblemExample[];
@@ -36,6 +38,7 @@ export interface CreateProblemInput {
   readonly id?: ProblemId;
   readonly title: string;
   readonly difficulty: ProblemDifficulty;
+  readonly topicId?: TopicId;
   readonly description?: string;
   readonly constraints?: readonly string[];
   readonly examples?: readonly ProblemExample[];
@@ -70,6 +73,7 @@ export function createProblem(input: CreateProblemInput): Result<Problem> {
     id: input.id ?? newProblemId(),
     title,
     difficulty: input.difficulty,
+    ...(input.topicId === undefined ? {} : { topicId: input.topicId }),
     ...(input.description === undefined
       ? {}
       : { description: input.description.trim() }),

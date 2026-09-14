@@ -1,6 +1,6 @@
 # AGENTS.md — InterviewCoach
 
-## Repo state: learning loop — Phase 2 (user profile / onboarding) landed
+## Repo state: learning loop — Phase 3 (curriculum & skill state) landed
 
 Runners (locked, pnpm-only — never npm/yarn):
 - `pnpm install` — install workspace deps
@@ -15,6 +15,7 @@ Runners (locked, pnpm-only — never npm/yarn):
 - Hardening (S8a): `API_AUTH_TOKEN` gates `/api` (health/ready open); `GET /api/ready`, `GET /api/metrics`, `GET /api/metrics/prometheus`; quotas via `RATE_LIMIT_*`/`VOICE_MAX_ACTIVE_SESSIONS`/`CODE_RUN_MAX_*` (see `.env.example`)
 - Deploy (S8b): `docker compose up -d db backend web` (backend migrates on boot on `HOST:PORT`, default `0.0.0.0:3000` in compose; web on `:8080`); seed once via `docker compose run --rm backend pnpm --filter @interview-coach/db db:seed`; images build from repo root (`docker build -f packages/backend/Dockerfile .`, `docker build -f packages/web-client/Dockerfile .`); CI (`.github/workflows/ci.yml`) runs typecheck → live-DB tests → builds → bundle secret scans → container boot probe; retention policy in `docs/data-retention.md` (`DELETE /api/interviews/:id` hard-erases with cascade)
 - Learning loop (roadmap Phase 2): `GET/PUT /api/profile` scoped to the bearer's `caller.userId` (401 without a user session; anonymous/service callers rejected), `user_profiles` table (migration `0004` + CHECKs), `ProfileService`; web client requires sign-in and gates a signed-in user with no profile into onboarding (no anonymous loop). Taxonomy lives in `packages/domain/src/profile.ts`; the client mirror (it cannot import the domain) is `packages/web-client/src/profile-taxonomy.ts` — keep them in sync.
+- Learning loop (roadmap Phase 3): server-owned curriculum + per-user skill state. `dsa-interview-curriculum.json` imports to `curricula`/`curriculum_modules`/`curriculum_topics`/`curriculum_topic_problems` (migration `0005`, idempotent re-seed; `problems.topic_id` now set from the catalog topic); `user_skill_states` + `user_curriculum_progress` (CHECKs, cascade with the account; `topic_id` deliberately not FK'd to `curriculum_topics` so a re-seed cannot wipe progress). `CurriculumService`/`SkillService`; `GET /api/curriculum`, `GET /api/curriculum/topics/:id`, `GET /api/skills` (user-session-only, like the profile). Domain: `packages/domain/src/curriculum.ts` + `skill.ts` (mastery scale `not_started→learning→developing→proficient→mastered`, thresholds 1/2/3/3). The client no longer bundles `curriculum.ts` (Progress goes server-backed in Phase 13); mastery *algorithm* is Phase 10/11.
 
 Only sources of truth:
 - `interview-coach-hld-and-implementation-plan.md` — architecture baseline (2026-09-11), phased plan. Trust it over guesses.
