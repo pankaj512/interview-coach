@@ -7,7 +7,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackendApiError, type BackendClient } from "./api/backend-client.js";
 import type {
+  Problem,
   SerializedInterview,
+  SerializedRecommendation,
   SerializedStateSnapshot,
   SerializedUserProfile,
 } from "./api/types.js";
@@ -32,6 +34,7 @@ import { SignInScreen } from "./screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "./screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "./screens/WeakAreasScreen.js";
 import { clearAuthSession, useAuthSession } from "./state/auth-store.js";
+import { useDashboard } from "./state/use-dashboard.js";
 import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-interview.js";
 
 type NavView = Exclude<NavKey, "setup">;
@@ -48,6 +51,37 @@ type Flow =
   | "signup"
   | "profile";
 type ProfileState = "idle" | "loading" | "ready" | "error";
+
+function asDifficulty(value: string | undefined): "Easy" | "Medium" | "Hard" {
+  return value === "Easy" || value === "Hard" ? value : "Medium";
+}
+
+// DashboardView mounts the Phase 5 data hook only while the Dashboard is
+// visible, so a signed-out or onboarding render never probes user-only APIs.
+function DashboardView({
+  backend,
+  profile,
+  starting,
+  onStart,
+  onProfile,
+}: {
+  readonly backend: BackendClient;
+  readonly profile: SerializedUserProfile;
+  readonly starting: boolean;
+  readonly onStart: (recommendation: SerializedRecommendation, problem: Problem | null) => void;
+  readonly onProfile: () => void;
+}) {
+  const data = useDashboard(backend);
+  return (
+    <DashboardScreen
+      profile={profile}
+      data={data}
+      starting={starting}
+      onStart={onStart}
+      onProfile={onProfile}
+    />
+  );
+}
 
 export function App() {
   const backend: BackendClient = useBackendClient();
@@ -67,6 +101,8 @@ export function App() {
   const [entries, setEntries] = useState<readonly HistoryEntry[]>(() => loadHistory(localStorage));
   const [busyId, setBusyId] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
+  const [dashboardBusy, setDashboardBusy] = useState(false);
+  const [dashboardError, setDashboardError] = useState<string | null>(null);
   const evaluatingTimer = useRef<number | null>(null);
 
   // Phase 2: load the server-owned profile whenever the signed-in session
@@ -147,6 +183,40 @@ export function App() {
     // Straight to the briefing/lobby, which requests the microphone.
     setFlow("briefing");
   }
+
+  // Phase 5: the Dashboard's primary CTA. Accept the recommendation, then
+  // create + assign + ready an interview bound to the recommended problem so
+  // practice starts from server state (the persisted recommendation linkage is
+  // Phase 9; the app-level binding is Phase 6).
+  const startRecommended = useCallback(
+    async (recommendation: SerializedRecommendation, problem: Problem | null) => {
+      if (session === null) return;
+      setDashboardBusy(true);
+      setDashboardError(null);
+      try {
+        await backend.acceptRecommendation(recommendation.id).catch(() => undefined);
+        const difficulty = asDifficulty(problem?.difficulty);
+        const created = await backend.createInterview({
+          candidateId: session.displayName || session.email,
+          configuration: { interviewType: "dsa", difficulty, durationMinutes: 30, problemCount: 1 },
+        });
+        const assigned = await backend.assignProblems(created.id, [recommendation.problemId]);
+        const ready = await backend.markReady(assigned.id);
+        setInterview(ready);
+        setSetupResult({ interview: ready, mode: "Realistic Interview", interaction: "Voice", durationMinutes: 30, difficulty });
+        setFinalSnapshot(null);
+        setEvents([]);
+        setStale(false);
+        setNav(null);
+        setFlow("briefing");
+      } catch (e) {
+        setDashboardError(formatApiError(e));
+      } finally {
+        setDashboardBusy(false);
+      }
+    },
+    [backend, session],
+  );
 
   const handleFinished = useCallback(
     (snapshot: SerializedStateSnapshot | null, roomEvents: readonly LiveEvent[], elapsedSec: number) => {
@@ -296,7 +366,16 @@ export function App() {
         onSignOut={handleSignOut}
       >
         {nav === "dashboard" && (
-          <DashboardScreen entries={entries} onStart={startNew} onHistory={() => navigate("history")} onOpen={openEntry} />
+          <>
+            <DashboardView
+              backend={backend}
+              profile={profile}
+              starting={dashboardBusy}
+              onStart={startRecommended}
+              onProfile={() => goAuth("profile")}
+            />
+            {dashboardError !== null && <p className="error">{dashboardError}</p>}
+          </>
         )}
         {nav === "history" && (
           <HistoryScreen

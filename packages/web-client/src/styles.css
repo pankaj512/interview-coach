@@ -874,6 +874,83 @@ button:focus-visible {
   border-bottom: 0;
 }
 
+/* ---------- Dashboard (Phase 5) ---------- */
+.preparing-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-16);
+}
+
+.preparing-role {
+  font-size: var(--fs-heading);
+  font-weight: var(--fw-medium);
+}
+
+.recommendation-card {
+  border-color: var(--line-strong);
+}
+
+.recommendation-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s-12);
+}
+
+.recommendation-problem {
+  display: flex;
+  align-items: center;
+  gap: var(--s-8);
+  font-size: var(--fs-body);
+  color: var(--ink-base);
+}
+
+.recommendation-difficulty {
+  font-size: var(--fs-caption);
+}
+
+.recommendation-reason {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  max-width: 68ch;
+}
+
+.progress-track {
+  height: 8px;
+  border-radius: var(--r-pill);
+  background: var(--bg-sunken);
+  border: var(--bw-1) solid var(--line-base);
+  overflow: hidden;
+}
+
+.progress-fill {
+  display: block;
+  height: 100%;
+  background: var(--info-solid);
+  border-radius: var(--r-pill);
+}
+
+.module-list {
+  list-style: none;
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-4);
+}
+
+.module-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-16);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.module-name {
+  color: var(--ink-base);
+}
+
 /* ---------- Setup ---------- */
 .setup-screen {
   display: flex;

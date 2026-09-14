@@ -6,11 +6,15 @@ import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
 import { BackendClient } from "../src/api/backend-client.js";
 import type {
+  Problem,
+  SerializedCurriculum,
   SerializedEvaluation,
   SerializedInterview,
+  SerializedRecommendation,
   SerializedStateSnapshot,
   SerializedUserProfile,
 } from "../src/api/types.js";
+import type { DashboardData } from "../src/state/use-dashboard.js";
 import { AppShell } from "../src/components/AppShell.js";
 import { App } from "../src/App.js";
 import { BriefingScreen } from "../src/screens/BriefingScreen.js";
@@ -108,6 +112,46 @@ const profile: SerializedUserProfile = {
   updatedAt: new Date(0).toISOString(),
 };
 
+const dashboardCurriculum: SerializedCurriculum = {
+  id: "dsa",
+  interviewType: "dsa",
+  name: "DSA Interview Curriculum",
+  version: 1,
+  modules: [{ id: "mod_1", curriculumId: "dsa", order: 1, name: "Foundations", topicIds: ["topic_arrays"] }],
+  topics: [
+    { id: "topic_arrays", curriculumId: "dsa", moduleId: "mod_1", order: 1, name: "Arrays", problemIds: ["prob_move-zeroes"] },
+  ],
+};
+
+const dashboardRecommendation: SerializedRecommendation = {
+  id: "rec_1",
+  userId: "user_1",
+  curriculumId: "dsa",
+  recommendationType: "new_topic",
+  topicId: "topic_arrays",
+  problemId: "prob_move-zeroes",
+  reason: "Start with array fundamentals.",
+  source: "fallback",
+  status: "active",
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
+};
+
+const dashboardProblem: Problem = { id: "prob_move-zeroes", title: "Move Zeroes", difficulty: "Easy" };
+
+const dashboardData: DashboardData = {
+  state: "ready",
+  recommendation: dashboardRecommendation,
+  problem: dashboardProblem,
+  curriculum: dashboardCurriculum,
+  skills: [],
+  progress: null,
+  error: null,
+  busy: false,
+  reload: async () => undefined,
+  regenerate: async () => undefined,
+};
+
 describe("screen render smoke", () => {
   it("App renders the sign-in landing for a signed-out visitor", () => {
     const html = renderToString(<App />);
@@ -123,8 +167,20 @@ describe("screen render smoke", () => {
     expect(html).toContain("Interview History");
     expect(html).toContain("Sign in");
   });
-  it("DashboardScreen renders", () => {
-    expect(renderToString(<DashboardScreen entries={entries} onStart={noop} onHistory={noop} onOpen={noopEntry} />)).toContain("Start Interview");
+  it("DashboardScreen renders the recommendation CTA and progress", () => {
+    const html = renderToString(
+      <DashboardScreen
+        profile={profile}
+        data={dashboardData}
+        starting={false}
+        onStart={noop}
+        onProfile={noop}
+      />,
+    );
+    expect(html).toContain("Recommended next");
+    expect(html).toContain("Start practice");
+    expect(html).toContain("Curriculum progress");
+    expect(html).toContain("Senior Backend Engineer");
   });
   it("SetupScreen renders", () => {
     expect(renderToString(<SetupScreen onCreated={noop} onCancel={noop} />)).toContain("New Interview");

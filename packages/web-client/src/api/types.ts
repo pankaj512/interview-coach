@@ -335,3 +335,73 @@ export interface SerializedRecommendation {
   readonly createdAt: string;
   readonly updatedAt: string;
 }
+
+// Phase 3 curriculum + skill state: structural mirrors of the backend
+// serializers. The curriculum is server-owned static config; the browser
+// never bundles it. Skill state is user-scoped server state (Phase 5
+// Dashboard reads it, Phase 13 Progress renders the full view).
+export interface SerializedCurriculumModule {
+  readonly id: string;
+  readonly curriculumId: string;
+  readonly order: number;
+  readonly name: string;
+  readonly objective?: string;
+  readonly topicIds: readonly string[];
+}
+
+export interface SerializedCurriculumTopic {
+  readonly id: string;
+  readonly curriculumId: string;
+  readonly moduleId: string;
+  readonly order: number;
+  readonly name: string;
+  readonly problemIds: readonly string[];
+}
+
+export interface SerializedCurriculum {
+  readonly id: string;
+  readonly interviewType: string;
+  readonly name: string;
+  readonly version: number;
+  readonly modules: readonly SerializedCurriculumModule[];
+  readonly topics: readonly SerializedCurriculumTopic[];
+}
+
+export type MasteryLevel =
+  | "not_started"
+  | "learning"
+  | "developing"
+  | "proficient"
+  | "mastered";
+
+export type SkillOutcome = "success" | "partial" | "failure";
+
+export interface SerializedUserSkillState {
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly topicId: string;
+  readonly masteryLevel: MasteryLevel;
+  readonly successfulAttempts: number;
+  readonly totalAttempts: number;
+  readonly lastAttemptAt?: string;
+  readonly lastOutcome?: SkillOutcome;
+  readonly strengths: readonly string[];
+  readonly weaknesses: readonly string[];
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export interface SerializedUserCurriculumProgress {
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly currentTopicId?: string;
+  readonly completedTopicIds: readonly string[];
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+// GET /api/skills: skills + curriculum pointer (progress null before state).
+export interface SkillSnapshot {
+  readonly skills: readonly SerializedUserSkillState[];
+  readonly progress: SerializedUserCurriculumProgress | null;
+}

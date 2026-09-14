@@ -31,6 +31,8 @@ import type {
   SerializedUserProfile,
   ProfileInput,
   SerializedRecommendation,
+  SerializedCurriculum,
+  SkillSnapshot,
 } from "./types.js";
 
 export class BackendApiError extends Error {
@@ -184,6 +186,25 @@ export class BackendClient {
       `/api/recommendations/${encodeURIComponent(id)}/accept`,
     );
     return body.recommendation;
+  }
+
+  // Phase 3 curriculum + skills: server-owned config and per-user mastery.
+  // Both are read-only views; the Dashboard (Phase 5) consumes them.
+  async listCurriculum(interviewType?: string): Promise<readonly SerializedCurriculum[]> {
+    const suffix =
+      interviewType === undefined || interviewType === ""
+        ? ""
+        : `?interviewType=${encodeURIComponent(interviewType)}`;
+    const body = await this.request<{ ok: true; curricula: SerializedCurriculum[] }>(
+      "GET",
+      `/api/curriculum${suffix}`,
+    );
+    return body.curricula;
+  }
+
+  async getSkills(): Promise<SkillSnapshot> {
+    const body = await this.request<{ ok: true } & SkillSnapshot>("GET", "/api/skills");
+    return { skills: body.skills, progress: body.progress };
   }
 
   async createInterview(input: CreateInterviewInput): Promise<SerializedInterview> {
