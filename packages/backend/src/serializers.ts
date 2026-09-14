@@ -10,6 +10,7 @@ import type {
   InterviewProblem,
   InterviewStateSnapshot,
   Problem,
+  Recommendation,
   UserCurriculumProgress,
   UserProfile,
   UserSkillState,
@@ -234,6 +235,43 @@ export function serializeUserCurriculumProgress(
     completedTopicIds: progress.completedTopicIds,
     createdAt: progress.createdAt.toISOString(),
     updatedAt: progress.updatedAt.toISOString(),
+  };
+}
+
+// Learning-loop Phase 4: persisted recommendation (LLM-proposed or fallback).
+export interface SerializedRecommendation {
+  readonly id: string;
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly recommendationType: string;
+  readonly topicId: string;
+  readonly problemId: string;
+  readonly reason: string;
+  readonly source: string;
+  readonly status: string;
+  readonly acceptedAt?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}
+
+export function serializeRecommendation(
+  recommendation: Recommendation,
+): SerializedRecommendation {
+  return {
+    id: recommendation.id,
+    userId: recommendation.userId,
+    curriculumId: recommendation.curriculumId,
+    recommendationType: recommendation.recommendationType,
+    topicId: recommendation.topicId,
+    problemId: recommendation.problemId,
+    reason: recommendation.reason,
+    source: recommendation.source,
+    status: recommendation.status,
+    ...(recommendation.acceptedAt === undefined
+      ? {}
+      : { acceptedAt: recommendation.acceptedAt.toISOString() }),
+    createdAt: recommendation.createdAt.toISOString(),
+    updatedAt: recommendation.updatedAt.toISOString(),
   };
 }
 

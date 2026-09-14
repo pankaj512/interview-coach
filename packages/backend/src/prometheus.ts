@@ -78,6 +78,21 @@ export function renderPrometheusMetrics(snapshot: MetricsSnapshot): string {
       "User profiles created or edited via PUT /api/profile.",
       snapshot.profilesUpdated,
     ),
+    counter(
+      "interview_coach_recommendations_generated_total",
+      "Recommendations generated via POST /api/recommendations.",
+      snapshot.recommendationsGenerated,
+    ),
+    counter(
+      "interview_coach_recommendations_accepted_total",
+      "Recommendations accepted via POST /api/recommendations/:id/accept.",
+      snapshot.recommendationsAccepted,
+    ),
+    counter(
+      "interview_coach_recommendation_fallbacks_total",
+      "Recommendations that used the deterministic fallback (model unavailable or invalid).",
+      snapshot.recommendationFallbacks,
+    ),
   ];
   for (const status of ["passed", "failed", "timeout", "error"] as const) {
     lines.push(

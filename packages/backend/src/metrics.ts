@@ -22,6 +22,9 @@ export interface MetricsSnapshot {
   readonly authLogins: number;
   readonly authFailures: number;
   readonly profilesUpdated: number;
+  readonly recommendationsGenerated: number;
+  readonly recommendationsAccepted: number;
+  readonly recommendationFallbacks: number;
   readonly toolExecuted: number;
   readonly toolReplayed: number;
   readonly toolFailed: number;
@@ -52,6 +55,9 @@ export class BackendMetrics {
   private authLogins = 0;
   private authFailures = 0;
   private profilesUpdated = 0;
+  private recommendationsGenerated = 0;
+  private recommendationsAccepted = 0;
+  private recommendationFallbacks = 0;
   private toolExecuted = 0;
   private toolReplayed = 0;
   private toolFailed = 0;
@@ -97,6 +103,15 @@ export class BackendMetrics {
     this.profilesUpdated += 1;
   }
 
+  countRecommendationGenerated(source: "llm" | "fallback"): void {
+    this.recommendationsGenerated += 1;
+    if (source === "fallback") this.recommendationFallbacks += 1;
+  }
+
+  countRecommendationAccepted(): void {
+    this.recommendationsAccepted += 1;
+  }
+
   countTool(replayed: boolean, ok: boolean): void {
     if (replayed) this.toolReplayed += 1;
     else this.toolExecuted += 1;
@@ -130,6 +145,9 @@ export class BackendMetrics {
       authLogins: this.authLogins,
       authFailures: this.authFailures,
       profilesUpdated: this.profilesUpdated,
+      recommendationsGenerated: this.recommendationsGenerated,
+      recommendationsAccepted: this.recommendationsAccepted,
+      recommendationFallbacks: this.recommendationFallbacks,
       toolExecuted: this.toolExecuted,
       toolReplayed: this.toolReplayed,
       toolFailed: this.toolFailed,

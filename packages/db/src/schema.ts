@@ -193,6 +193,36 @@ export const userCurriculumProgress = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.curriculumId] })],
 );
 
+// Learning-loop Phase 4: persisted recommendations (LLM-proposed, backend-
+// validated, or deterministic fallback). Cascades with the account. topic_id /
+// problem_id are plain text by design (same reasoning as user_skill_states): a
+// curriculum re-seed replaces topic rows and must never delete user state;
+// validity is the domain/service boundary. CHECK constraints live in the
+// migration.
+export const recommendations = pgTable(
+  "recommendations",
+  {
+    id: text("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    curriculumId: text("curriculum_id").notNull(),
+    recommendationType: text("recommendation_type").notNull(),
+    topicId: text("topic_id").notNull(),
+    problemId: text("problem_id").notNull(),
+    reason: text("reason").notNull(),
+    source: text("source").notNull(),
+    status: text("status").notNull(),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (t) => [
+    index("recommendations_user_id_idx").on(t.userId),
+    index("recommendations_user_status_idx").on(t.userId, t.status),
+  ],
+);
+
 export const interviews = pgTable(
   "interviews",
   {

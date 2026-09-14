@@ -19,6 +19,9 @@
 //   GET    /api/curriculum                        (Phase 3: server-owned curriculum)
 //   GET    /api/curriculum/topics/:id             (Phase 3: topic + problems)
 //   GET    /api/skills                            (Phase 3: own skill state)
+//   GET    /api/recommendations/current           (Phase 4: current proposal)
+//   POST   /api/recommendations                   (Phase 4: generate + persist)
+//   POST   /api/recommendations/:id/accept        (Phase 4: accept proposal)
 //   POST   /api/interviews
 //   GET    /api/interviews/:id
 //   GET    /api/interviews/:id/state
@@ -57,6 +60,7 @@ import {
   ToolService,
   asInterviewId,
   asProblemId,
+  asRecommendationId,
   asRunId,
   asSubmissionId,
   asTopicId,
@@ -67,6 +71,7 @@ import {
   type CodeExecutor,
   type InterviewConfiguration,
   type InterviewId,
+  type RecommendationModel,
   type RepositorySet,
   type ToolName,
   type ToolResult,
@@ -79,6 +84,8 @@ import { UserService, type AuthenticatedSession } from "./users.js";
 import { ProfileService } from "./profile.js";
 import { CurriculumService } from "./curriculum.js";
 import { SkillService } from "./skills.js";
+import { RecommendationService } from "./recommendation.js";
+import { createRecommendationModelFromEnv } from "./recommendation-model.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
   CallIdConflictError,
@@ -90,6 +97,7 @@ import {
   serializeEvaluation,
   serializeCurriculum,
   serializeInterview,
+  serializeRecommendation,
   serializeRun,
   serializeStateSnapshot,
   serializeSubmission,
@@ -112,6 +120,8 @@ export interface BuildAppDeps {
   readonly config?: BackendConfig;
   readonly voiceProvider?: VoiceSessionProvider;
   readonly codeRunner?: CodeExecutor;
+  /** Phase 4: injectable so tests use a deterministic fake, never a live LLM. */
+  readonly recommendationModel?: RecommendationModel;
   readonly logger?: boolean;
 }
 
@@ -368,6 +378,19 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     skillStates: deps.repos.skillStates,
     curriculumProgress: deps.repos.curriculumProgress,
   });
+  // Phase 4: recommendation service over a server-side LLM port. Unconfigured
+  // in local dev by default, so the deterministic fallback drives the loop.
+  const recommendationModel =
+    deps.recommendationModel ?? createRecommendationModelFromEnv(config.llm);
+  const recommendations = new RecommendationService({
+    recommendations: deps.repos.recommendations,
+    curricula: deps.repos.curricula,
+    problems: deps.repos.problems,
+    skillStates: deps.repos.skillStates,
+    curriculumProgress: deps.repos.curriculumProgress,
+    profiles: deps.repos.profiles,
+    model: recommendationModel,
+  });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
   // a fake via deps.codeRunner; container isolation lands in S8.
   const codeRunner =
@@ -405,6 +428,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     voiceMint: { max: config.rateLimits.voiceMintPerMin, windowMs: 60_000 },
     codeRun: { max: config.rateLimits.codeRunPerMin, windowMs: 60_000 },
     auth: { max: config.rateLimits.authPerMin, windowMs: 60_000 },
+    recommendation: { max: config.rateLimits.recommendationPerMin, windowMs: 60_000 },
   };
   app.addHook("onRequest", (request, reply, done) => {
     const pathname = request.url.split("?", 1)[0] ?? "/";
@@ -634,6 +658,72 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
           ? null
           : serializeUserCurriculumProgress(snapshot.progress),
     });
+  });
+
+  // Phase 4 recommendation (HLD learning loop): user-only, like profile/skills.
+  // GET current returns the latest non-superseded proposal, or null before one
+  // has been generated. Generation is synchronous (ADR-002) and always yields
+  // a result — the LLM picks from a backend-built candidate set, and an
+  // unavailable/invalid model falls back deterministically.
+  app.get("/api/recommendations/current", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access recommendations", false);
+    }
+    const current = await recommendations.current(caller.userId);
+    return reply.send({
+      ok: true,
+      recommendation: current === null ? null : serializeRecommendation(current),
+    });
+  });
+
+  app.post("/api/recommendations", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access recommendations", false);
+    }
+    const generated = await recommendations.generate(caller.userId);
+    if (!generated.ok) return sendDomainError(reply, generated.error);
+    const { recommendation, source } = generated.value;
+    request.log.info(
+      {
+        userId: caller.userId,
+        recommendationId: recommendation.id,
+        source,
+        ...(generated.value.modelError === undefined
+          ? {}
+          : { modelError: generated.value.modelError }),
+      },
+      "recommendation.generated",
+    );
+    metrics.countRecommendationGenerated(source);
+    return reply.status(201).send({
+      ok: true,
+      recommendation: serializeRecommendation(recommendation),
+      source,
+    });
+  });
+
+  app.post("/api/recommendations/:id/accept", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to access recommendations", false);
+    }
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const accepted = await recommendations.accept(
+      caller.userId,
+      asRecommendationId(params.data.id),
+    );
+    if (!accepted.ok) return sendDomainError(reply, accepted.error);
+    request.log.info(
+      { userId: caller.userId, recommendationId: params.data.id },
+      "recommendation.accepted",
+    );
+    metrics.countRecommendationAccepted();
+    return reply.send({ ok: true, recommendation: serializeRecommendation(accepted.value) });
   });
 
   app.post("/api/interviews", async (request, reply) => {

@@ -8,11 +8,13 @@ import type {
   UserId,
   CurriculumId,
   TopicId,
+  RecommendationId,
 } from "./ids.js";
 import type { UserAccount, UserSession } from "./user.js";
 import type { UserProfile } from "./profile.js";
 import type { Curriculum } from "./curriculum.js";
 import type { UserCurriculumProgress, UserSkillState } from "./skill.js";
+import type { Recommendation } from "./recommendation.js";
 import type { CandidateResponse } from "./candidate-response.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
@@ -282,6 +284,22 @@ export interface UserCurriculumProgressRepository {
   ): Promise<UserCurriculumProgress | null>;
 }
 
+// Learning-loop Phase 4: persisted recommendations. `findCurrentByUser` is the
+// latest non-superseded proposal (the one the dashboard/lobby act on);
+// `listByUser` returns all, newest first (trajectory / Phase 12 supersession).
+export interface RecommendationRepository {
+  save(recommendation: Recommendation): Promise<void>;
+  findById(id: RecommendationId): Promise<Recommendation | null>;
+  findCurrentByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<Recommendation | null>;
+  listByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly Recommendation[]>;
+}
+
 export class InMemoryUserRepository implements UserRepository {
   private readonly store = new Map<UserId, UserAccount>();
 
@@ -412,6 +430,49 @@ export class InMemoryUserCurriculumProgressRepository
   }
 }
 
+export class InMemoryRecommendationRepository implements RecommendationRepository {
+  private readonly store = new Map<RecommendationId, Recommendation>();
+
+  async save(recommendation: Recommendation): Promise<void> {
+    this.store.set(recommendation.id, recommendation);
+  }
+
+  async findById(id: RecommendationId): Promise<Recommendation | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  private byUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Recommendation[] {
+    return [...this.store.values()]
+      .filter(
+        (r) =>
+          r.userId === userId &&
+          (curriculumId === undefined || r.curriculumId === curriculumId),
+      )
+      .sort(
+        (a, b) =>
+          b.createdAt.getTime() - a.createdAt.getTime() ||
+          b.updatedAt.getTime() - a.updatedAt.getTime(),
+      );
+  }
+
+  async findCurrentByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<Recommendation | null> {
+    return this.byUser(userId, curriculumId).find((r) => r.status !== "superseded") ?? null;
+  }
+
+  async listByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly Recommendation[]> {
+    return this.byUser(userId, curriculumId);
+  }
+}
+
 export interface RepositorySet {
   readonly interviews: InterviewRepository;
   readonly problems: ProblemRepository;
@@ -426,6 +487,7 @@ export interface RepositorySet {
   readonly curricula: CurriculumRepository;
   readonly skillStates: UserSkillStateRepository;
   readonly curriculumProgress: UserCurriculumProgressRepository;
+  readonly recommendations: RecommendationRepository;
 }
 
 export function createInMemoryRepositories(): RepositorySet & {
@@ -442,6 +504,7 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly curricula: InMemoryCurriculumRepository;
   readonly skillStates: InMemoryUserSkillStateRepository;
   readonly curriculumProgress: InMemoryUserCurriculumProgressRepository;
+  readonly recommendations: InMemoryRecommendationRepository;
 } {
   return {
     interviews: new InMemoryInterviewRepository(),
@@ -457,5 +520,6 @@ export function createInMemoryRepositories(): RepositorySet & {
     curricula: new InMemoryCurriculumRepository(),
     skillStates: new InMemoryUserSkillStateRepository(),
     curriculumProgress: new InMemoryUserCurriculumProgressRepository(),
+    recommendations: new InMemoryRecommendationRepository(),
   };
 }

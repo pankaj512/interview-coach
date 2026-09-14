@@ -30,6 +30,7 @@ import type {
   RegisterInput,
   SerializedUserProfile,
   ProfileInput,
+  SerializedRecommendation,
 } from "./types.js";
 
 export class BackendApiError extends Error {
@@ -156,6 +157,33 @@ export class BackendClient {
       },
     );
     return body.profile;
+  }
+
+  // Phase 4 recommendation: current proposal (null before one exists),
+  // synchronous generation (backend validates + falls back), and accept.
+  async getCurrentRecommendation(): Promise<SerializedRecommendation | null> {
+    const body = await this.request<{
+      ok: true;
+      recommendation: SerializedRecommendation | null;
+    }>("GET", "/api/recommendations/current");
+    return body.recommendation;
+  }
+
+  async createRecommendation(): Promise<SerializedRecommendation> {
+    const body = await this.request<{
+      ok: true;
+      recommendation: SerializedRecommendation;
+      source: string;
+    }>("POST", "/api/recommendations");
+    return body.recommendation;
+  }
+
+  async acceptRecommendation(id: string): Promise<SerializedRecommendation> {
+    const body = await this.request<{ ok: true; recommendation: SerializedRecommendation }>(
+      "POST",
+      `/api/recommendations/${encodeURIComponent(id)}/accept`,
+    );
+    return body.recommendation;
   }
 
   async createInterview(input: CreateInterviewInput): Promise<SerializedInterview> {

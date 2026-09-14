@@ -13,14 +13,17 @@ import {
   InterviewService,
   SubmissionService,
   asCurriculumId,
+  asProblemId,
   asTopicId,
   asUserId,
   createProblem,
+  createRecommendation,
   createUserCurriculumProgress,
   createUserProfile,
   createUserSkillState,
   importCatalogTopics,
   importCurriculum,
+  supersedeRecommendation,
   updateUserProfile,
   type CurriculumRaw,
   type Problem,
@@ -455,5 +458,73 @@ describe("postgres persistence", () => {
     await reconnected.db.delete(schema.users).where(eq(schema.users.id, userId));
     expect(await reconnected.repos.skillStates.findByUser(userId)).toHaveLength(0);
     expect(await reconnected.repos.curriculumProgress.findByUser(userId, DSA_CURRICULUM_ID)).toBeNull();
+  }));
+
+  it("persists recommendations, survives restart, supersedes, and cascades with the account", withDb(ctx, async (t) => {
+    const userId = asUserId("user_rec_persist");
+    await t.repos.users.save({
+      id: userId,
+      email: "rec-persist@example.com",
+      displayName: "Rec Persist",
+      passwordHash: "scrypt$v2$1$1$1$eA==$eA==",
+      createdAt: new Date("2026-09-14T00:00:00.000Z"),
+    });
+    const arrays = asTopicId("topic_arrays");
+    const twoSum = asProblemId("prob_two-sum");
+
+    const first = createRecommendation({
+      userId,
+      curriculumId: DSA_CURRICULUM_ID,
+      recommendationType: "new_topic",
+      topicId: arrays,
+      problemId: twoSum,
+      reason: "Start with arrays",
+      source: "fallback",
+      now: new Date("2026-09-14T10:00:00.000Z"),
+    });
+    if (!first.ok) throw new Error(first.error.message);
+    await t.repos.recommendations.save(first.value);
+    expect(await t.repos.recommendations.findById(first.value.id)).toEqual(first.value);
+    expect((await t.repos.recommendations.findCurrentByUser(userId))?.id).toBe(first.value.id);
+
+    // A newer proposal supersedes the first; `current` is the latest non-superseded.
+    const superseded = supersedeRecommendation(first.value, new Date("2026-09-14T11:00:00.000Z"));
+    if (!superseded.ok) throw new Error(superseded.error.message);
+    await t.repos.recommendations.save(superseded.value);
+    const second = createRecommendation({
+      userId,
+      curriculumId: DSA_CURRICULUM_ID,
+      recommendationType: "continue_topic",
+      topicId: arrays,
+      problemId: twoSum,
+      reason: "Keep going",
+      source: "llm",
+      now: new Date("2026-09-14T11:00:00.000Z"),
+    });
+    if (!second.ok) throw new Error(second.error.message);
+    await t.repos.recommendations.save(second.value);
+
+    const listed = await t.repos.recommendations.listByUser(userId, DSA_CURRICULUM_ID);
+    expect(listed.map((r) => r.id)).toEqual([second.value.id, first.value.id]);
+    expect(listed.find((r) => r.id === first.value.id)?.status).toBe("superseded");
+    expect((await t.repos.recommendations.findCurrentByUser(userId))?.id).toBe(second.value.id);
+
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      const reloaded = await repos.recommendations.findCurrentByUser(userId);
+      expect(reloaded?.id).toBe(second.value.id);
+      expect(reloaded?.source).toBe("llm");
+      expect((await repos.recommendations.listByUser(userId))).toHaveLength(2);
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+
+    await reconnected.db.delete(schema.users).where(eq(schema.users.id, userId));
+    expect(await reconnected.repos.recommendations.listByUser(userId)).toHaveLength(0);
   }));
 });

@@ -25,6 +25,8 @@ export interface RateLimitConfig {
   readonly codeRunPerMin: number;
   /** S8c: strict budget on credential endpoints (brute-force protection). */
   readonly authPerMin: number;
+  /** Phase 4: budget on LLM-backed recommendation generation. */
+  readonly recommendationPerMin: number;
 }
 
 export interface AuthConfig {
@@ -43,6 +45,19 @@ export interface SandboxConfig {
   readonly maxSubmissionsPerInterview: number;
 }
 
+// Learning-loop Phase 4 (ADR-002): server-side Azure AI Foundry text model for
+// recommendation. Credentials stay server-side (never in the browser). When
+// endpoint/apiKey are absent the recommendation service uses its deterministic
+// fallback, so the loop works without an LLM in local dev.
+export interface LlmConfig {
+  readonly endpoint: string | undefined;
+  readonly apiKey: string | undefined;
+  readonly deployment: string;
+  readonly apiVersion: string;
+  readonly timeoutMs: number;
+  readonly maxRetries: number;
+}
+
 export interface BackendConfig {
   readonly host: string;
   readonly port: number;
@@ -54,6 +69,7 @@ export interface BackendConfig {
   readonly tools: ToolsConfig;
   readonly rateLimits: RateLimitConfig;
   readonly sandbox: SandboxConfig;
+  readonly llm: LlmConfig;
 }
 
 function num(env: NodeJS.ProcessEnv, name: string, fallback: number): number {
@@ -123,6 +139,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       voiceMintPerMin: num(env, "RATE_LIMIT_VOICE_MINT_PER_MIN", 60),
       codeRunPerMin: num(env, "RATE_LIMIT_CODE_RUN_PER_MIN", 30),
       authPerMin: num(env, "RATE_LIMIT_AUTH_PER_MIN", 10),
+      recommendationPerMin: num(env, "RATE_LIMIT_RECOMMENDATION_PER_MIN", 30),
     },
     sandbox: {
       // S7a local runner (HLD Phase 6): wall-clock kill + output caps.
@@ -131,6 +148,16 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       maxActualChars: num(env, "CODE_RUN_MAX_OUTPUT_CHARS", 20000),
       maxConcurrentRuns: num(env, "CODE_RUN_MAX_CONCURRENT", 4),
       maxSubmissionsPerInterview: num(env, "CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW", 100),
+    },
+    llm: {
+      // Phase 4 recommendation model. Unset endpoint/key = deterministic
+      // fallback (the loop still works); never exposed to the browser.
+      endpoint: optSecret(env, "LLM_ENDPOINT"),
+      apiKey: optSecret(env, "LLM_API_KEY"),
+      deployment: str(env, "LLM_DEPLOYMENT", "gpt-4o-mini"),
+      apiVersion: str(env, "LLM_API_VERSION", "2024-10-21"),
+      timeoutMs: num(env, "LLM_TIMEOUT_MS", 10_000),
+      maxRetries: num(env, "LLM_MAX_RETRIES", 2),
     },
   };
 }

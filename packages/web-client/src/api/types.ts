@@ -307,3 +307,31 @@ export interface ProfileInput {
   readonly level: string;
   readonly goals?: string;
 }
+
+// Phase 4 recommendation: structural mirror of the backend serializer. The
+// dashboard/lobby consume this; the client never invents a recommendation.
+export type RecommendationType =
+  | "new_topic"
+  | "continue_topic"
+  | "reinforce_weakness"
+  | "review_topic"
+  | "advance_topic";
+
+export type RecommendationStatus = "active" | "accepted" | "superseded";
+
+export type RecommendationSource = "llm" | "fallback";
+
+export interface SerializedRecommendation {
+  readonly id: string;
+  readonly userId: string;
+  readonly curriculumId: string;
+  readonly recommendationType: RecommendationType;
+  readonly topicId: string;
+  readonly problemId: string;
+  readonly reason: string;
+  readonly source: RecommendationSource;
+  readonly status: RecommendationStatus;
+  readonly acceptedAt?: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+}

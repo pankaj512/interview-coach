@@ -10,6 +10,7 @@ import {
   importCatalogTopics,
   importCurriculum,
   type CurriculumRaw,
+  type RecommendationModel,
   type RepositorySet,
 } from "@interview-coach/domain";
 import { buildApp, type BuiltBackend } from "../src/app.js";
@@ -20,7 +21,9 @@ export interface TestBackend extends BuiltBackend {
   readonly repos: RepositorySet;
 }
 
-export function buildTestBackend(): TestBackend {
+export function buildTestBackend(
+  options: { readonly recommendationModel?: RecommendationModel } = {},
+): TestBackend {
   const repos = createInMemoryRepositories();
   const built = buildApp({
     repos,
@@ -31,6 +34,9 @@ export function buildTestBackend(): TestBackend {
       CORS_ORIGIN: "http://localhost:5173",
     }),
     voiceProvider: new FakeVoiceSessionProvider(),
+    ...(options.recommendationModel === undefined
+      ? {}
+      : { recommendationModel: options.recommendationModel }),
     logger: false,
   });
   return { ...built, repos };

@@ -82,7 +82,14 @@ export class FixedWindowRateLimiter {
   }
 }
 
-export type RateBucket = "toolExec" | "voiceMint" | "codeRun" | "auth" | "global" | "exempt";
+export type RateBucket =
+  | "toolExec"
+  | "voiceMint"
+  | "codeRun"
+  | "auth"
+  | "recommendation"
+  | "global"
+  | "exempt";
 
 export function bucketForRoute(method: string, pathname: string): RateBucket {
   // Liveness/readiness probes and non-API traffic are never limited.
@@ -97,5 +104,7 @@ export function bucketForRoute(method: string, pathname: string): RateBucket {
   if (method === "POST" && pathname.includes("/submissions/") && pathname.endsWith("/runs")) {
     return "codeRun";
   }
+  // Phase 4: generation hits the server-side LLM, so it gets its own budget.
+  if (method === "POST" && pathname === "/api/recommendations") return "recommendation";
   return "global";
 }

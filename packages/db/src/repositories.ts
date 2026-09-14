@@ -4,7 +4,7 @@
 // Transaction boundary: InterviewRepository.save writes the interview row +
 // its problem assignments atomically.
 
-import { and, asc, desc, eq, inArray } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type {
   EvaluationRepository,
@@ -24,9 +24,11 @@ import type {
   CurriculumRepository,
   UserSkillStateRepository,
   UserCurriculumProgressRepository,
+  RecommendationRepository,
   Curriculum,
   CurriculumModule,
   CurriculumTopic,
+  Recommendation,
   UserCurriculumProgress,
   UserSkillState,
 } from "@interview-coach/domain";
@@ -48,6 +50,9 @@ import type {
   ProblemDifficulty,
   ProfileLevel,
   ProfileRole,
+  RecommendationSource,
+  RecommendationStatus,
+  RecommendationType,
   ResponseKind,
   RunStatus,
   SkillOutcome,
@@ -57,6 +62,7 @@ import type {
   InterviewId,
   ModuleId,
   ProblemId,
+  RecommendationId,
   RunId,
   SubmissionId,
   TopicId,
@@ -1052,6 +1058,108 @@ export class DrizzleUserCurriculumProgressRepository
   }
 }
 
+type RecommendationRow = typeof schema.recommendations.$inferSelect;
+
+function toRecommendation(row: RecommendationRow): Recommendation {
+  return {
+    id: row.id as RecommendationId,
+    userId: row.userId as UserId,
+    curriculumId: row.curriculumId as CurriculumId,
+    recommendationType: row.recommendationType as RecommendationType,
+    topicId: row.topicId as TopicId,
+    problemId: row.problemId as ProblemId,
+    reason: row.reason,
+    source: row.source as RecommendationSource,
+    status: row.status as RecommendationStatus,
+    ...(row.acceptedAt === null ? {} : { acceptedAt: row.acceptedAt }),
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+  };
+}
+
+export class DrizzleRecommendationRepository implements RecommendationRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(recommendation: Recommendation): Promise<void> {
+    const values = {
+      id: recommendation.id,
+      userId: recommendation.userId,
+      curriculumId: recommendation.curriculumId,
+      recommendationType: recommendation.recommendationType,
+      topicId: recommendation.topicId,
+      problemId: recommendation.problemId,
+      reason: recommendation.reason,
+      source: recommendation.source,
+      status: recommendation.status,
+      acceptedAt: recommendation.acceptedAt ?? null,
+      createdAt: recommendation.createdAt,
+      updatedAt: recommendation.updatedAt,
+    };
+    await this.db
+      .insert(schema.recommendations)
+      .values(values)
+      .onConflictDoUpdate({
+        target: schema.recommendations.id,
+        set: {
+          reason: values.reason,
+          source: values.source,
+          status: values.status,
+          acceptedAt: values.acceptedAt,
+          updatedAt: values.updatedAt,
+        },
+      });
+  }
+
+  async findById(id: RecommendationId): Promise<Recommendation | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.recommendations)
+      .where(eq(schema.recommendations.id, id))
+      .limit(1);
+    return rows[0] === undefined ? null : toRecommendation(rows[0]);
+  }
+
+  async findCurrentByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<Recommendation | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.recommendations)
+      .where(
+        and(
+          eq(schema.recommendations.userId, userId),
+          ne(schema.recommendations.status, "superseded"),
+          ...(curriculumId === undefined
+            ? []
+            : [eq(schema.recommendations.curriculumId, curriculumId)]),
+        ),
+      )
+      .orderBy(desc(schema.recommendations.createdAt), desc(schema.recommendations.updatedAt))
+      .limit(1);
+    return rows[0] === undefined ? null : toRecommendation(rows[0]);
+  }
+
+  async listByUser(
+    userId: UserId,
+    curriculumId?: CurriculumId,
+  ): Promise<readonly Recommendation[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.recommendations)
+      .where(
+        and(
+          eq(schema.recommendations.userId, userId),
+          ...(curriculumId === undefined
+            ? []
+            : [eq(schema.recommendations.curriculumId, curriculumId)]),
+        ),
+      )
+      .orderBy(desc(schema.recommendations.createdAt), desc(schema.recommendations.updatedAt));
+    return rows.map(toRecommendation);
+  }
+}
+
 function toAccount(
   row: typeof schema.users.$inferSelect | null,
 ): UserAccount | null {  // Pre-S8c rows have no credentials and are invisible to auth flows.
@@ -1080,5 +1188,6 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     curricula: new DrizzleCurriculumRepository(db),
     skillStates: new DrizzleUserSkillStateRepository(db),
     curriculumProgress: new DrizzleUserCurriculumProgressRepository(db),
+    recommendations: new DrizzleRecommendationRepository(db),
   };
 }
