@@ -35,7 +35,7 @@ import { SignInScreen } from "./screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "./screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "./screens/WeakAreasScreen.js";
 import { clearAuthSession, useAuthSession } from "./state/auth-store.js";
-import { useDashboard } from "./state/use-dashboard.js";
+import { useDashboard, type DashboardData } from "./state/use-dashboard.js";
 import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-interview.js";
 
 type NavView = NavKey;
@@ -59,14 +59,14 @@ function asDifficulty(value: string | undefined): Difficulty {
 // DashboardView mounts the Phase 5 data hook only while the Dashboard is
 // visible, so a signed-out or onboarding render never probes user-only APIs.
 function DashboardView({
-  backend,
   profile,
+  data,
   starting,
   onStart,
   onProfile,
 }: {
-  readonly backend: BackendClient;
   readonly profile: SerializedUserProfile;
+  readonly data: DashboardData;
   readonly starting: boolean;
   readonly onStart: (
     recommendation: SerializedRecommendation,
@@ -75,7 +75,6 @@ function DashboardView({
   ) => void;
   readonly onProfile: () => void;
 }) {
-  const data = useDashboard(backend);
   return (
     <DashboardScreen
       profile={profile}
@@ -90,6 +89,7 @@ function DashboardView({
 export function App() {
   const backend: BackendClient = useBackendClient();
   const session = useAuthSession();
+  const dashboardData = useDashboard(backend, session !== null);
   const [nav, setNav] = useState<NavView | null>("dashboard");
   const [flow, setFlow] = useState<Flow | null>(null);
   const [profile, setProfile] = useState<SerializedUserProfile | null>(null);
@@ -103,7 +103,11 @@ export function App() {
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [stale, setStale] = useState(false);
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([]);
+  const [historyLimit, setHistoryLimit] = useState(20);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [historyError, setHistoryError] = useState<string | null>(null);
   const [dashboardBusy, setDashboardBusy] = useState(false);
   const [dashboardError, setDashboardError] = useState<string | null>(null);
@@ -112,17 +116,28 @@ export function App() {
   // Phase 9: history is server-owned. Load the signed-in user's interviews
   // (newest first) whenever the session changes; the browser keeps no local
   // index. Errors surface inline rather than inventing entries.
-  const refreshHistory = useCallback(async () => {
-    if (session === null) {
-      setEntries([]);
-      return;
-    }
-    try {
-      setEntries(historyEntriesFromSummaries(await backend.listInterviews()));
-    } catch (e) {
-      setHistoryError(formatApiError(e));
-    }
-  }, [backend, session?.token]);
+  const refreshHistory = useCallback(
+    async (limit?: number) => {
+      if (session === null) {
+        setEntries([]);
+        setHistoryHasMore(false);
+        return;
+      }
+      const effectiveLimit = limit ?? historyLimit;
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const list = await backend.listInterviews(effectiveLimit);
+        setEntries(historyEntriesFromSummaries(list));
+        setHistoryHasMore(list.length >= effectiveLimit);
+      } catch (e) {
+        setHistoryError(formatApiError(e));
+      } finally {
+        setHistoryLoading(false);
+      }
+    },
+    [backend, session?.token, historyLimit],
+  );
 
   useEffect(() => {
     void refreshHistory();
@@ -174,6 +189,10 @@ export function App() {
   const remember = useCallback(() => {
     void refreshHistory();
   }, [refreshHistory]);
+
+  const loadMoreHistory = useCallback(() => {
+    setHistoryLimit((limit) => limit + 20);
+  }, []);
 
   function navigate(key: NavKey) {
     setNav(key);
@@ -243,6 +262,11 @@ export function App() {
     [backend, session],
   );
 
+  const startRecommendedFromDashboard = useCallback(() => {
+    if (dashboardData.recommendation === null) return;
+    void startRecommended(dashboardData.recommendation, dashboardData.problem, dashboardData.curriculum);
+  }, [dashboardData.curriculum, dashboardData.problem, dashboardData.recommendation, startRecommended]);
+
   const handleFinished = useCallback(
     (snapshot: SerializedStateSnapshot | null, roomEvents: readonly LiveEvent[], _elapsedSec: number) => {
       setFinalSnapshot(snapshot);
@@ -279,6 +303,22 @@ export function App() {
       setBusyId(null);
     }
   }
+
+  const deleteEntry = useCallback(
+    async (entry: HistoryEntry) => {
+      setDeletingId(entry.id);
+      setHistoryError(null);
+      try {
+        await backend.deleteInterview(entry.id);
+        await refreshHistory();
+      } catch (e) {
+        setHistoryError(`Could not delete ${entry.id}: ${formatApiError(e)}`);
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [backend, refreshHistory],
+  );
 
   // "New practice" now routes to the Dashboard, whose recommendation CTA is the
   // only entry into a session (roadmap Phase 6: Setup retired).
@@ -371,8 +411,8 @@ export function App() {
         {nav === "dashboard" && (
           <>
             <DashboardView
-              backend={backend}
               profile={profile}
+              data={dashboardData}
               starting={dashboardBusy}
               onStart={startRecommended}
               onProfile={() => goAuth("profile")}
@@ -384,13 +424,28 @@ export function App() {
           <HistoryScreen
             entries={entries}
             busyId={busyId}
+            deletingId={deletingId}
+            loading={historyLoading}
+            hasMore={historyHasMore}
             onSelect={openEntry}
+            onDelete={deleteEntry}
+            onLoadMore={loadMoreHistory}
             onNew={startNew}
             onBack={() => navigate("dashboard")}
           />
         )}
         {nav === "progress" && (
-          <ProgressScreen entries={entries} onWeakAreas={() => { setNav(null); setFlow("weakareas"); }} onNew={startNew} />
+          <ProgressScreen
+            entries={entries}
+            data={dashboardData}
+            starting={dashboardBusy}
+            onWeakAreas={() => {
+              setNav(null);
+              setFlow("weakareas");
+            }}
+            onStartRecommendation={startRecommendedFromDashboard}
+            onNew={startNew}
+          />
         )}
         {nav === "settings" && (
           <SettingsScreen
@@ -458,7 +513,13 @@ export function App() {
       )}
       {flow === "weakareas" && (
         <div className="shell-content standalone">
-          <WeakAreasScreen entries={entries} onPractice={startNew} onBack={() => navigate("progress")} />
+          <WeakAreasScreen
+            entries={entries}
+            skills={dashboardData.skills}
+            curriculum={dashboardData.curriculum}
+            onPractice={startNew}
+            onBack={() => navigate("progress")}
+          />
         </div>
       )}
       {flow === "profile" && (

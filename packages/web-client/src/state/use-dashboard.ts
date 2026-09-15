@@ -33,7 +33,7 @@ export interface DashboardData {
   readonly regenerate: () => Promise<void>;
 }
 
-export function useDashboard(backend: BackendClient): DashboardData {
+export function useDashboard(backend: BackendClient, enabled = true): DashboardData {
   const [state, setState] = useState<DashboardState>("loading");
   const [recommendation, setRecommendation] = useState<SerializedRecommendation | null>(null);
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -45,6 +45,17 @@ export function useDashboard(backend: BackendClient): DashboardData {
   const inFlightRef = useRef<Promise<void> | null>(null);
 
   const load = useCallback((): Promise<void> => {
+    if (!enabled) {
+      setState("loading");
+      setRecommendation(null);
+      setProblem(null);
+      setCurriculum(null);
+      setSkills([]);
+      setProgress(null);
+      setError(null);
+      inFlightRef.current = null;
+      return Promise.resolve();
+    }
     const existing = inFlightRef.current;
     if (existing !== null) return existing;
     const promise = (async () => {
@@ -84,13 +95,14 @@ export function useDashboard(backend: BackendClient): DashboardData {
       inFlightRef.current = null;
     });
     return promise;
-  }, [backend]);
+  }, [backend, enabled]);
 
   useEffect(() => {
     void load();
-  }, [load]);
+  }, [load, enabled]);
 
   const regenerate = useCallback(async () => {
+    if (!enabled) return;
     setBusy(true);
     setError(null);
     try {
@@ -109,7 +121,7 @@ export function useDashboard(backend: BackendClient): DashboardData {
     } finally {
       setBusy(false);
     }
-  }, [backend]);
+  }, [backend, enabled]);
 
   return {
     state,

@@ -15,6 +15,8 @@ export type InterviewStatus =
   | "cancelled"
   | "failed";
 
+export type EvaluationStatus = "none" | "pending" | "completed" | "failed";
+
 // Phase 8: canonical realtime tool contract (ADR-002 decision 11). The web
 // model is advertised only the canonical names; the deprecated aliases stay
 // accepted by the forwarder/backend for CLI-harness compatibility.
@@ -61,7 +63,7 @@ export interface SerializedInterview {
   readonly currentOrder: number | null;
   readonly recommendationId?: string;
   readonly topicId?: string;
-  readonly evaluationStatus: string;
+  readonly evaluationStatus: EvaluationStatus;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly startedAt?: string;

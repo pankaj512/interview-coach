@@ -7,7 +7,9 @@
 // transport/5xx failures throw so the forwarder can retry them.
 
 import type {
+  EvaluationStatus,
   InterviewConfiguration,
+  InterviewStatus,
   Problem,
   ProblemList,
   ProblemListQuery,
@@ -312,6 +314,18 @@ export class BackendClient {
       transitioned: boolean;
     }>("POST", `/api/interviews/${encodeURIComponent(id)}/end`);
     return { interview: body.interview, transitioned: body.transitioned };
+  }
+
+  // S8b: hard-erase an interview (app-only; model never calls this). Live
+  // sessions must be ended/cancelled first.
+  async deleteInterview(id: string): Promise<{ id: string; status: InterviewStatus }> {
+    const body = await this.request<{ ok: true; deleted: { id: string; status: EvaluationStatus | InterviewStatus } }>(
+      "DELETE",
+      `/api/interviews/${encodeURIComponent(id)}`,
+    );
+    // Backend echoes the pre-delete interview status; evaluationStatus is not
+    // surfaced to the client here.
+    return { id: body.deleted.id, status: body.deleted.status as InterviewStatus };
   }
 
   // S6.1: remaining lifecycle transitions (app-only; the model never calls

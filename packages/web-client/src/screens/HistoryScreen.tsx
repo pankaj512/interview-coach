@@ -18,13 +18,23 @@ function dayLabel(iso: string): string {
 export function HistoryScreen({
   entries,
   busyId,
+  deletingId,
+  loading,
+  hasMore,
   onSelect,
+  onDelete,
+  onLoadMore,
   onNew,
   onBack,
 }: {
   readonly entries: readonly HistoryEntry[];
   readonly busyId: string | null;
+  readonly deletingId: string | null;
+  readonly loading: boolean;
+  readonly hasMore: boolean;
   readonly onSelect: (entry: HistoryEntry) => void;
+  readonly onDelete: (entry: HistoryEntry) => void;
+  readonly onLoadMore: () => void;
   readonly onNew: () => void;
   readonly onBack: () => void;
 }) {
@@ -39,6 +49,13 @@ export function HistoryScreen({
       return (e.interviewType ?? "Coding").toLowerCase().includes(q) || e.candidateId.toLowerCase().includes(q);
     });
   }, [entries, query, difficulty]);
+
+  const evaluationLabel = (status: string): string => {
+    if (status === "completed") return "evaluated";
+    if (status === "pending") return "evaluation pending";
+    if (status === "failed") return "evaluation failed";
+    return "not evaluated";
+  };
 
   const groups = useMemo(() => {
     const map = new Map<string, HistoryEntry[]>();
@@ -74,7 +91,7 @@ export function HistoryScreen({
       {filtered.length === 0 ? (
         <Card className="empty-state">
           <p>{entries.length === 0 ? "No interviews yet." : "No interviews match your filters."}</p>
-          <p className="hint">Your practice sessions on this browser will appear here.</p>
+          <p className="hint">Your server-backed practice history will appear here.</p>
           <PrimaryButton onClick={onNew}>Start your first interview</PrimaryButton>
         </Card>
       ) : (
@@ -84,11 +101,21 @@ export function HistoryScreen({
             <ul className="history-list">
               {items.map((entry) => (
                 <li key={entry.id}>
-                  <button
-                    type="button"
+                  <div
                     className="history-row"
-                    onClick={() => onSelect(entry)}
-                    disabled={busyId !== null}
+                    role="button"
+                    tabIndex={0}
+                    aria-disabled={busyId !== null || deletingId !== null || loading}
+                    onClick={() => {
+                      if (busyId !== null || deletingId !== null || loading) return;
+                      onSelect(entry);
+                    }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter" && event.key !== " ") return;
+                      event.preventDefault();
+                      if (busyId !== null || deletingId !== null || loading) return;
+                      onSelect(entry);
+                    }}
                   >
                     <span className="history-main">
                       <strong>{entry.interviewType ?? "Coding"}</strong>
@@ -98,16 +125,44 @@ export function HistoryScreen({
                       {entry.overallScore === undefined ? "—" : `${entry.overallScore.toFixed(1)} / 10`}
                     </span>
                     <span className="history-meta">
+                      <span className="badge">{evaluationLabel(entry.evaluationStatus)}</span>
                       {entry.difficulty !== undefined && <span className="badge">{entry.difficulty}</span>}
                       <span className="hint">{entry.durationMin === undefined ? "" : `${entry.durationMin} min`}</span>
                     </span>
-                    <span className="history-action">{busyId === entry.id ? "loading…" : "Review →"}</span>
-                  </button>
+                    <span className="history-action">
+                      <PrimaryButton
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onSelect(entry);
+                        }}
+                        disabled={busyId !== null || deletingId !== null || loading}
+                      >
+                        {busyId === entry.id || loading ? "Loading…" : "Review"}
+                      </PrimaryButton>
+                      <GhostButton
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          onDelete(entry);
+                        }}
+                        disabled={(deletingId !== null && deletingId !== entry.id) || busyId !== null || loading}
+                      >
+                        {deletingId === entry.id ? "Deleting…" : "Delete"}
+                      </GhostButton>
+                    </span>
+                  </div>
                 </li>
               ))}
             </ul>
           </section>
         ))
+      )}
+
+      {hasMore && (
+        <div className="row actions">
+          <GhostButton onClick={onLoadMore} disabled={busyId !== null || deletingId !== null || loading}>
+            {loading ? "Loading…" : "Load more"}
+          </GhostButton>
+        </div>
       )}
 
       <div className="row actions">

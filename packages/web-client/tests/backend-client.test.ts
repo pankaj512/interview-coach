@@ -56,6 +56,20 @@ describe("BackendClient", () => {
     expect(JSON.parse(requests[0]?.init?.body ?? "{}")).toMatchObject({ candidateId: "ada" });
   });
 
+  it("deletes an interview and returns the deleted status", async () => {
+    const requests: Array<{ url: string; init?: { method?: string } | undefined }> = [];
+    const client = new BackendClient(
+      "http://localhost:3000",
+      fakeFetch((url, init) => {
+        requests.push({ url, init });
+        return { status: 200, body: { ok: true, deleted: { id: "int_1", status: "completed" } } };
+      }),
+    );
+    const deleted = await client.deleteInterview("int_1");
+    expect(deleted).toEqual({ id: "int_1", status: "completed" });
+    expect(requests[0]?.init?.method).toBe("DELETE");
+  });
+
   it("omits content-type on bodyless calls (backend rejects empty JSON bodies)", async () => {
     const seen: Array<{ url: string; init?: unknown }> = [];
     const client = new BackendClient(

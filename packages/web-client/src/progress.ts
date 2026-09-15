@@ -1,9 +1,12 @@
 // Progress + weak-area derivations (ux-spec §27–§29).
 //
-// Pure functions over the local history index. No backend listing endpoint
-// exists, so trends are computed from the browser's own session records.
+// Pure functions over server-owned state: interview history summaries (Phase 9)
+// plus the skill snapshot/curriculum (Phase 3). No browser-local authority —
+// every value here is derived from backend responses.
 
 import type { HistoryEntry } from "./history.js";
+import type { SerializedCurriculum, SerializedUserSkillState } from "./api/types.js";
+import { findTopic } from "./dashboard.js";
 
 export interface TrendPoint {
   readonly at: string;
@@ -34,7 +37,15 @@ function round1(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
-export function buildProgress(entries: readonly HistoryEntry[]): ProgressSummary {
+function topicLabel(curriculum: SerializedCurriculum | null, topicId: string): string {
+  return findTopic(curriculum, topicId)?.name ?? topicId;
+}
+
+export function buildProgress(
+  entries: readonly HistoryEntry[],
+  skills: readonly SerializedUserSkillState[] = [],
+  curriculum: SerializedCurriculum | null = null,
+): ProgressSummary {
   const scored = entries.filter((e) => typeof e.overallScore === "number");
   const trend: TrendPoint[] = [...scored]
     .reverse()
@@ -73,6 +84,17 @@ export function buildProgress(entries: readonly HistoryEntry[]): ProgressSummary
       const key = weakness.trim();
       if (key === "") continue;
       weakCounts.set(key, (weakCounts.get(key) ?? 0) + 1);
+    }
+  }
+  for (const skill of skills) {
+    for (const weakness of skill.weaknesses ?? []) {
+      const key = weakness.trim();
+      if (key === "") continue;
+      weakCounts.set(key, (weakCounts.get(key) ?? 0) + 1);
+    }
+    if (skill.masteryLevel === "learning" || skill.lastOutcome === "failure") {
+      const label = topicLabel(curriculum, skill.topicId);
+      weakCounts.set(label, (weakCounts.get(label) ?? 0) + 1);
     }
   }
   const weaknesses = [...weakCounts.entries()]

@@ -5,12 +5,13 @@
 // model built from `GET /api/interviews` summaries. Detail views still
 // re-fetch canonical state from the backend.
 
-import type { InterviewStatus, SerializedEvaluation, SerializedInterviewSummary } from "./api/types.js";
+import type { EvaluationStatus, InterviewStatus, SerializedEvaluation, SerializedInterviewSummary } from "./api/types.js";
 
 export interface HistoryEntry {
   readonly id: string;
   readonly candidateId: string;
   readonly status: InterviewStatus;
+  readonly evaluationStatus: EvaluationStatus;
   readonly at: string;
   /** Presentation metadata derived from the server summary. */
   readonly interviewType?: string;
@@ -51,6 +52,7 @@ export function historyEntryFromSummary(summary: SerializedInterviewSummary): Hi
     id: interview.id,
     candidateId: interview.candidateId,
     status: interview.status,
+    evaluationStatus: interview.evaluationStatus,
     at: interview.endedAt ?? interview.updatedAt,
     interviewType: interview.configuration.interviewType === "dsa" ? "Coding" : interview.configuration.interviewType,
     ...(interview.configuration.difficulty === undefined
