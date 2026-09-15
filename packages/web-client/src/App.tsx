@@ -22,6 +22,7 @@ import { historyEntriesFromSummaries, type HistoryEntry } from "./history.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
+import { LandingScreen } from "./screens/LandingScreen.js";
 import { HistoryScreen } from "./screens/HistoryScreen.js";
 import { LiveScreen } from "./screens/LiveScreen.js";
 import { LobbyScreen } from "./screens/LobbyScreen.js";
@@ -89,7 +90,8 @@ function DashboardView({
 export function App() {
   const backend: BackendClient = useBackendClient();
   const session = useAuthSession();
-  const dashboardData = useDashboard(backend, session !== null);
+  const [guestMode, setGuestMode] = useState(false);
+  const dashboardData = useDashboard(backend, session !== null && !guestMode);
   const [nav, setNav] = useState<NavView | null>("dashboard");
   const [flow, setFlow] = useState<Flow | null>(null);
   const [profile, setProfile] = useState<SerializedUserProfile | null>(null);
@@ -115,10 +117,11 @@ export function App() {
 
   // Phase 9: history is server-owned. Load the signed-in user's interviews
   // (newest first) whenever the session changes; the browser keeps no local
-  // index. Errors surface inline rather than inventing entries.
+  // index. Errors surface inline rather than inventing entries. Guest mode
+  // skips network calls and shows an empty history.
   const refreshHistory = useCallback(
     async (limit?: number) => {
-      if (session === null) {
+      if (session === null || guestMode) {
         setEntries([]);
         setHistoryHasMore(false);
         return;
@@ -136,7 +139,7 @@ export function App() {
         setHistoryLoading(false);
       }
     },
-    [backend, session?.token, historyLimit],
+    [backend, session?.token, historyLimit, guestMode],
   );
 
   useEffect(() => {
@@ -145,8 +148,22 @@ export function App() {
 
   // Phase 2: load the server-owned profile whenever the signed-in session
   // changes. A 401 means the session is stale, so drop it (the gate then shows
-  // sign-in); anything else surfaces a retryable error state.
+  // sign-in); anything else surfaces a retryable error state. Guest mode skips
+  // loading and uses a placeholder profile.
   useEffect(() => {
+    if (guestMode) {
+      setProfile({
+        userId: "guest",
+        interviewTypes: ["dsa"],
+        role: "software_engineer",
+        level: "mid",
+        goals: "Explore the app",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
+      setProfileState("ready");
+      return;
+    }
     if (session === null) {
       setProfile(null);
       setProfileState("idle");
@@ -205,6 +222,13 @@ export function App() {
   }
 
   async function handleSignOut() {
+    if (guestMode) {
+      setGuestMode(false);
+      setProfile(null);
+      setProfileState("idle");
+      navigate("dashboard");
+      return;
+    }
     await backend.logout().catch(() => undefined);
     clearAuthSession();
     navigate("dashboard");
@@ -221,7 +245,10 @@ export function App() {
       problem: Problem | null,
       curriculum: SerializedCurriculum | null,
     ) => {
-      if (session === null) return;
+    if (session === null) {
+      goAuth("signin");
+      return;
+    }
       setDashboardBusy(true);
       setDashboardError(null);
       try {
@@ -334,27 +361,18 @@ export function App() {
   // ---- First-run gate (Phase 2) ----
   // No anonymous loop: signed-out users only get the landing/sign-in, and a
   // signed-in user with no profile is sent to required onboarding.
-  if (session === null) {
+  if (session === null && !guestMode) {
     return (
-      <main className="app">
-        {flow === "signup" ? (
-          <CreateAccountScreen
-            backend={backend}
-            onSuccess={handleAuthSuccess}
-            onGoSignIn={() => setFlow("signin")}
-          />
-        ) : (
-          <SignInScreen
-            backend={backend}
-            onSuccess={handleAuthSuccess}
-            onGoCreate={() => setFlow("signup")}
-          />
-        )}
-      </main>
+      <LandingScreen
+        onSignIn={() => setFlow("signin")}
+        onCreateAccount={() => setFlow("signup")}
+        onDevGuest={() => setGuestMode(true)}
+        showDevGuest={import.meta.env.DEV === true || import.meta.env.VITE_DEV_GUEST === "true"}
+      />
     );
   }
 
-  if (profileState === "loading" || profileState === "idle") {
+  if ((profileState === "loading" || profileState === "idle") && !guestMode) {
     return (
       <main className="app">
         <div className="auth-wrap">
@@ -443,7 +461,13 @@ export function App() {
               setNav(null);
               setFlow("weakareas");
             }}
-            onStartRecommendation={startRecommendedFromDashboard}
+            onStartRecommendation={() => {
+              if (session === null) {
+                goAuth("signin");
+                return;
+              }
+              startRecommendedFromDashboard();
+            }}
             onNew={startNew}
           />
         )}
@@ -517,7 +541,13 @@ export function App() {
             entries={entries}
             skills={dashboardData.skills}
             curriculum={dashboardData.curriculum}
-            onPractice={startNew}
+            onPractice={() => {
+              if (session === null) {
+                goAuth("signin");
+                return;
+              }
+              startNew();
+            }}
             onBack={() => navigate("progress")}
           />
         </div>
