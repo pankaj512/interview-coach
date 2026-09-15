@@ -473,7 +473,7 @@ rest first). **6** needs **4** + Phase 9's interview-from-recommendation binding
 - **Sub-phases:** 13.1 history · 13.2 progress · 13.3 weak areas · 13.4 remove local ·
   13.5 tests.
 
-# Phase 14 — Security, observability & failure handling
+# Phase 14 — Security, observability & failure handling *(deferred to v2)*
 
 - **Objective:** Production reliability across all new surfaces.
 - **Dependencies:** 2–13.
@@ -497,7 +497,7 @@ rest first). **6** needs **4** + Phase 9's interview-from-recommendation binding
 - **Sub-phases:** 14.1 authz · 14.2 LLM creds/validation · 14.3 failure handling ·
   14.4 metrics/events/tracing · 14.5 tests.
 
-# Phase 15 — Testing strategy
+# Phase 15 — Testing strategy *(deferred to v2)*
 
 - **Objective:** Consolidated suite per the agreed strategy (domain-first).
 - **Dependencies:** 2–14.
@@ -516,7 +516,7 @@ rest first). **6** needs **4** + Phase 9's interview-from-recommendation binding
 - **Sub-phases:** 15.1 fixtures/doubles · 15.2 domain tests · 15.3 backend route tests ·
   15.4 db live tests · 15.5 integration loop · 15.6 CI gate.
 
-# Phase 16 — Final integration / production readiness
+# Phase 16 — Final integration / production readiness *(deferred to v2)*
 
 - **Objective:** Integrate and validate Phases 1–15 end-to-end. **No new product
   functionality.**
