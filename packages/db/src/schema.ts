@@ -328,13 +328,12 @@ export const evaluations = pgTable(
     dimensions: jsonb("dimensions").notNull().$type<
       Partial<
         Record<
-          | "understanding"
+          | "problem_understanding"
           | "approach"
-          | "correctness"
-          | "complexity"
-          | "edge_cases"
           | "communication"
-          | "code_quality"
+          | "coding"
+          | "testing_debugging"
+          | "complexity_analysis"
           | "independence",
           { score: number; notes?: string }
         >

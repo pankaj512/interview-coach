@@ -132,7 +132,9 @@ export function buildFallbackEvaluation(input: EvaluationModelInput): Evaluation
 
   const dimensions: Partial<Record<EvaluationDimension, DimensionScore>> = {
     // Engagement is observable regardless of correctness.
-    understanding: { score: clampScore(1 + Math.min(4, responseCount + Math.floor(candidateTurns / 2))) },
+    problem_understanding: {
+      score: clampScore(1 + Math.min(4, responseCount + Math.floor(candidateTurns / 2))),
+    },
     communication: { score: clampScore(2 + Math.min(3, Math.floor(candidateTurns / 2))) },
     // Independence degrades with each hint (guided success is not solo success).
     independence: { score: clampScore(5 - input.hintsUsed) },
@@ -143,19 +145,16 @@ export function buildFallbackEvaluation(input: EvaluationModelInput): Evaluation
     dimensions.approach = { score: 2, notes: "Limited approach signal." };
   }
   if (latestRun !== null && latestRun.totalCount > 0) {
-    dimensions.correctness = {
+    dimensions.coding = {
       score: clampScore((latestRun.passedCount / latestRun.totalCount) * 5),
       notes: `${latestRun.passedCount}/${latestRun.totalCount} cases passed.`,
     };
-    dimensions.edge_cases = {
+    dimensions.testing_debugging = {
       score: clampScore(latestRun.totalCount >= 3 ? 4 : 3),
       notes: `${latestRun.totalCount} case${latestRun.totalCount === 1 ? "" : "s"} exercised.`,
     };
   } else if (hasCode) {
-    dimensions.correctness = { score: 2, notes: "Code submitted but not executed." };
-  }
-  if (hasCode) {
-    dimensions.code_quality = { score: 3, notes: "An implementation was submitted." };
+    dimensions.coding = { score: 2, notes: "Code submitted but not executed." };
   }
 
   const strengths: string[] = [];

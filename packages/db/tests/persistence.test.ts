@@ -358,7 +358,7 @@ describe("postgres persistence", () => {
       status: "completed",
       source: "fallback",
       jobId: job.id,
-      dimensions: { correctness: { score: 4 } },
+      dimensions: { coding: { score: 4 } },
       hintsUsed: 1,
       overallScore: 80,
       now: new Date("2026-09-14T10:00:05.000Z"),

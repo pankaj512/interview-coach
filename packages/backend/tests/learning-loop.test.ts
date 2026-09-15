@@ -50,7 +50,7 @@ class ScoreEvaluationModel implements EvaluationModel {
         dimensions: {
           understanding: { score: this.score },
           approach: { score: this.score },
-          correctness: { score: this.score },
+          coding: { score: this.score },
           independence: { score: this.score },
         },
         strengths: [],

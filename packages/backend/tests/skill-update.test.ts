@@ -30,9 +30,9 @@ class HighScoreModel implements EvaluationModel {
     return {
       proposal: {
         dimensions: {
-          understanding: { score: 5 },
+          problem_understanding: { score: 5 },
           approach: { score: 5 },
-          correctness: { score: 5 },
+          coding: { score: 5 },
           independence: { score: 5 },
         },
         strengths: ["Clear and correct"],

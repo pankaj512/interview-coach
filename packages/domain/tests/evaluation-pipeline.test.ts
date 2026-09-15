@@ -9,10 +9,10 @@ describe("evaluation pipeline", () => {
   it("scores the mean of present dimensions scaled to 0..100", () => {
     expect(
       computeOverallScore({
-        understanding: { score: 5 },
+        problem_understanding: { score: 5 },
         approach: { score: 4 },
-        correctness: { score: 3 },
-        complexity: { score: 4 },
+        coding: { score: 3 },
+        complexity_analysis: { score: 4 },
       }),
     ).toBe(80);
     expect(computeOverallScore({})).toBeNull();
@@ -29,7 +29,7 @@ describe("evaluation pipeline", () => {
 
   it("finalizes explicit scores, deriving missing fields", () => {
     const finalized = finalizeEvaluation({
-      dimensions: { correctness: { score: 4 }, approach: { score: 4 } },
+      dimensions: { coding: { score: 4 }, approach: { score: 4 } },
       hintsUsed: 1,
       strengths: ["clear communication"],
       weaknesses: ["missed edge case"],
@@ -40,7 +40,7 @@ describe("evaluation pipeline", () => {
 
   it("keeps explicitly pinned score and recommendation", () => {
     const finalized = finalizeEvaluation({
-      dimensions: { correctness: { score: 1 } },
+      dimensions: { coding: { score: 1 } },
       overallScore: 95,
       recommendation: "hire",
     });

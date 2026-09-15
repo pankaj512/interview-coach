@@ -29,18 +29,18 @@ function input(overrides: Partial<EvaluationModelInput> = {}): EvaluationModelIn
 describe("validateEvaluationProposal", () => {
   it("accepts a valid proposal and trims notes", () => {
     const proposal = validateEvaluationProposal({
-      dimensions: { correctness: { score: 4, notes: "  solid  " }, independence: { score: 3 } },
+      dimensions: { coding: { score: 4, notes: "  solid  " }, independence: { score: 3 } },
       strengths: ["clear"],
       weaknesses: ["edge cases"],
     });
     expect(proposal).not.toBeNull();
-    expect(proposal?.dimensions.correctness).toEqual({ score: 4, notes: "solid" });
+    expect(proposal?.dimensions.coding).toEqual({ score: 4, notes: "solid" });
     expect(proposal?.strengths).toEqual(["clear"]);
   });
 
   it("rejects unknown dimensions, bad scores, and malformed lists", () => {
     expect(validateEvaluationProposal({ dimensions: { telepathy: { score: 5 } } })).toBeNull();
-    expect(validateEvaluationProposal({ dimensions: { correctness: { score: 9 } } })).toBeNull();
+    expect(validateEvaluationProposal({ dimensions: { coding: { score: 9 } } })).toBeNull();
     expect(validateEvaluationProposal({ dimensions: {}, strengths: "nope" })).toBeNull();
     expect(validateEvaluationProposal(null)).toBeNull();
   });
@@ -69,9 +69,9 @@ describe("buildFallbackEvaluation", () => {
       }),
     );
     expect(proposal.dimensions.approach?.score).toBe(4);
-    expect(proposal.dimensions.correctness?.score).toBe(5);
+    expect(proposal.dimensions.coding?.score).toBe(5);
     expect(proposal.dimensions.independence?.score).toBe(5);
-    expect(proposal.dimensions.code_quality?.score).toBe(3);
+    expect(proposal.dimensions.testing_debugging?.score).toBe(4);
     expect(proposal.strengths.length).toBeGreaterThan(0);
   });
 
@@ -90,8 +90,8 @@ describe("buildFallbackEvaluation", () => {
 
   it("omits dimensions with no evidence", () => {
     const proposal = buildFallbackEvaluation(input());
-    expect(proposal.dimensions.correctness).toBeUndefined();
-    expect(proposal.dimensions.code_quality).toBeUndefined();
+    expect(proposal.dimensions.coding).toBeUndefined();
+    expect(proposal.dimensions.testing_debugging).toBeUndefined();
     expect(proposal.weaknesses).toContain("No substantive responses were captured.");
   });
 });

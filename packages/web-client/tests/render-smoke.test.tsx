@@ -67,7 +67,7 @@ const evaluation: SerializedEvaluation = {
   interviewId: "int_1",
   status: "completed",
   source: "llm",
-  dimensions: { correctness: { score: 8 }, communication: { score: 7.5 } },
+  dimensions: { coding: { score: 8 }, communication: { score: 7.5 } },
   hintsUsed: 1,
   strengths: ["Clear API reasoning"],
   weaknesses: ["Complexity analysis"],
@@ -99,7 +99,7 @@ const entries: readonly HistoryEntry[] = [
     hintsUsed: 1,
     strengths: ["Clear"],
     weaknesses: ["Complexity analysis"],
-    dimensions: { correctness: 8.1, communication: 7.9 },
+    dimensions: { coding: 8.1, communication: 7.9 },
   },
 ];
 
@@ -221,7 +221,7 @@ describe("screen render smoke", () => {
     const html = renderToString(
       <ResultsScreen backend={backend} snapshot={snapshot} events={[]} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
     );
-    expect(html).toContain("Technical correctness");
+    expect(html).toContain("Coding accuracy");
     expect(html).toContain("Strong");
   });
   it("ResultsScreen handles a null snapshot", () => {
@@ -238,13 +238,49 @@ describe("screen render smoke", () => {
     expect(renderToString(<TranscriptReviewScreen interview={interview} events={[]} onBack={noop} />)).toContain("Interview transcript");
   });
   it("HistoryScreen renders", () => {
-    expect(renderToString(<HistoryScreen entries={entries} busyId={null} onSelect={noopEntry} onNew={noop} onBack={noop} />)).toContain("Interview History");
+    expect(
+      renderToString(
+        <HistoryScreen
+          entries={entries}
+          busyId={null}
+          deletingId={null}
+          loading={false}
+          hasMore={false}
+          onSelect={noopEntry}
+          onDelete={noopEntry}
+          onLoadMore={noop}
+          onNew={noop}
+          onBack={noop}
+        />,
+      ),
+    ).toContain("Interview History");
   });
   it("ProgressScreen renders", () => {
-    expect(renderToString(<ProgressScreen entries={entries} onWeakAreas={noop} onNew={noop} />)).toContain("Overall performance");
+    expect(
+      renderToString(
+        <ProgressScreen
+          entries={entries}
+          data={dashboardData}
+          starting={false}
+          onWeakAreas={noop}
+          onStartRecommendation={noop}
+          onNew={noop}
+        />,
+      ),
+    ).toContain("Overall performance");
   });
   it("WeakAreasScreen renders", () => {
-    expect(renderToString(<WeakAreasScreen entries={entries} onPractice={noop} onBack={noop} />)).toContain("Recommended practice");
+    expect(
+      renderToString(
+        <WeakAreasScreen
+          entries={entries}
+          skills={dashboardData.skills}
+          curriculum={dashboardData.curriculum}
+          onPractice={noop}
+          onBack={noop}
+        />,
+      ),
+    ).toContain("Recommended practice");
   });
   it("SettingsScreen renders the account section", () => {
     const html = renderToString(

@@ -56,7 +56,7 @@ describe("phase 10 evaluation", () => {
   it("uses a valid LLM proposal (source: llm) and validates it", async () => {
     const model = new FakeEvaluationModel(() => ({
       proposal: {
-        dimensions: { correctness: { score: 5, notes: "clean" }, independence: { score: 4 } },
+        dimensions: { coding: { score: 5, notes: "clean" }, independence: { score: 4 } },
         strengths: ["Correct and independent"],
         weaknesses: ["Could add edge cases"],
       },

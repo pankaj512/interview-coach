@@ -6,25 +6,23 @@ import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
 
 // Structured evaluation, persisted independently from raw conversation
-// (HLD 5.8/5.11). Dimensions mirror the HLD evaluation list.
+// (HLD 5.8/5.11). Dimensions mirror the roadmap Phase 10 canonical set.
 export type EvaluationDimension =
-  | "understanding"
+  | "problem_understanding"
   | "approach"
-  | "correctness"
-  | "complexity"
-  | "edge_cases"
   | "communication"
-  | "code_quality"
+  | "coding"
+  | "testing_debugging"
+  | "complexity_analysis"
   | "independence";
 
 export const EVALUATION_DIMENSIONS: readonly EvaluationDimension[] = [
-  "understanding",
+  "problem_understanding",
   "approach",
-  "correctness",
-  "complexity",
-  "edge_cases",
   "communication",
-  "code_quality",
+  "coding",
+  "testing_debugging",
+  "complexity_analysis",
   "independence",
 ];
 

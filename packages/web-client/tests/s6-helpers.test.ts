@@ -49,7 +49,7 @@ describe("history view model", () => {
           id: "eval_1",
           interviewId: "iv_1",
           status: "completed",
-          dimensions: { correctness: { score: 4 }, communication: { score: 3 } },
+          dimensions: { coding: { score: 4 }, communication: { score: 3 } },
           hintsUsed: 2,
           strengths: ["clear reasoning"],
           weaknesses: ["edge cases"],
@@ -63,7 +63,7 @@ describe("history view model", () => {
     expect(entry.overallScore).toBe(7);
     expect(entry.hintsUsed).toBe(2);
     expect(entry.durationMin).toBe(2);
-    expect(entry.dimensions).toEqual({ correctness: 4, communication: 3 });
+    expect(entry.dimensions).toEqual({ coding: 4, communication: 3 });
     expect(entry.strengths).toEqual(["clear reasoning"]);
     expect(entry.weaknesses).toEqual(["edge cases"]);
   });

@@ -157,10 +157,10 @@ describe("ToolService S5 tools", () => {
     must(await interviews.complete(id));
     const recorded = must(
       await interviews.recordEvaluation(id, {
-        dimensions: { correctness: { score: 4 } },
+        dimensions: { coding: { score: 4 } },
         strengths: ["steady"],
       }),
     );
-    expect(recorded.dimensions["correctness"]).toMatchObject({ score: 4 });
+    expect(recorded.dimensions["coding"]).toMatchObject({ score: 4 });
   });
 });
