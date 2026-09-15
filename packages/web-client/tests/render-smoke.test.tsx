@@ -201,9 +201,10 @@ describe("screen render smoke", () => {
     const html = renderToString(
       <LobbyScreen backend={backend} plan={lobbyPlan} onBegin={noop} onChangeGoal={noop} onBack={noop} />,
     );
-    expect(html).toContain("Recommended practice");
+    expect(html).toContain("Arrays");
     expect(html).toContain("Move Zeroes");
-    expect(html).toContain("Session prep");
+    expect(html).toContain("Mic &amp; audio readiness");
+    expect(html).toContain("Evaluation criteria");
     expect(html).toContain("Begin interview");
   });
   it("LiveScreen renders the join state", () => {

@@ -2,7 +2,7 @@
 
 import { buildCurriculumProgress, buildRecommendationView, buildStrengthsWeaknesses, masteryLabel } from "../dashboard.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, ScoreRow } from "../ds/primitives.js";
+import { Card, ProgressTrack, ScoreRow, SectionHead } from "../ds/primitives.js";
 import type { HistoryEntry } from "../history.js";
 import { buildProgress } from "../progress.js";
 import type { DashboardData } from "../state/use-dashboard.js";
@@ -70,11 +70,11 @@ export function ProgressScreen({
 
       <div className="progress-grid">
         <Card>
-          <h3 className="section-title">Overall performance</h3>
+          <SectionHead title="Overall performance" meta="Trend" />
           <TrendChart scores={progress.trend.map((t) => t.score)} />
         </Card>
         <Card>
-          <h3 className="section-title">Areas to improve</h3>
+          <SectionHead title="Areas to improve" />
           {areas.length === 0 ? (
             <p className="hint">No dimension scores yet. Finish an interview to populate this.</p>
           ) : (
@@ -90,21 +90,12 @@ export function ProgressScreen({
 
       <div className="progress-grid">
         <Card>
-          <h3 className="section-title">Curriculum progress</h3>
+          <SectionHead title="Curriculum progress" />
           {curriculumProgress === null ? (
             <p className="hint">Loading your curriculum…</p>
           ) : (
             <>
-              <div
-                className="progress-track"
-                role="progressbar"
-                aria-label="Curriculum completion"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={curriculumProgress.percent}
-              >
-                <span className="progress-fill" style={{ width: `${curriculumProgress.percent}%` }} />
-              </div>
+              <ProgressTrack percent={curriculumProgress.percent} label="Curriculum completion" />
               <p className="hint">
                 {curriculumProgress.completedTopics} of {curriculumProgress.totalTopics} topics complete · {curriculumProgress.startedTopics} started · {curriculumProgress.masteredTopics} mastered
                 {curriculumProgress.currentTopicName === null ? "" : ` · now on ${curriculumProgress.currentTopicName}`}
@@ -113,7 +104,7 @@ export function ProgressScreen({
           )}
         </Card>
         <Card>
-          <h3 className="section-title">Strengths &amp; focus areas</h3>
+          <SectionHead title="Strengths & focus areas" />
           {strengthsView.strengths.length === 0 && strengthsView.weaknesses.length === 0 ? (
             <p className="hint">Complete an interview to see strengths and focus areas.</p>
           ) : (

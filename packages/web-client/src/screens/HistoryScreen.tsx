@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card } from "../ds/primitives.js";
+import { Card, ChipList, Pill, SectionHead } from "../ds/primitives.js";
 import type { HistoryEntry } from "../history.js";
 
 function dayLabel(iso: string): string {
@@ -40,15 +40,19 @@ export function HistoryScreen({
 }) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("");
+  const [quick, setQuick] = useState<"all" | "evaluated" | "pending" | "failed">("all");
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return entries.filter((e) => {
       if (difficulty !== "" && e.difficulty !== difficulty) return false;
+      if (quick === "evaluated" && e.evaluationStatus !== "completed") return false;
+      if (quick === "pending" && e.evaluationStatus !== "pending") return false;
+      if (quick === "failed" && e.evaluationStatus !== "failed") return false;
       if (q === "") return true;
       return (e.interviewType ?? "Coding").toLowerCase().includes(q) || e.candidateId.toLowerCase().includes(q);
     });
-  }, [entries, query, difficulty]);
+  }, [entries, query, difficulty, quick]);
 
   const evaluationLabel = (status: string): string => {
     if (status === "completed") return "evaluated";
@@ -70,7 +74,13 @@ export function HistoryScreen({
 
   return (
     <>
-      <h1 className="page-title">Interview History</h1>
+      <SectionHead title="Interview History" meta={`${filtered.length} sessions`} />
+      <ChipList label="Quick filters">
+        <Pill label="All" selected={quick === "all"} onClick={() => setQuick("all")} />
+        <Pill label="Evaluated" selected={quick === "evaluated"} onClick={() => setQuick("evaluated")} />
+        <Pill label="Pending" selected={quick === "pending"} onClick={() => setQuick("pending")} />
+        <Pill label="Failed" selected={quick === "failed"} onClick={() => setQuick("failed")} />
+      </ChipList>
       <div className="history-controls">
         <input
           className="search-input"

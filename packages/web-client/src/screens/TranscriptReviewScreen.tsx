@@ -2,7 +2,7 @@
 
 import type { SerializedInterview } from "../api/types.js";
 import { GhostButton } from "../ds/buttons.js";
-import { Card } from "../ds/primitives.js";
+import { Badge, Card, ChipList, SectionHead, TimelineRow } from "../ds/primitives.js";
 import type { LiveEvent } from "../state/use-interview.js";
 
 interface Turn {
@@ -50,42 +50,57 @@ export function TranscriptReviewScreen({
 
   return (
     <>
-      <p className="eyebrow">Transcript</p>
+      <ChipList label="Transcript">
+        <Badge tone="neutral">Full session</Badge>
+        <Badge tone="neutral">{turns.length} turns</Badge>
+      </ChipList>
       <h1 className="page-title">Interview transcript</h1>
-      <p className="lede">Full session · important moments marked · export available</p>
+      <p className="lede">Timestamped turns · important moments marked · export available</p>
 
       <div className="transcript-grid">
         <Card className="transcript-card">
+          <SectionHead title="Timeline" meta={`${turns.length} turns`} />
           {turns.length === 0 ? (
             <p className="hint">No transcript turns captured for this session.</p>
           ) : (
             <ol className="transcript-list">
               {turns.map((turn, i) => (
-                <li key={i} className={`turn turn-${turn.role === "Interviewer" ? "assistant" : "you"}`}>
-                  <span className="turn-time">{formatTime(turn.at)}</span>
-                  <span className="turn-role">{turn.role}</span>
-                  <p className="turn-text">{turn.text}</p>
-                </li>
+                <TimelineRow
+                  key={i}
+                  time={formatTime(turn.at)}
+                  role={turn.role}
+                  tags={
+                    i === turns.length - 1 ? (
+                      <ChipList>
+                        <Badge tone="active">Latest</Badge>
+                      </ChipList>
+                    ) : undefined
+                  }
+                >
+                  {turn.text}
+                </TimelineRow>
               ))}
             </ol>
           )}
         </Card>
         <div className="transcript-side">
           <Card>
-            <h3 className="section-title">Marked moments</h3>
+            <SectionHead title="Marked moments" />
             <p className="hint">Important moments are marked by the coach as the evaluation is produced.</p>
             <p className="hint">No moments marked yet.</p>
           </Card>
           <Card>
-            <h3 className="section-title">Labels</h3>
-            <ul className="plain-list">
-              <li>Strong answer</li>
-              <li>Weak answer</li>
-              <li>Missed opportunity</li>
-              <li>Good follow-up</li>
-              <li>Important trade-off</li>
-            </ul>
-            <GhostButton onClick={exportTranscript}>Export transcript</GhostButton>
+            <SectionHead title="Labels" />
+            <ChipList label="Moment labels">
+              <Badge tone="pass">Strong answer</Badge>
+              <Badge tone="review">Weak answer</Badge>
+              <Badge tone="neutral">Missed opportunity</Badge>
+              <Badge tone="neutral">Good follow-up</Badge>
+              <Badge tone="active">Important trade-off</Badge>
+            </ChipList>
+            <div className="row actions">
+              <GhostButton onClick={exportTranscript}>Export transcript</GhostButton>
+            </div>
           </Card>
         </div>
       </div>

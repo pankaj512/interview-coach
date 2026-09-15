@@ -552,7 +552,7 @@ export function App() {
           />
         </div>
       )}
-      {flow === "profile" && (
+      {flow === "profile" && session !== null && (
         <ProfileScreen
           backend={backend}
           identity={{ displayName: session.displayName, email: session.email }}

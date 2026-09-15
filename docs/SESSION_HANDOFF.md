@@ -656,3 +656,48 @@ Open for Phase 13 (History & progress): server-backed History/Progress/Weak-Area
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB (`TEST_DATABASE_URL`) persistence and a live HTTP smoke.
 Verified 2026-09-15: typecheck ok, test 443 passed (439 prior + 4 backend learning-loop; no-DB warn-and-pass) and 443 with live-DB `TEST_DATABASE_URL`, `tsc -b` ok, `vite build` ok (327.83kB JS / 98.60kB gzip; CSS 28.82kB / 5.22kB gzip — unchanged, no client edits). No migration. Live HTTP smoke (in-process inject, dev DB, LLM unconfigured): register → `POST /api/recommendations` (`topic_arrays`/`prob_move-zeroes`) → accept → create bound to the recommendation → assign → ready → start → `end` → `GET /api/recommendations/current` returned a **new active** recommendation while the accepted one is `superseded` → metrics `recommendationsRegenerated: 1`, `recommendationRegenerationFailures: 0`.
 Tag: `session-phase12` after commit.
+
+## UI Rebuild v1.1 — Stitch → code batch 1: shared primitives + Lobby/Live/Evaluating/Results/Transcript/History/Progress/Settings (2026-09-15)
+Status: done (verified below). Executes `docs/ui-rebuild-v1.1-plan.md` via the
+"Current implementation plan (Stitch → code, no Penpot)" track: Penpot is not
+connected, Stitch project "Interview Coach v1.1"
+(`projects/14871679314862032879`, 22 screens) + local exports under
+`design/interview_coach_v1.1/` + `calm_technical_engineer/DESIGN.md` are the
+reference. Continues the landed Stitch restyles (landing, onboarding,
+dashboard commits below) for the remaining screens. No data-wiring changes.
+
+Done:
+* Tokens (`tokens.css`): v1.1 note, `--cta-hover/active`, Stitch surface tiers
+  (`--canvas/panel/tray/scrim/keyline-shadow`); breakpoints documented as
+  Stitch ~768px/~1024px. `styles.css` adds JetBrains Mono + a v1.1 primitive
+  block (section-head, badge tones neutral/pass/review/active, chip-list,
+  CTA card, coach panel, voice rail, timeline row, form card; 1024/768px
+  collapse rules). No one-off screen CSS.
+* Primitives (`ds/primitives.tsx`): `SectionHead`, `Badge`, `ChipList`,
+  `CtaCard`, `ProgressTrack`, `TableShell`, `CoachPanel`, `VoiceRail`,
+  `TimelineRow`, `FormCard` (pure UI, composable, documented to DESIGN.md).
+* Screens (same props/hooks/gating, Stitch layout only): Lobby two-column
+  (readiness rail + briefing CTA + criteria + gated Begin); Live header chips
+  + last-6-turns conversation card + `VoiceRail` (Mute/Pause/End preserved);
+  Evaluating checklist badges + optional back-to-dashboard; Results metadata
+  chips + `SectionHead`; Transcript `TimelineRow` + label chips; History quick
+  filter pills (All/Evaluated/Pending/Failed); Progress `SectionHead` +
+  `ProgressTrack`; Settings `FormCard` sections + header.
+* Drive-by fixes (pre-existing main failures): `ds/buttons.tsx` `onClick`
+  now takes the button mouse event (HistoryScreen stopPropagation typecheck);
+  `App.tsx` profile route guarded on non-null session.
+* Tests: `render-smoke` Lobby assertions updated to the rebuilt copy
+  (recommendation topic/problem + readiness + criteria + Begin).
+
+Verify: `pnpm --filter @interview-coach/web-client typecheck` ok,
+`vite build` ok (344.32kB JS / 103.30kB gzip; CSS 41.01kB / 7.52kB gzip),
+`pnpm test` 441 passed + the same 3 pre-existing main failures (backend
+learning-loop advance-next-topic, Dashboard "Recommended next" copy drift,
+Onboarding "Set up your profile" copy drift — all untouched by this batch;
+root `pnpm typecheck` still reports the two pre-existing test-file type
+errors behind those failures). No DB/migration/API change.
+
+Open: remaining plan items (marketing↔app shells, onboarding local-cache +
+final sign-in gate + `DEV_BYPASS_AUTH`, voice-state ARIA audit, 768/1024px
+responsive pass per screen) + the 3 pre-existing failures above.
+Tag: `session-ui-v11-batch1` after commit.

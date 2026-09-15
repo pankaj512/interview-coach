@@ -12,7 +12,7 @@ import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedEvaluation, SerializedStateSnapshot } from "../api/types.js";
 import { ExecutionPanel } from "../components/ExecutionPanel.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, ScoreRow } from "../ds/primitives.js";
+import { Badge, Card, ChipList, ScoreRow, SectionHead } from "../ds/primitives.js";
 import { dimensionLabel } from "../dimensions.js";
 import { overallBand } from "../progress.js";
 import type { LiveEvent } from "../state/use-interview.js";
@@ -111,10 +111,14 @@ export function ResultsScreen({
 
   return (
     <>
-      <p className="eyebrow">
-        Debrief · {snapshot.interview.configuration.interviewType === "dsa" ? "Coding" : snapshot.interview.configuration.interviewType} ·{" "}
-        {snapshot.interview.configuration.difficulty ?? "Medium"} · {snapshot.responseCount} responses
-      </p>
+      <ChipList label="Interview metadata">
+        <Badge tone="neutral">
+          Type: {snapshot.interview.configuration.interviewType === "dsa" ? "Coding" : snapshot.interview.configuration.interviewType}
+        </Badge>
+        <Badge tone="neutral">Difficulty: {snapshot.interview.configuration.difficulty ?? "Medium"}</Badge>
+        <Badge tone="neutral">Responses: {snapshot.responseCount}</Badge>
+        {evaluation !== null && <Badge tone="neutral">Hints: {evaluation.hintsUsed ?? 0}</Badge>}
+      </ChipList>
       <h1 className="page-title">Results — {snapshot.interview.candidateId}</h1>
       {stale && (
         <Card className="state-card state-reconnecting" role="note">
@@ -154,7 +158,7 @@ export function ResultsScreen({
         </Card>
       )}
 
-      <h2 className="section-heading">Dimension scores</h2>
+      <SectionHead title="Dimension scores" />
       {dimensions.length > 0 ? (
         <div className="dimension-grid">
           {dimensions.map(([key, raw]) => (

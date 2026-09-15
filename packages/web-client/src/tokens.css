@@ -5,6 +5,14 @@
  * 3 fontWeights). Mapping rule: `--<token-name with . → ->`.
  * `generateStyle` spot-checks (H-Setup bg #0e1116, title 20px/700,
  * btn-primary label 600) match the values below.
+ *
+ * v1.1 (Stitch → code, no Penpot): aligned to
+ * `design/interview_coach_v1.1/calm_technical_engineer/DESIGN.md` +
+ * the Stitch `code.html` exports under `design/interview_coach_v1.1/`.
+ * Primary command blue #1f4b99 (CTA/focus/current phase); surfaces
+ * paper-white cards on off-white canvas; telemetry in JetBrains Mono.
+ * Breakpoints follow Stitch: tablet ~768px, desktop ~1024px (the live
+ * two-column workbench collapses below 1024px, single column below 768px).
  */
 
 :root {
@@ -31,9 +39,19 @@
   --info-solid: #2563eb;
   --info-wash: #eff6ff;
 
-  /* Primary CTA uses brand blue */
+  /* Primary CTA uses brand blue (DESIGN.md command blue #1f4b99;
+     Stitch HTML uses #2563eb for the same role — CTA wins). */
   --cta-base: #1f4b99;
+  --cta-hover: #173a77;
+  --cta-active: #132f60;
   --cta-ink: #ffffff;
+
+  /* v1.1 Stitch surface tiers (DESIGN.md elevation: borders over shadows) */
+  --canvas: #f8fafc;
+  --panel: #ffffff;
+  --tray: #f1f5f9;
+  --overlay-scrim: rgba(15, 23, 42, 0.4);
+  --keyline-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
 
   /* 3.2 Space / radius / border */
   --s-4: 4px;

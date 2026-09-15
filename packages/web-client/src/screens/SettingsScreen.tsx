@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { AccountSection } from "../components/AccountSection.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, Segmented } from "../ds/primitives.js";
+import { FormCard, Segmented, SectionHead } from "../ds/primitives.js";
 import type { HistoryEntry } from "../history.js";
 
 interface Settings {
@@ -104,12 +104,11 @@ export function SettingsScreen({
 
   return (
     <>
-      <h1 className="page-title">Settings</h1>
+      <SectionHead title="Settings" meta="General · Voice · Interview · AI · Privacy" />
 
       <AccountSection onSignIn={onSignIn} onCreateAccount={onCreateAccount} onSignOut={onSignOut} />
 
-      <Card className="settings-section">
-        <h3 className="section-title">General</h3>
+      <FormCard title="General">        
         <div className="setting-row">
           <span>Theme</span>
           <Segmented options={["Dark", "Light"] as const} value={settings.theme} onChange={(v) => update("theme", v)} ariaLabel="Theme" />
@@ -135,10 +134,9 @@ export function SettingsScreen({
             ))}
           </select>
         </div>
-      </Card>
+      </FormCard>
 
-      <Card className="settings-section">
-        <h3 className="section-title">Voice</h3>
+      <FormCard title="Voice">
         <div className="setting-row">
           <span>Microphone</span>
           <span className="hint">Default system input</span>
@@ -156,10 +154,9 @@ export function SettingsScreen({
           <GhostButton onClick={() => void testSpeaker()}>Play test tone</GhostButton>
         </div>
         {speakerTested && <p className="hint">Test tone played — you should have heard it.</p>}
-      </Card>
+      </FormCard>
 
-      <Card className="settings-section">
-        <h3 className="section-title">Interview</h3>
+      <FormCard title="Interview">
         <div className="setting-row">
           <span>Default mode</span>
           <Segmented
@@ -184,10 +181,9 @@ export function SettingsScreen({
           <span>Feedback preferences</span>
           <Segmented options={["Detailed", "Concise"] as const} value={settings.feedback} onChange={(v) => update("feedback", v)} ariaLabel="Feedback preferences" />
         </div>
-      </Card>
+      </FormCard>
 
-      <Card className="settings-section">
-        <h3 className="section-title">AI</h3>
+      <FormCard title="AI">
         <div className="setting-row">
           <span>Provider</span>
           <span className="hint">Azure Voice Live (managed)</span>
@@ -200,10 +196,9 @@ export function SettingsScreen({
           <span>Endpoint</span>
           <span className="hint">Server-managed — credentials never leave the backend</span>
         </div>
-      </Card>
+      </FormCard>
 
-      <Card className="settings-section">
-        <h3 className="section-title">Privacy</h3>
+      <FormCard title="Privacy">
         <div className="setting-row">
           <span>Transcript retention</span>
           <select value={settings.retentionDays} onChange={(e) => update("retentionDays", Number(e.target.value))}>
@@ -222,7 +217,7 @@ export function SettingsScreen({
           <span>Export data</span>
           <PrimaryButton onClick={exportData}>Download JSON</PrimaryButton>
         </div>
-      </Card>
+      </FormCard>
     </>
   );
 }

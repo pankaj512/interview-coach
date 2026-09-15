@@ -10,7 +10,7 @@ import type { Problem, SerializedInterview, SerializedStateSnapshot } from "../a
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, Dialog, Wave } from "../ds/primitives.js";
+import { Badge, Card, ChipList, Dialog, VoiceRail, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
@@ -83,18 +83,20 @@ export function LiveScreen({
   ) : (
     <StatusChip connection={live.connection} />
   );
+  const transcriptTurns = live.events.filter((e) => e.kind === "assistant" || e.kind === "candidate").slice(-6);
 
   return (
     <div className="room">
       <header className="room-topbar">
         <div className="room-title">
-          <strong>
-            {interview.configuration.interviewType === "dsa" ? "Coding" : interview.configuration.interviewType} Interview ·{" "}
-            {interview.configuration.difficulty ?? "Medium"}
-          </strong>
-          <span className="hint">
-            {mode} · {interaction}
-          </span>
+          <ChipList label="Session">
+            <Badge tone="active">
+              {interview.configuration.interviewType === "dsa" ? "Coding" : interview.configuration.interviewType}
+            </Badge>
+            <Badge tone="neutral">{interview.configuration.difficulty ?? "Medium"}</Badge>
+            <Badge tone="neutral">{mode}</Badge>
+            <Badge tone="neutral">{interaction}</Badge>
+          </ChipList>
         </div>
         {live.snapshot?.interview.status === "completing" && (
           <span className="chip-status chip-connecting" role="status">
@@ -157,7 +159,24 @@ export function LiveScreen({
           )}
 
           <div className="room-grid">
-            <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} />
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+              <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} />
+              {transcriptTurns.length > 0 && (
+                <Card>
+                  <h3 className="section-title">Conversation</h3>
+                  <ol className="transcript-list" aria-live="polite">
+                    {transcriptTurns.map((turn, i) => (
+                      <li key={`${turn.at}-${i}`} className="turn">
+                        <span className="turn-role">
+                          {turn.kind === "assistant" ? "Interviewer" : "You"}
+                        </span>
+                        <p className="turn-text">{turn.detail}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </Card>
+              )}
+            </div>
             <CodeWorkspace
               backend={backend}
               interviewId={interview.id}
@@ -169,9 +188,8 @@ export function LiveScreen({
             />
           </div>
 
-          <div className="control-bar">
-            <div className="control-voice">
-              <Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />
+          <VoiceRail
+            state={
               <VoiceState
                 assistantSpeaking={live.assistantSpeaking}
                 candidateSpeaking={live.candidateSpeaking}
@@ -180,19 +198,22 @@ export function LiveScreen({
                 muted={live.muted}
                 paused={live.paused}
               />
-            </div>
-            <div className="control-actions">
-              <GhostButton onClick={live.toggleMute} disabled={live.paused}>
-                {live.muted ? "Unmute" : "Mute"}
-              </GhostButton>
-              <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
-                {live.paused ? "Resume" : "Pause"}
-              </GhostButton>
-              <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
-                End interview
-              </DangerButton>
-            </div>
-          </div>
+            }
+            waveform={<Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />}
+            controls={
+              <>
+                <GhostButton onClick={live.toggleMute} disabled={live.paused}>
+                  {live.muted ? "Unmute" : "Mute"}
+                </GhostButton>
+                <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
+                  {live.paused ? "Resume" : "Pause"}
+                </GhostButton>
+                <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
+                  End interview
+                </DangerButton>
+              </>
+            }
+          />
         </>
       )}
 

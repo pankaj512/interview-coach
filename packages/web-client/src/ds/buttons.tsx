@@ -3,11 +3,11 @@
 // Primary CTA is near-white (var(--cta-base)), NOT voice green —
 // voice.solid is reserved for voice activity (Phase D principle 2).
 
-import type { ReactNode } from "react";
+import type { MouseEvent, ReactNode } from "react";
 
 interface ButtonProps {
   readonly children: ReactNode;
-  readonly onClick?: () => void;
+  readonly onClick?: (event: MouseEvent<HTMLButtonElement>) => void;
   readonly disabled?: boolean;
   readonly type?: "button" | "submit";
   readonly autoFocus?: boolean;
