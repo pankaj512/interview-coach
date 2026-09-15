@@ -256,6 +256,11 @@ Status: planned (Phase 1 starting).
 
 Scope: rebuild UI per `docs/interview-coach-ui-specification.md` with public marketing page (unauth), onboarding collects context pre-auth, final step asks to sign in; dev mode allows bypass for local testing. Three-phase plan captured in `docs/ui-rebuild-v1.1-plan.md`.
 
+Execution plan (Stitch → code, no Penpot) [2026-09-15 update]:
+- Shared primitives first: section head + pill/badge, CTA card, progress track, chip list, table shell, coach panel, voice rail (state + waveform + controls), timeline row, form card; keep Stitch breakpoints (~768px/1024px) and chip/pill semantics from landing/dashboard.
+- Screen order: Lobby/Live → Evaluating → Results → Transcript Review → History → Progress → Settings. Each mirrors the Stitch HTML under `design/interview_coach_v1.1/` (canonical folders).
+- Process: apply per screen using shared primitives, preserve data wiring, run `pnpm --filter @interview-coach/web-client test` + `... build`, commit per screen/batch.
+
 Phases:
 1) Stitch: create project “Interview Coach v1.1”, define design system (calm/technical palette, Space Grotesk/Manrope headings + Public Sans body, 8px radius, semantic colors, functional motion), generate screens (marketing, onboarding, dashboard, new interview/config, lobby/briefing, live interview with voice states + text fallback + coaching panel, end confirm, evaluation loading, results, transcript review, history, progress, settings, error/empty/loading). Export CSS/markup.
 2) Penpot: recreate all Stitch screens/components with identical tokens, fix overlaps/readability/accessibility, add responsive variants, build component library (buttons/cards/tabs/filters/tables/progress/charts/dialogs/waveform/transcript/nav/CTAs/status chips). Penpot is visual authority.

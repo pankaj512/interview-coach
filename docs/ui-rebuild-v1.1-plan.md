@@ -29,6 +29,21 @@ Goal: rebuild the Interview Coach UI with a fresh design system, stitched markup
 - Accessibility: keyboard focus, screen-reader labels for voice states, sufficient contrast.
 - Config: `DEV_BYPASS_AUTH` (or similar) for local dev only.
 
+## Current implementation plan (Stitch → code, no Penpot)
+
+Order of execution (reuse shared primitives, keep Stitch breakpoints ~768px/1024px, chip/pill semantics from landing/dashboard):
+
+1) Shared primitives: section head + pill/badge, CTA card, progress track, chip list, table shell, coach panel, voice rail (state + waveform + controls), timeline row, form card. Add any missing spacing/breakpoint tokens.
+2) Lobby/Live: briefing summary (type/difficulty/duration/mode), evaluation criteria, mic/system readiness, Begin/Back; live header (type/difficulty/timer/live), two-column transcript + progress/coaching, voice rail, controls, coaching panel (Hint/Clarify/Feedback), text fallback, responsive collapse.
+3) Evaluating: centered card with title + checklist steps and spinner; back-to-dashboard option.
+4) Results: header metadata, overall score/tier, dimension grid, what went well / improve next, CTAs (review, practice weak areas).
+5) Transcript Review: timeline with timestamped turns + tags + code blocks; sidebar with score/dimensions and quick actions (practice weak areas, download); filters if present.
+6) History: search + filters (type/score/date/difficulty/mode), quick filter pills, table/list with review links, empty state.
+7) Progress: trend chart placeholder, per-type performance cards, strengths/weak areas with Start Practice, improvement notes.
+8) Settings: General, Voice, Interview defaults, AI (advanced), Privacy; consistent cards/toggles/inputs.
+
+Execution: apply per-screen, reuse primitives (no one-off CSS), keep existing data wiring, run `pnpm --filter @interview-coach/web-client test` + `... build`, commit per screen/batch.
+
 ## Notes
 - Grounded in `docs/interview-coach-ui-specification.md` and `docs/implementation-roadmap.md` constraints (backend owns truth; guests only for marketing/dev bypass).
 - Penpot is the final visual authority; code must match Penpot.
