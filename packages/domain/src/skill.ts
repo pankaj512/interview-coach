@@ -10,7 +10,7 @@
 // mastery *algorithm* (turning an accepted evaluation into a new level) is
 // Phase 10/11 and deliberately absent here — Phase 3 only persists and reads.
 
-import type { CurriculumId, TopicId, UserId } from "./ids.js";
+import type { CurriculumId, EvaluationId, TopicId, UserId } from "./ids.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
@@ -72,6 +72,8 @@ export interface UserSkillState {
   readonly totalAttempts: number;
   readonly lastAttemptAt?: Date;
   readonly lastOutcome?: SkillOutcome;
+  /** Phase 11 idempotency marker: the last evaluation applied to this topic. */
+  readonly lastEvaluationId?: EvaluationId;
   readonly strengths: readonly string[];
   readonly weaknesses: readonly string[];
   readonly createdAt: Date;
@@ -87,6 +89,7 @@ export interface CreateUserSkillStateInput {
   readonly totalAttempts?: number;
   readonly lastAttemptAt?: Date;
   readonly lastOutcome?: SkillOutcome;
+  readonly lastEvaluationId?: EvaluationId;
   readonly strengths?: readonly unknown[];
   readonly weaknesses?: readonly unknown[];
   readonly now?: Date;
@@ -200,6 +203,9 @@ export function createUserSkillState(
     totalAttempts: total.value,
     ...(input.lastAttemptAt === undefined ? {} : { lastAttemptAt: input.lastAttemptAt }),
     ...(input.lastOutcome === undefined ? {} : { lastOutcome: input.lastOutcome }),
+    ...(input.lastEvaluationId === undefined
+      ? {}
+      : { lastEvaluationId: input.lastEvaluationId }),
     strengths: strengths.value,
     weaknesses: weaknesses.value,
     createdAt: now,

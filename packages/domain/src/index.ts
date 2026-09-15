@@ -23,6 +23,7 @@ export * from "./catalog.js";
 export * from "./selection.js";
 export * from "./curriculum.js";
 export * from "./skill.js";
+export * from "./skill-update.js";
 export * from "./recommendation.js";
 export * from "./hints.js";
 export * from "./evaluation-pipeline.js";

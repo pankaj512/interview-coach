@@ -88,6 +88,7 @@ import { UserService, type AuthenticatedSession } from "./users.js";
 import { ProfileService } from "./profile.js";
 import { CurriculumService } from "./curriculum.js";
 import { SkillService } from "./skills.js";
+import { SkillUpdateService } from "./skill-update.js";
 import { RecommendationService } from "./recommendation.js";
 import { createRecommendationModelFromEnv } from "./recommendation-model.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
@@ -389,6 +390,12 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     skillStates: deps.repos.skillStates,
     curriculumProgress: deps.repos.curriculumProgress,
   });
+  // Phase 11: deterministic mastery/curriculum update after an evaluation.
+  const skillUpdates = new SkillUpdateService({
+    skillStates: deps.repos.skillStates,
+    curriculumProgress: deps.repos.curriculumProgress,
+    curricula,
+  });
   // Phase 4: recommendation service over a server-side LLM port. Unconfigured
   // in local dev by default, so the deterministic fallback drives the loop.
   const recommendationModel =
@@ -412,6 +419,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     curricula,
     profiles,
     skills,
+    skillUpdates,
     model: evaluationModel,
     ...(deps.evaluationRunSynchronously === undefined
       ? {}

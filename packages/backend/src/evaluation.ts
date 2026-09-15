@@ -38,6 +38,7 @@ import type { InterviewService } from "@interview-coach/domain";
 import type { CurriculumService } from "./curriculum.js";
 import type { ProfileService } from "./profile.js";
 import type { SkillService } from "./skills.js";
+import type { SkillUpdateService } from "./skill-update.js";
 import { assembleEvaluationContext, type AssembleEvaluationContextInput } from "./evaluation-context.js";
 
 export interface EvaluationServiceDeps {
@@ -46,6 +47,7 @@ export interface EvaluationServiceDeps {
   readonly curricula: CurriculumService;
   readonly profiles: ProfileService;
   readonly skills: SkillService;
+  readonly skillUpdates: SkillUpdateService;
   readonly model: EvaluationModel;
   readonly clock?: Clock;
   /** Tests set true so `enqueue` awaits the job instead of scheduling it. */
@@ -64,6 +66,7 @@ export class EvaluationService {
   private readonly curricula: CurriculumService;
   private readonly profiles: ProfileService;
   private readonly skills: SkillService;
+  private readonly skillUpdates: SkillUpdateService;
   private readonly model: EvaluationModel;
   private readonly clock: Clock;
   private readonly runSynchronously: boolean;
@@ -74,6 +77,7 @@ export class EvaluationService {
     this.curricula = deps.curricula;
     this.profiles = deps.profiles;
     this.skills = deps.skills;
+    this.skillUpdates = deps.skillUpdates;
     this.model = deps.model;
     this.clock = deps.clock ?? systemClock;
     this.runSynchronously = deps.runSynchronously ?? false;
@@ -144,27 +148,47 @@ export class EvaluationService {
 
     try {
       const input = await this.assembleInput(job.interviewId);
-      const { proposal, source } = await this.propose(input);
-      const finalized = finalizeEvaluation({
-        dimensions: proposal.dimensions,
-        hintsUsed: input.hintsUsed,
-        strengths: [...proposal.strengths],
-        weaknesses: [...proposal.weaknesses],
+      // A previous attempt may have recorded the evaluation before failing
+      // later in the job. Reuse it (same id) so the Phase 11 skill update
+      // stays idempotent instead of scoring the interview twice.
+      const existing = await this.repos.evaluations.findByInterview(job.interviewId);
+      let evaluation: Evaluation;
+      if (isRealEvaluation(existing)) {
+        evaluation = existing;
+      } else {
+        const { proposal, source } = await this.propose(input);
+        const finalized = finalizeEvaluation({
+          dimensions: proposal.dimensions,
+          hintsUsed: input.hintsUsed,
+          strengths: [...proposal.strengths],
+          weaknesses: [...proposal.weaknesses],
+        });
+        const interview = await this.repos.interviews.findById(job.interviewId);
+        const recorded = await this.interviews.recordEvaluation(job.interviewId, {
+          status: "completed",
+          source,
+          jobId: job.id,
+          ...(interview?.topicId === undefined ? {} : { topicId: interview.topicId }),
+          dimensions: finalized.dimensions,
+          hintsUsed: finalized.hintsUsed,
+          strengths: [...finalized.strengths],
+          weaknesses: [...finalized.weaknesses],
+          ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
+          ...(finalized.recommendation === null
+            ? {}
+            : { recommendation: finalized.recommendation }),
+        });
+        if (!recorded.ok) throw recorded.error;
+        evaluation = recorded.value;
+      }
+      // Phase 11: apply the accepted evaluation to mastery + curriculum.
+      // Deterministic and idempotent (guarded by the evaluation id on the
+      // skill state); a failure retries the job against the same evaluation.
+      const skillUpdate = await this.skillUpdates.apply({
+        evaluation,
+        userId: input.candidateId as UserId,
       });
-      const interview = await this.repos.interviews.findById(job.interviewId);
-      const recorded = await this.interviews.recordEvaluation(job.interviewId, {
-        status: "completed",
-        source,
-        jobId: job.id,
-        ...(interview?.topicId === undefined ? {} : { topicId: interview.topicId }),
-        dimensions: finalized.dimensions,
-        hintsUsed: finalized.hintsUsed,
-        strengths: [...finalized.strengths],
-        weaknesses: [...finalized.weaknesses],
-        ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
-        ...(finalized.recommendation === null ? {} : { recommendation: finalized.recommendation }),
-      });
-      if (!recorded.ok) throw recorded.error;
+      if (!skillUpdate.ok) throw skillUpdate.error;
       await this.interviews.markEvaluationStatus(job.interviewId, "completed");
       await this.repos.evaluationJobs.save({
         ...job,
@@ -174,7 +198,7 @@ export class EvaluationService {
         completedAt: this.clock.now(),
         updatedAt: this.clock.now(),
       });
-      return ok(recorded.value);
+      return ok(evaluation);
     } catch (error) {
       const message =
         error instanceof Error

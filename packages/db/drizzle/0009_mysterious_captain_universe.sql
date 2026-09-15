@@ -1,0 +1,1 @@
+ALTER TABLE "user_skill_states" ADD COLUMN "last_evaluation_id" text;

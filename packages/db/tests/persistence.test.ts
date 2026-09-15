@@ -13,6 +13,7 @@ import {
   InterviewService,
   SubmissionService,
   asCurriculumId,
+  asEvaluationId,
   asProblemId,
   asRecommendationId,
   asTopicId,
@@ -521,6 +522,7 @@ describe("postgres persistence", () => {
       successfulAttempts: 2,
       totalAttempts: 3,
       lastOutcome: "success",
+      lastEvaluationId: asEvaluationId("eval_persist_1"),
       strengths: ["two pointers"],
       weaknesses: ["complexity"],
       now: new Date("2026-09-14T10:00:00.000Z"),
@@ -556,6 +558,7 @@ describe("postgres persistence", () => {
       successfulAttempts: 3,
       totalAttempts: 4,
       lastOutcome: "success",
+      lastEvaluationId: asEvaluationId("eval_persist_2"),
       now: new Date("2026-09-15T10:00:00.000Z"),
     });
     if (!advanced.ok) throw new Error(advanced.error.message);
@@ -571,6 +574,9 @@ describe("postgres persistence", () => {
       expect((await repos.skillStates.findByTopic(userId, DSA_CURRICULUM_ID, arrays))?.masteryLevel).toBe(
         "proficient",
       );
+      expect(
+        (await repos.skillStates.findByTopic(userId, DSA_CURRICULUM_ID, arrays))?.lastEvaluationId,
+      ).toBe(asEvaluationId("eval_persist_2"));
       expect((await repos.curriculumProgress.findByUser(userId, DSA_CURRICULUM_ID))?.currentTopicId).toBe(
         arrays,
       );

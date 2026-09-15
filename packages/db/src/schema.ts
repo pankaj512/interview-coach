@@ -165,6 +165,7 @@ export const userSkillStates = pgTable(
     totalAttempts: integer("total_attempts").notNull(),
     lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }),
     lastOutcome: text("last_outcome"),
+    lastEvaluationId: text("last_evaluation_id"),
     strengths: jsonb("strengths").notNull().$type<readonly string[]>(),
     weaknesses: jsonb("weaknesses").notNull().$type<readonly string[]>(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),

@@ -64,6 +64,7 @@ import type {
 } from "@interview-coach/domain";
 import type {
   CurriculumId,
+  EvaluationId,
   EvaluationJobId,
   InterviewId,
   ModuleId,
@@ -1099,6 +1100,9 @@ function toUserSkillState(row: UserSkillStateRow): UserSkillState {
     ...(row.lastOutcome === null
       ? {}
       : { lastOutcome: row.lastOutcome as SkillOutcome }),
+    ...(row.lastEvaluationId === null
+      ? {}
+      : { lastEvaluationId: row.lastEvaluationId as EvaluationId }),
     strengths: row.strengths,
     weaknesses: row.weaknesses,
     createdAt: row.createdAt,
@@ -1121,6 +1125,7 @@ export class DrizzleUserSkillStateRepository
       totalAttempts: state.totalAttempts,
       lastAttemptAt: state.lastAttemptAt ?? null,
       lastOutcome: state.lastOutcome ?? null,
+      lastEvaluationId: state.lastEvaluationId ?? null,
       strengths: [...state.strengths],
       weaknesses: [...state.weaknesses],
       createdAt: state.createdAt,
@@ -1141,6 +1146,7 @@ export class DrizzleUserSkillStateRepository
           totalAttempts: values.totalAttempts,
           lastAttemptAt: values.lastAttemptAt,
           lastOutcome: values.lastOutcome,
+          lastEvaluationId: values.lastEvaluationId,
           strengths: values.strengths,
           weaknesses: values.weaknesses,
           updatedAt: values.updatedAt,
