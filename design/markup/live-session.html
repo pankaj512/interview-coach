@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Live Interview - Interview Coach v1.1</title>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config -->
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#0284c7",
+            "primary-container": "#e0f2fe",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#0369a1",
+            "primary-fixed-dim": "#38bdf8",
+            "surface": "#f8fafc",
+            "surface-low": "#f1f5f9",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f8fafc",
+            "surface-container": "#f1f5f9",
+            "surface-container-high": "#e2e8f0",
+            "on-surface": "#0f172a",
+            "inverse-on-surface": "#f8fafc",
+            "secondary": "#64748b",
+            "outline": "#94a3b8",
+            "outline-variant": "#cbd5e1"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Public Sans", "sans-serif"],
+            label: ["Public Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<!-- Google Fonts & Material Symbols -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300..800;1,300..800&amp;family=Space+Grotesk:wght@300..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+    }
+  </style>
+</head>
+<body class="h-full bg-surface text-on-surface font-body antialiased flex flex-col">
+<!-- TopNavBar Shell -->
+<header class="w-full px-8 flex justify-between items-center h-14 bg-surface-container-lowest border-b border-outline-variant shrink-0 z-30">
+<div class="flex items-center space-x-8">
+<span class="text-headline-sm font-headline-sm font-semibold tracking-tight text-on-surface">Interview Coach v1.1</span>
+<nav class="hidden md:flex items-center space-x-6">
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-label-md font-label-md" href="#">Curriculum</a>
+<a class="border-b-2 border-primary text-primary font-medium py-1 text-label-md font-label-md" href="#">Mock Sessions</a>
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-label-md font-label-md" href="#">System Design</a>
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-label-md font-label-md" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center space-x-4">
+<!-- Active Timer -->
+<div class="flex items-center space-x-2 bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant">
+<span class="material-symbols-outlined text-primary text-sm">timer</span>
+<span class="text-label-md font-mono font-medium" id="interview-timer">18:42</span>
+</div>
+<button class="bg-primary text-on-primary px-4 py-1.5 rounded-lg text-label-md font-label-md font-medium hover:opacity-90 transition-opacity flex items-center space-x-1.5">
+<span class="material-symbols-outlined text-sm">bookmark</span>
+<span>Save Progress</span>
+</button>
+<div class="flex items-center space-x-2 border-l border-outline-variant pl-4">
+<button aria-label="help" class="p-1.5 text-secondary hover:text-on-surface transition-colors rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined">help</span>
+</button>
+<button aria-label="terminal" class="p-1.5 text-secondary hover:text-on-surface transition-colors rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined">terminal</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden bg-surface-container flex items-center justify-center border border-outline-variant">
+<img class="w-full h-full object-cover" data-alt="A professional headshot portrait of a friendly tech-industry software engineer smiling softly against a neutral grey studio background, captured with crisp focus and soft natural lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMZyTlz1t61A-xc3C1DAGEI2sJtencpyB8FVO2hKbKktF44WAgV7Di0pisMkRmrVP8uUh2vLGZx8XK_2zASFe_pytvzaGHfCVG8muKBNROwITnbpYAuYDAJUQQeZI5JqMmjvjf_kiTGnbjdAmw0mOBPPRaxtc_0czPczf0nm441YrW0S3Ek1fJmO_t7sTsj65nF2RkgzOklcfBWZW4-ypY5RD89sY56cmAgQ65Wl7bwLYWq9xmxXXZBUaWgfOFsmjmYETMSf0-gUFJ"/>
+</div>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex overflow-hidden p-6 gap-6 max-w-[1600px] w-full mx-auto">
+<!-- Left Column: Conversation Transcript & Audio Controls -->
+<section class="flex-1 flex flex-col bg-surface-container-lowest rounded-xl border border-outline-variant overflow-hidden shadow-sm">
+<!-- Session Header Bar -->
+<div class="px-6 py-4 border-b border-outline-variant flex items-center justify-between bg-surface-container-low">
+<div class="flex items-center space-x-3">
+<span class="w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+<div>
+<h2 class="text-headline-sm font-headline-sm font-medium">System Design: Distributed Cache Architecture</h2>
+<p class="text-secondary text-body-md font-body-md text-xs">Interviewer: Alex Mercer (Principal Engineer)</p>
+</div>
+</div>
+<button class="border border-rose-200 text-rose-600 hover:bg-rose-50 px-3 py-1.5 rounded-lg text-label-md font-label-md transition-colors flex items-center space-x-1" onclick="openModal()">
+<span class="material-symbols-outlined text-sm">stop_circle</span>
+<span>End Interview</span>
+</button>
+</div>
+<!-- Transcript Container -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6" id="transcript-scroll">
+<!-- Turn 1 -->
+<div class="flex items-start space-x-4">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 font-medium text-xs text-secondary">
+            AM
+          </div>
+<div class="flex-1 space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-headline-sm font-medium text-sm">Alex Mercer</span>
+<span class="text-xs text-secondary">10:00 AM</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl rounded-tl-none border border-outline-variant/50 text-body-md font-body-md text-sm leading-relaxed">
+              Let's dive straight into the core bottleneck. Imagine we are scaling our read-heavy caching layer to support 10 million QPS. How would you handle cache stampede during major cache invalidations across distributed clusters?
+            </div>
+</div>
+</div>
+<!-- Turn 2 (You) -->
+<div class="flex items-start space-x-4 flex-row-reverse space-x-reverse">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 font-medium text-xs">
+            You
+          </div>
+<div class="flex-1 space-y-1 text-right">
+<div class="flex items-center space-x-2 justify-end">
+<span class="text-xs text-secondary">10:01 AM</span>
+<span class="font-headline-sm font-medium text-sm">You</span>
+</div>
+<div class="bg-primary-container text-on-primary-container p-4 rounded-xl rounded-tr-none text-body-md font-body-md text-sm leading-relaxed text-left">
+              To mitigate cache stampede, I'd implement probabilistic early expiration alongside mutex locking on the datastore fetch. Here's a quick snippet demonstrating how we can compute the delta before letting a single worker regenerate the key:
+              
+              <!-- Syntax-highlighted code block -->
+<div class="mt-3 bg-slate-950 text-slate-200 p-3 rounded-lg font-mono text-xs overflow-x-auto border border-slate-800">
+<span class="text-sky-400">def</span> <span class="text-amber-300">should_refresh</span>(key_metadata, beta=<span class="text-purple-400">1.0</span>):<br/>
+                  delta = -beta * math.log(random.random()) * compute_load_time()<br/>
+                  <span class="text-sky-400">return</span> time.time() + delta &gt;= key_metadata.expires_at
+              </div>
+</div>
+</div>
+</div>
+<!-- Turn 3 -->
+<div class="flex items-start space-x-4">
+<div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 font-medium text-xs text-secondary">
+            AM
+          </div>
+<div class="flex-1 space-y-1">
+<div class="flex items-center space-x-2">
+<span class="font-headline-sm font-medium text-sm">Alex Mercer</span>
+<span class="text-xs text-secondary">10:03 AM</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-xl rounded-tl-none border border-outline-variant/50 text-body-md font-body-md text-sm leading-relaxed">
+              That probabilistic approach (XFetch algorithm) handles the probabilistic distribution nicely. What about memory fragmentation under heavy eviction churn using Redis?
+            </div>
+</div>
+</div>
+</div>
+<!-- Voice State & Waveform Area -->
+<div class="px-6 py-3 bg-surface-container border-t border-outline-variant flex items-center justify-between">
+<div class="flex items-center space-x-3">
+<span class="px-2.5 py-1 rounded-full text-xs font-medium bg-primary-container text-on-primary-container" id="state-badge">AI Speaking</span>
+<!-- Live Animated Waveform -->
+<div class="flex items-center space-x-1 h-6">
+<span class="w-1 bg-primary rounded-full animate-bounce h-3"></span>
+<span class="w-1 bg-primary rounded-full animate-bounce h-5" style="animation-delay: 0.1s"></span>
+<span class="w-1 bg-primary rounded-full animate-bounce h-2" style="animation-delay: 0.2s"></span>
+<span class="w-1 bg-primary rounded-full animate-bounce h-6" style="animation-delay: 0.3s"></span>
+<span class="w-1 bg-primary rounded-full animate-bounce h-4" style="animation-delay: 0.4s"></span>
+</div>
+</div>
+<!-- Audio Controls -->
+<div class="flex items-center space-x-2">
+<button class="p-2 rounded-lg bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-high transition-colors text-secondary" id="mute-btn" onclick="toggleMute()" title="Mute/Unmute">
+<span class="material-symbols-outlined text-sm" id="mute-icon">mic</span>
+</button>
+<button class="p-2 rounded-lg bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-high transition-colors text-secondary" id="pause-btn" onclick="togglePause()" title="Pause/Resume">
+<span class="material-symbols-outlined text-sm" id="pause-icon">pause</span>
+</button>
+</div>
+</div>
+<!-- Text Input Fallback Box -->
+<div class="p-4 bg-surface-container-lowest border-t border-outline-variant flex items-center space-x-3">
+<input class="flex-1 bg-surface border border-outline-variant rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary" placeholder="Type your response as a fallback..." type="text"/>
+<button class="bg-primary text-on-primary px-4 py-2 rounded-lg text-label-md font-label-md font-medium hover:opacity-90 transition-opacity flex items-center space-x-1.5">
+<span>Send Response</span>
+<span class="material-symbols-outlined text-sm">send</span>
+</button>
+</div>
+</section>
+<!-- Right Column: Progress Checklist, Evaluation, Hint Policy, & Coaching Controls -->
+<aside class="w-96 flex flex-col space-y-6 shrink-0 overflow-y-auto pr-1">
+<!-- Session Progress Checklist -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-4">
+<h3 class="font-headline-sm font-semibold text-sm flex items-center justify-between">
+<span>Session Progress</span>
+<span class="text-xs font-normal text-secondary">2/5 Complete</span>
+</h3>
+<div class="space-y-2.5 text-sm">
+<label class="flex items-start space-x-3 cursor-pointer group">
+<input checked="" class="mt-0.5 rounded border-outline text-primary focus:ring-0" disabled="" type="checkbox"/>
+<span class="line-through text-secondary">Define architectural boundaries &amp; throughput requirements</span>
+</label>
+<label class="flex items-start space-x-3 cursor-pointer group">
+<input checked="" class="mt-0.5 rounded border-outline text-primary focus:ring-0" disabled="" type="checkbox"/>
+<span class="line-through text-secondary">Address cache stampede mitigation strategy</span>
+</label>
+<label class="flex items-start space-x-3 cursor-pointer group">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span>Analyze Redis memory fragmentation &amp; eviction tradeoffs</span>
+</label>
+<label class="flex items-start space-x-3 cursor-pointer group">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span>Design multi-region replication consistency model</span>
+</label>
+<label class="flex items-start space-x-3 cursor-pointer group">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary" type="checkbox"/>
+<span>Capacity estimation &amp; failure mode analysis</span>
+</label>
+</div>
+</div>
+<!-- Live Evaluation Metrics -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-4">
+<h3 class="font-headline-sm font-semibold text-sm">Live Evaluation Metrics</h3>
+<div class="space-y-4">
+<div>
+<div class="flex justify-between text-xs mb-1.5">
+<span class="font-medium">Clarity &amp; Conciseness</span>
+<span class="text-primary font-medium">85%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1.5">
+<span class="font-medium">Technical Depth</span>
+<span class="text-primary font-medium">92%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 92%"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs mb-1.5">
+<span class="font-medium">Pacing &amp; Tone</span>
+<span class="text-primary font-medium">78%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 78%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Hint Policy Note -->
+<div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant/60 flex items-start space-x-3 text-xs text-secondary">
+<span class="material-symbols-outlined text-primary text-base shrink-0">info</span>
+<p class="leading-relaxed">
+<strong class="text-on-surface">Hint Policy Note:</strong> Requesting a hint will gently calibrate the interviewer's subsequent probing questions but may slightly adjust your final depth score. Use judiciously.
+        </p>
+</div>
+<!-- Coaching Controls -->
+<div class="bg-surface-container-lowest p-5 rounded-xl border border-outline-variant shadow-sm space-y-3">
+<h3 class="font-headline-sm font-semibold text-sm">Coaching Actions</h3>
+<div class="grid grid-cols-3 gap-2">
+<button class="flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors border border-outline-variant/60 text-xs font-medium space-y-1" onclick="triggerCoachingAction('Hint')">
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+<span>Hint</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors border border-outline-variant/60 text-xs font-medium space-y-1" onclick="triggerCoachingAction('Clarify')">
+<span class="material-symbols-outlined text-primary">help_outline</span>
+<span>Clarify</span>
+</button>
+<button class="flex flex-col items-center justify-center p-3 rounded-lg bg-surface-container-low hover:bg-surface-container transition-colors border border-outline-variant/60 text-xs font-medium space-y-1" onclick="triggerCoachingAction('Feedback')">
+<span class="material-symbols-outlined text-primary">analytics</span>
+<span>Feedback</span>
+</button>
+</div>
+</div>
+</aside>
+</main>
+<!-- Guarded Modal for End Interview -->
+<div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden" id="end-interview-modal">
+<div class="bg-surface-container-lowest p-6 rounded-xl border border-outline-variant max-w-md w-full shadow-xl space-y-4">
+<div class="flex items-center space-x-3 text-rose-600">
+<span class="material-symbols-outlined text-2xl">warning</span>
+<h3 class="font-headline-sm font-semibold text-base text-on-surface">End Mock Interview Session?</h3>
+</div>
+<p class="text-sm text-secondary leading-relaxed">
+        Are you sure you want to conclude this session? Your current progress and metrics will be saved to your dashboard, and a comprehensive performance review will be generated.
+      </p>
+<div class="flex justify-end space-x-3 pt-2">
+<button class="px-4 py-2 rounded-lg border border-outline-variant text-sm font-medium hover:bg-surface-container transition-colors" onclick="closeModal()">
+          Continue Interview
+        </button>
+<button class="px-4 py-2 rounded-lg bg-rose-600 text-white text-sm font-medium hover:bg-rose-700 transition-colors" onclick="confirmEndInterview()">
+          End &amp; Evaluate
+        </button>
+</div>
+</div>
+</div>
+<!-- Micro-interaction Script -->
+<script>
+    let isMuted = false;
+    let isPaused = false;
+
+    function toggleMute() {
+      isMuted = !isMuted;
+      const icon = document.getElementById('mute-icon');
+      const btn = document.getElementById('mute-btn');
+      if (isMuted) {
+        icon.textContent = 'mic_off';
+        btn.classList.add('bg-rose-50', 'text-rose-600', 'border-rose-200');
+      } else {
+        icon.textContent = 'mic';
+        btn.classList.remove('bg-rose-50', 'text-rose-600', 'border-rose-200');
+      }
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      const icon = document.getElementById('pause-icon');
+      const stateBadge = document.getElementById('state-badge');
+      if (isPaused) {
+        icon.textContent = 'play_arrow';
+        stateBadge.textContent = 'Paused';
+        stateBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800';
+      } else {
+        icon.textContent = 'pause';
+        stateBadge.textContent = 'AI Speaking';
+        stateBadge.className = 'px-2.5 py-1 rounded-full text-xs font-medium bg-primary-container text-on-primary-container';
+      }
+    }
+
+    function openModal() {
+      document.getElementById('end-interview-modal').classList.remove('hidden');
+    }
+
+    function closeModal() {
+      document.getElementById('end-interview-modal').classList.add('hidden');
+    }
+
+    function confirmEndInterview() {
+      alert('Interview concluded. Generating performance evaluation summary...');
+      closeModal();
+    }
+
+    function triggerCoachingAction(actionType) {
+      alert('Coaching action requested: ' + actionType + '. The system is adjusting context accordingly.');
+    }
+
+    // Simple timer increment simulation
+    let seconds = 42;
+    let minutes = 18;
+    setInterval(() => {
+      if (!isPaused) {
+        seconds++;
+        if (seconds === 60) {
+          seconds = 0;
+          minutes++;
+        }
+        document.getElementById('interview-timer').textContent = 
+          String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+      }
+    }, 1000);
+  </script>
+</body></html>

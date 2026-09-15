@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach v1.1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Public+Sans:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#F8FAFC",
+            "surface-container-lowest": "#FFFFFF",
+            "surface-container": "#F1F5F9",
+            "on-surface": "#0F172A",
+            "on-surface-variant": "#475569",
+            primary: "#2563EB",
+            "primary-container": "#DBEAFE",
+            "on-primary": "#FFFFFF",
+            "on-primary-container": "#1E40AF",
+            "outline-variant": "#CBD5E1",
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Public Sans", "sans-serif"],
+            label: ["Public Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 z-50 w-full bg-surface/90 dark:bg-surface/90 backdrop-blur-md border-b border-outline-variant/30 shadow-sm">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="font-headline text-lg font-bold tracking-tight text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">neurology</span>
+        Interview Coach v1.1
+      </div>
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-150" href="#features">Features</a>
+<a class="font-label text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-150" href="#methodology">Methodology</a>
+<a class="font-label text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-150" href="#pricing">Pricing</a>
+<a class="font-label text-sm font-medium text-on-surface-variant hover:text-primary transition-colors duration-150" href="#docs">Docs</a>
+</nav>
+<div class="flex items-center gap-4">
+<a class="font-label text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors duration-150 px-4 py-2" href="#signin">Sign in</a>
+<a class="font-label text-sm font-medium bg-primary text-on-primary px-4 py-2 rounded-lg hover:opacity-90 transition-all duration-150 active:scale-[0.98] shadow-sm" href="#start">Start practice</a>
+</div>
+</div>
+</header>
+<main class="pt-24 pb-16">
+<!-- Hero Section -->
+<section class="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+<div class="lg:col-span-7 flex flex-col gap-6">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-container text-on-primary-container font-label text-xs font-semibold w-fit">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">arrow_back_ios_new</span>
+          Now with v1.1 Multi-modal Realtime Engine
+        </div>
+<h1 class="font-headline text-4xl md:text-6xl font-bold tracking-tight text-on-surface leading-tight">
+          Master high-stakes technical interviews with real-time AI guidance
+        </h1>
+<p class="font-body text-lg text-on-surface-variant leading-relaxed">
+          Simulate rigorous FAANG-level loops with an advanced conversational AI coach. Get precise behavioral grading, live hints, and instant code execution across 14 languages.
+        </p>
+<div class="flex flex-wrap items-center gap-4 pt-2">
+<a class="bg-primary text-on-primary px-6 py-3 rounded-lg font-label font-medium shadow-md hover:opacity-90 transition-all duration-150 active:scale-[0.98] flex items-center gap-2" href="#start">
+            Start practice
+            <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+<a class="bg-surface-container-lowest text-on-surface border border-outline-variant px-6 py-3 rounded-lg font-label font-medium hover:bg-surface-container transition-colors duration-150" href="#features">
+            View features
+          </a>
+</div>
+<div class="flex items-center gap-6 pt-4 text-sm text-on-surface-variant">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            No credit card required
+          </div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+            14-day free trial
+          </div>
+</div>
+</div>
+<div class="lg:col-span-5">
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-4 shadow-xl relative overflow-hidden">
+<div class="flex items-center justify-between pb-4 border-b border-outline-variant/20 mb-4">
+<div class="flex items-center gap-2">
+<div class="w-3 h-3 rounded-full bg-red-400"></div>
+<div class="w-3 h-3 rounded-full bg-yellow-400"></div>
+<div class="w-3 h-3 rounded-full bg-green-400"></div>
+</div>
+<span class="font-label text-xs text-on-surface-variant font-medium">Session #8942 - System Design</span>
+</div>
+<div class="space-y-4">
+<div class="flex gap-3">
+<div class="w-8 h-8 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center font-headline text-sm font-bold shrink-0">AI</div>
+<div class="bg-surface-container p-3 rounded-lg rounded-tl-none text-sm text-on-surface">
+                How would you handle partition tolerance if the primary cache node fails during peak traffic hours?
+              </div>
+</div>
+<div class="flex gap-3 justify-end">
+<div class="bg-primary text-on-primary p-3 rounded-lg rounded-tr-none text-sm">
+                We can employ a consistent hashing ring with virtual nodes and implement a multi-region fallback replica...
+              </div>
+</div>
+<div class="bg-primary-container/40 border border-primary/20 p-3 rounded-lg flex items-start gap-3">
+<span class="material-symbols-outlined text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">lightbulb</span>
+<div class="text-xs text-on-primary-container">
+<strong class="font-semibold block mb-0.5">Live Coaching Hint:</strong> Mention read-repair mechanisms and eventual consistency tradeoffs to score higher on the FAANG scalability rubric.
+              </div>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-outline-variant/20 flex items-center justify-between text-xs text-on-surface-variant">
+<span class="flex items-center gap-1 text-green-600 font-medium">
+<span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+              Live Audio Connected
+            </span>
+<span>Latency: 42ms</span>
+</div>
+</div>
+</div>
+</section>
+<!-- Metrics Strip -->
+<section class="border-y border-outline-variant/30 bg-surface-container-lowest py-12 my-12">
+<div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+<div class="flex flex-col gap-1">
+<div class="font-headline text-3xl md:text-4xl font-bold text-primary">94%</div>
+<div class="font-label text-sm text-on-surface-variant">Offer rate for active users</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-headline text-3xl md:text-4xl font-bold text-primary">140k+</div>
+<div class="font-label text-sm text-on-surface-variant">Mock loops completed</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-headline text-3xl md:text-4xl font-bold text-primary">4.9/5</div>
+<div class="font-label text-sm text-on-surface-variant">User satisfaction rating</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="font-headline text-3xl md:text-4xl font-bold text-primary">45+</div>
+<div class="font-label text-sm text-on-surface-variant">FAANG dimensional rubrics</div>
+</div>
+</div>
+</section>
+<!-- Feature Grid -->
+<section class="max-w-7xl mx-auto px-6 py-20" id="features">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="font-headline text-3xl md:text-4xl font-bold text-on-surface mb-4">
+          Engineered for elite technical performance
+        </h2>
+<p class="font-body text-on-surface-variant">
+          Everything you need to bridge the gap between knowing how to code and acing high-pressure engineering panels.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+<!-- Feature 1 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">groups</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Realistic interviews</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Immersive simulations mimicking real FAANG interviewers with adaptive questioning based on your live responses.
+          </p>
+</div>
+<!-- Feature 2 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">mic</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Voice + text multimodal</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Practice conversational pacing and verbal articulation with ultra-low latency natural voice interaction.
+          </p>
+</div>
+<!-- Feature 3 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">In-session coaching hints</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Gentle, real-time nudges when you get stuck, helping you recover mid-interview without spoiling the answer.
+          </p>
+</div>
+<!-- Feature 4 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">analytics</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">FAANG dimensional rubrics</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Detailed scoring across technical competence, communication, problem-solving, and system trade-offs.
+          </p>
+</div>
+<!-- Feature 5 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">trending_up</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Progress tracking</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Longitudinal analytics dashboard highlighting your strengths, recurring pitfalls, and readiness trajectory.
+          </p>
+</div>
+<!-- Feature 6 -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl shadow-sm hover:shadow-md transition-all">
+<div class="w-12 h-12 rounded-lg bg-primary-container text-primary flex items-center justify-center mb-6">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">code</span>
+</div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">14-language in-browser code sandbox</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed">
+            Robust execution environment supporting Python, Go, TypeScript, C++, Rust, and more with instant test cases.
+          </p>
+</div>
+</div>
+</section>
+<!-- Methodology Contrast -->
+<section class="bg-surface-container py-20 border-y border-outline-variant/30" id="methodology">
+<div class="max-w-7xl mx-auto px-6">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="font-headline text-3xl md:text-4xl font-bold text-on-surface mb-4">
+            A smarter path to senior offers
+          </h2>
+<p class="font-body text-on-surface-variant">
+            See how Interview Coach v1.1 completely transforms technical preparation compared to outdated methods.
+          </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">
+<!-- Traditional Prep -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-red-500" style="font-variation-settings: 'FILL' 1;">cancel</span>
+<h3 class="font-headline text-xl font-bold text-on-surface">Traditional Prep</h3>
+</div>
+<ul class="space-y-4 font-body text-sm text-on-surface-variant">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-red-400 shrink-0 mt-0.5">remove</span>
+                Static LeetCode lists with no context on verbalization or system design trade-offs.
+              </li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-red-400 shrink-0 mt-0.5">remove</span>
+                Awkward peer mock interviews with inconsistent feedback quality and scheduling friction.
+              </li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-red-400 shrink-0 mt-0.5">remove</span>
+                Zero insight into how hiring managers evaluate your communication and problem breakdown.
+              </li>
+</ul>
+</div>
+<!-- Interview Coach v1.1 -->
+<div class="bg-surface-container-lowest border-2 border-primary p-8 rounded-xl shadow-lg relative">
+<div class="absolute -top-3 right-8 bg-primary text-on-primary font-label text-xs font-bold px-3 py-1 rounded-full">
+              Recommended
+            </div>
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<h3 class="font-headline text-xl font-bold text-on-surface">Interview Coach v1.1</h3>
+</div>
+<ul class="space-y-4 font-body text-sm text-on-surface">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check</span>
+                Dynamic, conversational loops mirroring rigorous real-world engineering panels.
+              </li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check</span>
+                On-demand availability 24/7 with zero scheduling lag and instant multi-modal feedback.
+              </li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-primary shrink-0 mt-0.5" style="font-variation-settings: 'FILL' 1;">check</span>
+                Granular rubric scoring mapped directly to top-tier tech company leveling standards.
+              </li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- Pricing Teaser -->
+<section class="max-w-7xl mx-auto px-6 py-20" id="pricing">
+<div class="text-center max-w-3xl mx-auto mb-16">
+<h2 class="font-headline text-3xl md:text-4xl font-bold text-on-surface mb-4">
+          Transparent, investment-grade pricing
+        </h2>
+<p class="font-body text-on-surface-variant">
+          Choose the plan that fits your interview timeline and career aspirations.
+        </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+<!-- Starter Tier -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Starter</h3>
+<p class="font-body text-sm text-on-surface-variant mb-6">For casual practice and fundamentals review.</p>
+<div class="font-headline text-4xl font-bold text-on-surface mb-6">Free</div>
+<ul class="space-y-3 font-body text-sm text-on-surface-variant mb-8">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                3 mock interviews / month
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                Basic code sandbox (3 languages)
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                Standard feedback reports
+              </li>
+</ul>
+</div>
+<a class="w-full bg-surface-container text-on-surface hover:bg-outline-variant/20 py-3 rounded-lg font-label font-medium text-center transition-colors" href="#start">Get started</a>
+</div>
+<!-- Pro Practice Tier -->
+<div class="bg-surface-container-lowest border-2 border-primary p-8 rounded-xl flex flex-col justify-between shadow-xl relative">
+<div class="absolute -top-3 right-8 bg-primary text-on-primary font-label text-xs font-bold px-3 py-1 rounded-full">
+            Most Popular
+          </div>
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Pro Practice</h3>
+<p class="font-body text-sm text-on-surface-variant mb-6">For engineers actively interviewing at top tech companies.</p>
+<div class="font-headline text-4xl font-bold text-on-surface mb-1">$39<span class="text-sm font-normal text-on-surface-variant">/mo</span></div>
+<div class="font-label text-xs text-primary font-medium mb-6">Billed monthly, cancel anytime</div>
+<ul class="space-y-3 font-body text-sm text-on-surface mb-8">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+                Unlimited mock interviews
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+                Voice + text multimodal engine
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+                Full 14-language sandbox
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check</span>
+                FAANG dimensional rubrics
+              </li>
+</ul>
+</div>
+<a class="w-full bg-primary text-on-primary hover:opacity-90 py-3 rounded-lg font-label font-medium text-center transition-all shadow-sm" href="#start">Start pro trial</a>
+</div>
+<!-- Team Tier -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 p-8 rounded-xl flex flex-col justify-between">
+<div>
+<h3 class="font-headline text-xl font-bold text-on-surface mb-2">Team</h3>
+<p class="font-body text-sm text-on-surface-variant mb-6">For engineering bootcamps and internal upskilling.</p>
+<div class="font-headline text-4xl font-bold text-on-surface mb-6">Custom</div>
+<ul class="space-y-3 font-body text-sm text-on-surface-variant mb-8">
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                Dedicated team dashboard
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                Custom question banks
+              </li>
+<li class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-sm">check</span>
+                Manager analytics &amp; reporting
+              </li>
+</ul>
+</div>
+<a class="w-full bg-surface-container text-on-surface hover:bg-outline-variant/20 py-3 rounded-lg font-label font-medium text-center transition-colors" href="#start">Contact sales</a>
+</div>
+</div>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest border-t border-outline-variant/30 w-full">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col gap-8">
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+<div class="flex flex-col gap-3">
+<div class="font-headline text-base font-bold text-on-surface">Interview Coach v1.1</div>
+<p class="font-body text-sm text-on-surface-variant/80">The premier AI-powered technical preparation platform for ambitious software engineers.</p>
+</div>
+<div class="flex flex-col gap-3">
+<div class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Platform</div>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#features">Features</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#methodology">Methodology</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#pricing">Pricing</a>
+</div>
+<div class="flex flex-col gap-3">
+<div class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Resources</div>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#docs">Documentation</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#api">API Reference</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#architecture">System Architecture</a>
+</div>
+<div class="flex flex-col gap-3">
+<div class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Legal &amp; Security</div>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#security">Security &amp; SOC-2</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#privacy">Privacy Policy</a>
+<a class="font-body text-sm text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#terms">Terms of Service</a>
+</div>
+</div>
+<div class="pt-8 border-t border-outline-variant/20 flex flex-col md:flex-row items-center justify-between gap-4">
+<div class="font-body text-sm text-on-surface-variant/80">
+          © 2024 Interview Coach Inc. Technical preparation platform. All rights reserved.
+        </div>
+<div class="flex items-center gap-4 text-on-surface-variant">
+<a class="hover:text-on-surface transition-colors" href="#twitter">Twitter</a>
+<a class="hover:text-on-surface transition-colors" href="#github">GitHub</a>
+<a class="hover:text-on-surface transition-colors" href="#linkedin">LinkedIn</a>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

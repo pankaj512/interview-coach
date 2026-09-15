@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach v1.1 - Onboarding Preferences</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            surface: "#fbfcfd",
+            "surface-container-low": "#f4f6f8",
+            "surface-container": "#edf1f4",
+            "surface-container-high": "#e4e9ed",
+            "surface-container-highest": "#dbe2e8",
+            primary: "#0f172a",
+            "primary-container": "#1e293b",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#f8fafc",
+            "on-surface": "#090d14",
+            "on-surface-variant": "#475569",
+            outline: "#cbd5e1",
+            "outline-variant": "#e2e8f0",
+            accent: "#2563eb",
+            "accent-soft": "#eff6ff",
+            success: "#15803d",
+            "success-soft": "#f0fdf4"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Public Sans", "sans-serif"],
+            label: ["Public Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 20;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-switch:checked {
+      background-color: #0f172a;
+      border-color: #0f172a;
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col selection:bg-primary selection:text-on-primary">
+<!-- TOP APP BAR -->
+<header class="bg-surface/80 backdrop-blur-md sticky top-0 z-50 border-b border-outline-variant/30">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between w-full">
+<!-- Brand & Version -->
+<div class="flex items-center gap-3">
+<div class="font-headline text-base font-bold tracking-tight text-on-surface flex items-center gap-2">
+<span class="w-7 h-7 rounded-lg bg-primary text-on-primary flex items-center justify-center font-mono text-xs font-semibold shadow-sm">IC</span>
+<span>Interview Coach <span class="font-mono text-xs font-normal text-on-surface-variant px-1.5 py-0.5 rounded bg-surface-container">v1.1</span></span>
+</div>
+<div class="hidden sm:flex items-center text-xs font-mono text-on-surface-variant pl-3 border-l border-outline-variant">
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+          Calibration Engine: Ready
+        </div>
+</div>
+<!-- Action items -->
+<div class="flex items-center gap-4">
+<a class="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium text-on-surface-variant hover:text-on-surface transition-colors py-1.5 px-2.5 rounded hover:bg-surface-container-low" href="#">
+<span class="material-symbols-outlined text-base" data-icon="help">help</span>
+<span>Rubric Docs</span>
+</a>
+<button class="inline-flex items-center gap-1.5 text-xs font-medium text-on-surface-variant hover:text-on-surface py-1.5 px-3 rounded border border-outline-variant hover:border-outline transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-base" data-icon="logout">logout</span>
+<span>Save &amp; Exit</span>
+</button>
+</div>
+</div>
+</header>
+<!-- STEP PROGRESS BAR / STEPPER INDICATOR -->
+<section class="border-b border-outline-variant/40 bg-surface-container-low/60">
+<div class="max-w-5xl mx-auto px-6 py-4">
+<nav aria-label="Onboarding Progress" class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+<!-- Step 1 -->
+<div class="flex items-center gap-3 flex-1">
+<div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-semibold shadow-sm shrink-0">
+<span class="material-symbols-outlined text-sm font-bold" data-icon="check">check</span>
+</div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] uppercase tracking-wider text-emerald-700 font-semibold">Step 01</span>
+<span class="text-xs font-medium text-on-surface">Welcome &amp; Account</span>
+</div>
+<div class="hidden md:block flex-1 h-px bg-outline-variant ml-2"></div>
+</div>
+<!-- Step 2 (Active) -->
+<div class="flex items-center gap-3 flex-1">
+<div class="w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold ring-4 ring-slate-200 shrink-0">
+            2
+          </div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] uppercase tracking-wider text-accent font-bold">Step 02 · Current</span>
+<span class="text-xs font-bold text-on-surface">Role &amp; Preferences</span>
+</div>
+<div class="hidden md:block flex-1 h-px bg-outline-variant ml-2"></div>
+</div>
+<!-- Step 3 -->
+<div class="flex items-center gap-3 flex-1 opacity-60">
+<div class="w-7 h-7 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center text-xs font-semibold border border-outline-variant shrink-0">
+            3
+          </div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-medium">Step 03</span>
+<span class="text-xs font-medium text-on-surface-variant">Technical Focus &amp; Persona</span>
+</div>
+<div class="hidden md:block flex-1 h-px bg-outline-variant ml-2"></div>
+</div>
+<!-- Step 4 -->
+<div class="flex items-center gap-3 opacity-40">
+<div class="w-7 h-7 rounded-full bg-surface-container text-on-surface-variant flex items-center justify-center text-xs font-semibold border border-outline-variant shrink-0">
+            4
+          </div>
+<div class="flex flex-col">
+<span class="font-mono text-[10px] uppercase tracking-wider text-on-surface-variant font-medium">Step 04</span>
+<span class="text-xs font-medium text-on-surface-variant">Summary &amp; Auth</span>
+</div>
+</div>
+</nav>
+</div>
+</section>
+<!-- MAIN CANVAS -->
+<main class="flex-1 max-w-4xl w-full mx-auto px-6 py-8 md:py-10">
+<!-- Notice Banner -->
+<div class="mb-8 p-4 rounded-xl border border-outline-variant bg-white shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+<div class="flex items-start sm:items-center gap-3">
+<span class="material-symbols-outlined text-accent text-xl mt-0.5 sm:mt-0" data-icon="info">info</span>
+<p class="text-xs text-on-surface leading-relaxed">
+<span class="font-semibold">Guest Mode:</span> Configuration cached locally in session. You will be prompted to authenticate or save profile in Step 4.
+        </p>
+</div>
+<div class="shrink-0 flex items-center gap-2 self-start sm:self-auto">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container text-[11px] font-mono text-on-surface-variant border border-outline-variant font-medium">
+<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          [Dev Mode: Skip Auth / Bypass Ready]
+        </span>
+</div>
+</div>
+<!-- Form Container -->
+<div class="bg-white border border-outline-variant rounded-2xl p-6 sm:p-10 shadow-sm space-y-10">
+<!-- Section Header -->
+<div class="border-b border-outline-variant pb-6">
+<div class="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-surface-container text-[11px] font-mono font-medium text-on-surface-variant mb-2">
+<span>CALIBRATION PROTOCOL</span>
+<span>•</span>
+<span>SCHEMA v2.4</span>
+</div>
+<h1 class="font-headline text-2xl sm:text-3xl font-bold tracking-tight text-on-surface">
+          Customize your interview curriculum &amp; calibration
+        </h1>
+<p class="text-sm text-on-surface-variant mt-2 max-w-2xl leading-relaxed">
+          Configure the AI evaluation rubric, real-time stress testing intensity, and architectural problem domains before generating your technical assessment loop.
+        </p>
+</div>
+<form class="space-y-10" id="onboarding-form" onsubmit="event.preventDefault();">
+<!-- FIELD 1: Target Role -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface flex items-center gap-2" for="role-select">
+<span>1. Target Engineering Domain &amp; Role</span>
+<span class="text-accent text-xs font-mono font-normal">(Primary Track)</span>
+</label>
+<span class="text-xs font-mono text-on-surface-variant">REQUIRED</span>
+</div>
+<div class="relative">
+<select class="w-full text-sm font-medium text-on-surface bg-surface border border-outline rounded-lg py-3 px-3.5 focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all appearance-none cursor-pointer" id="role-select">
+<option selected="">Software Engineer - Distributed Backend &amp; Systems</option>
+<option>Full-Stack Web Architect (Next.js, Node, Edge)</option>
+<option>Machine Learning / AI Platform Engineer</option>
+<option>Site Reliability &amp; Cloud Infrastructure (Kubernetes/DevOps)</option>
+<option>Embedded Systems &amp; Low-Latency Infrastructure</option>
+</select>
+<span class="material-symbols-outlined absolute right-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none" data-icon="unfold_more">unfold_more</span>
+</div>
+<!-- Quick Tags -->
+<div class="flex flex-wrap items-center gap-1.5 pt-1">
+<span class="text-xs font-mono text-on-surface-variant mr-1">Active Specializations:</span>
+<button class="px-2.5 py-1 rounded bg-surface-container border border-outline text-xs font-mono text-on-surface flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Go</span>
+<span class="text-on-surface-variant hover:text-on-surface text-sm">×</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-surface-container border border-outline text-xs font-mono text-on-surface flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Rust</span>
+<span class="text-on-surface-variant hover:text-on-surface text-sm">×</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-surface-container border border-outline text-xs font-mono text-on-surface flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Distributed Systems</span>
+<span class="text-on-surface-variant hover:text-on-surface text-sm">×</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-surface-container border border-outline text-xs font-mono text-on-surface flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Kubernetes</span>
+<span class="text-on-surface-variant hover:text-on-surface text-sm">×</span>
+</button>
+<button class="px-2.5 py-1 rounded bg-surface-container border border-outline text-xs font-mono text-on-surface flex items-center gap-1 hover:bg-surface-container-high transition-colors" type="button">
+<span>Kafka</span>
+<span class="text-on-surface-variant hover:text-on-surface text-sm">×</span>
+</button>
+<button class="px-2 py-1 rounded text-xs font-mono text-accent hover:underline flex items-center gap-1" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="add">add</span>
+<span>Add Tag</span>
+</button>
+</div>
+</div>
+<!-- FIELD 2: Seniority & Career Level -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface">
+              2. Seniority &amp; Career Calibration
+            </label>
+<span class="text-xs font-mono text-on-surface-variant">CALIBRATES RUBRIC WEIGHT</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<!-- Mid Level -->
+<label class="relative flex flex-col p-4 border border-outline-variant rounded-xl cursor-pointer hover:border-outline transition-all bg-surface hover:bg-surface-container-low">
+<input class="sr-only" name="seniority" type="radio" value="mid"/>
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono text-xs font-semibold text-on-surface-variant">L4 / Mid</span>
+<div class="w-4 h-4 rounded-full border border-outline"></div>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Mid-Level</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-normal">3–5 Yrs experience. Core implementation &amp; scoping.</p>
+</label>
+<!-- Senior Level (Active/Selected) -->
+<label class="relative flex flex-col p-4 border-2 border-primary rounded-xl cursor-pointer bg-accent-soft/40 shadow-sm transition-all ring-2 ring-primary/10">
+<input checked="" class="sr-only" name="seniority" type="radio" value="senior"/>
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono text-xs font-bold text-accent">L5 / Senior</span>
+<div class="w-4 h-4 rounded-full bg-primary flex items-center justify-center">
+<span class="w-1.5 h-1.5 rounded-full bg-white"></span>
+</div>
+</div>
+<p class="font-headline text-sm font-bold text-primary">Senior Engineer</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-normal">6–9 Yrs. System ownership, trade-offs, scaling resilience.</p>
+</label>
+<!-- Staff / Principal -->
+<label class="relative flex flex-col p-4 border border-outline-variant rounded-xl cursor-pointer hover:border-outline transition-all bg-surface hover:bg-surface-container-low">
+<input class="sr-only" name="seniority" type="radio" value="staff"/>
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono text-xs font-semibold text-on-surface-variant">L6/L7+</span>
+<div class="w-4 h-4 rounded-full border border-outline"></div>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Staff / Principal</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-normal">Org-wide impact, ambiguity resolution, multi-region arch.</p>
+</label>
+<!-- Engineering Management -->
+<label class="relative flex flex-col p-4 border border-outline-variant rounded-xl cursor-pointer hover:border-outline transition-all bg-surface hover:bg-surface-container-low">
+<input class="sr-only" name="seniority" type="radio" value="manager"/>
+<div class="flex justify-between items-start mb-2">
+<span class="font-mono text-xs font-semibold text-on-surface-variant">EM / Dir</span>
+<div class="w-4 h-4 rounded-full border border-outline"></div>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Management</p>
+<p class="text-xs text-on-surface-variant mt-1 leading-normal">Team leadership, strategy, delivery velocity, headcount.</p>
+</label>
+</div>
+</div>
+<!-- FIELD 3: Primary Preparation Goals -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface">
+              3. Primary Preparation Goals
+            </label>
+<span class="text-xs font-mono text-on-surface-variant">MULTI-SELECT (AT LEAST 1)</span>
+</div>
+<div class="space-y-2">
+<!-- Checked 1 -->
+<label class="flex items-start gap-3.5 p-3.5 rounded-lg border border-primary/40 bg-accent-soft/30 hover:bg-accent-soft/50 cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Master System Design &amp; Distributed Scaling</p>
+<p class="text-xs text-on-surface-variant">Deep dive into consensus (Raft/Paxos), caching tiers, sharding strategies, CAP theorem tradeoffs.</p>
+</div>
+</label>
+<!-- Checked 2 -->
+<label class="flex items-start gap-3.5 p-3.5 rounded-lg border border-primary/40 bg-accent-soft/30 hover:bg-accent-soft/50 cursor-pointer transition-colors">
+<input checked="" class="mt-0.5 rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-semibold text-on-surface">Real-time voice communication &amp; answering under pressure</p>
+<p class="text-xs text-on-surface-variant">Simulate aggressive clarifying inquiries and challenging follow-ups from strict interviewers.</p>
+</div>
+</label>
+<!-- Unchecked 3 -->
+<label class="flex items-start gap-3.5 p-3.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">Concurrency, Race conditions &amp; WASM Sandboxed algorithms</p>
+<p class="text-xs text-on-surface-variant">Evaluate memory models, deadlock prevention, parallel async execution, benchmark proofs.</p>
+</div>
+</label>
+<!-- Unchecked 4 -->
+<label class="flex items-start gap-3.5 p-3.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">Behavioral &amp; Executive FAANG leadership (STAR rubric)</p>
+<p class="text-xs text-on-surface-variant">Analyze conflict resolution, cross-team friction, ambiguous project delivery, and post-mortems.</p>
+</div>
+</label>
+<!-- Unchecked 5 -->
+<label class="flex items-start gap-3.5 p-3.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="mt-0.5 rounded border-outline text-primary focus:ring-primary h-4 w-4" type="checkbox"/>
+<div class="flex-1">
+<p class="text-sm font-medium text-on-surface">Reducing interview anxiety &amp; time-boxing panic</p>
+<p class="text-xs text-on-surface-variant">Calibrated pacing guidance with real-time HUD timers and composure feedback metrics.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- FIELD 4: Preferred Interview Track Type -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface">
+              4. Preferred Interview Track Type
+            </label>
+<span class="text-xs font-mono text-on-surface-variant">DEFAULT SESSION TRACK</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+<!-- Track 1 -->
+<label class="flex flex-col p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-all">
+<input class="sr-only" name="track_type" type="radio" value="algo"/>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface mb-3">
+<span class="material-symbols-outlined text-lg" data-icon="data_object">data_object</span>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Coding &amp; DSA</p>
+<p class="text-xs text-on-surface-variant mt-1">Data structures, asymptotic analysis, live IDE execution.</p>
+</label>
+<!-- Track 2 (Selected by default) -->
+<label class="flex flex-col p-4 rounded-xl border-2 border-primary bg-primary/[0.03] shadow-sm cursor-pointer transition-all ring-2 ring-primary/10">
+<input checked="" class="sr-only" name="track_type" type="radio" value="sysdesign"/>
+<div class="w-8 h-8 rounded-lg bg-primary text-on-primary flex items-center justify-center mb-3">
+<span class="material-symbols-outlined text-lg" data-icon="schema">schema</span>
+</div>
+<div class="flex items-center justify-between">
+<p class="font-headline text-sm font-bold text-primary">System Design</p>
+<span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary text-on-primary">ACTIVE</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1">Architecture canvas, capacity bounds, fault tolerance.</p>
+</label>
+<!-- Track 3 -->
+<label class="flex flex-col p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-all">
+<input class="sr-only" name="track_type" type="radio" value="api"/>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface mb-3">
+<span class="material-symbols-outlined text-lg" data-icon="database">database</span>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Backend &amp; API</p>
+<p class="text-xs text-on-surface-variant mt-1">Relational/NoSQL schemas, gRPC, auth flows, indexing.</p>
+</label>
+<!-- Track 4 -->
+<label class="flex flex-col p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-all">
+<input class="sr-only" name="track_type" type="radio" value="behavioral"/>
+<div class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-on-surface mb-3">
+<span class="material-symbols-outlined text-lg" data-icon="psychology">psychology</span>
+</div>
+<p class="font-headline text-sm font-bold text-on-surface">Behavioral</p>
+<p class="text-xs text-on-surface-variant mt-1">Culture alignment, leadership principles, conflict navigation.</p>
+</label>
+</div>
+</div>
+<!-- FIELD 5: Interaction Modality Preference -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface">
+              5. Interaction Modality Preference
+            </label>
+<span class="text-xs font-mono text-on-surface-variant">AUDIO / TEXT PIPELINE</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<!-- Voice AI Mode -->
+<label class="relative flex items-start gap-4 p-4 rounded-xl border-2 border-primary bg-primary/[0.02] cursor-pointer transition-all">
+<input checked="" class="sr-only" name="modality" type="radio" value="voice"/>
+<div class="w-10 h-10 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl" data-icon="mic">mic</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="font-headline text-sm font-bold text-on-surface">Voice AI Mode</span>
+<span class="px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-100 text-emerald-800">RECOMMENDED</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  Ultra-low-latency WebRTC speech synthesizer. Simulates genuine conversational pauses, interruptions, and live auditory feedback.
+                </p>
+</div>
+</label>
+<!-- Text & Sandbox Mode -->
+<label class="relative flex items-start gap-4 p-4 rounded-xl border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-all">
+<input class="sr-only" name="modality" type="radio" value="text"/>
+<div class="w-10 h-10 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-xl" data-icon="terminal">terminal</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2">
+<span class="font-headline text-sm font-bold text-on-surface">Text &amp; Code Sandbox Mode</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  Silent keyboard-first interaction. Ideal for noisy shared environments or library sessions with embedded terminal prompts.
+                </p>
+</div>
+</label>
+</div>
+</div>
+<!-- FIELD 6: Default Session Duration -->
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<label class="font-headline text-sm font-semibold text-on-surface">
+              6. Default Session Duration
+            </label>
+<span class="text-xs font-mono text-on-surface-variant">TIME-BOX ENFORCEMENT</span>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+<!-- 15m -->
+<label class="flex items-center justify-between p-3.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-colors">
+<div class="flex items-center gap-3">
+<input class="sr-only" name="duration" type="radio" value="15"/>
+<span class="font-mono text-sm font-bold text-on-surface">15m</span>
+<span class="text-xs text-on-surface-variant">Rapid Drill / Standup</span>
+</div>
+<span class="w-3.5 h-3.5 rounded-full border border-outline"></span>
+</label>
+<!-- 30m (Selected) -->
+<label class="flex items-center justify-between p-3.5 rounded-lg border-2 border-primary bg-accent-soft/30 cursor-pointer transition-colors ring-1 ring-primary/10">
+<div class="flex items-center gap-3">
+<input checked="" class="sr-only" name="duration" type="radio" value="30"/>
+<span class="font-mono text-sm font-bold text-primary">30m</span>
+<span class="text-xs font-medium text-on-surface">Targeted Deep-Dive</span>
+</div>
+<span class="w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+<span class="w-1 h-1 rounded-full bg-white"></span>
+</span>
+</label>
+<!-- 45m -->
+<label class="flex items-center justify-between p-3.5 rounded-lg border border-outline-variant bg-surface hover:bg-surface-container-low cursor-pointer transition-colors">
+<div class="flex items-center gap-3">
+<input class="sr-only" name="duration" type="radio" value="45"/>
+<span class="font-mono text-sm font-bold text-on-surface">45m</span>
+<span class="text-xs text-on-surface-variant">Full FAANG Loop</span>
+</div>
+<span class="w-3.5 h-3.5 rounded-full border border-outline"></span>
+</label>
+</div>
+</div>
+<!-- FIELD 7: Privacy & Consent Toggle -->
+<div class="pt-4 border-t border-outline-variant">
+<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant flex items-start justify-between gap-4">
+<div class="space-y-1">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-base text-on-surface-variant" data-icon="lock">lock</span>
+<span class="text-xs font-headline font-bold text-on-surface uppercase tracking-wider">Local Audio &amp; Diagnostic Data Processing Consent</span>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed max-w-2xl">
+                Allow local sandbox execution telemetry and prompt refinement for model adaptation. All audio processing runs ephemeral WebAssembly models client-side; zero audio streams are sold or retained.
+              </p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer shrink-0 mt-1">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-outline-variant peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+</div>
+</form>
+<!-- CARD FOOTER ACTIONS -->
+<div class="pt-6 border-t border-outline-variant flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3 w-full sm:w-auto">
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-outline text-xs font-semibold text-on-surface-variant hover:text-on-surface hover:bg-surface-container transition-all active:scale-[0.98]" type="button">
+<span class="material-symbols-outlined text-base" data-icon="arrow_back">arrow_back</span>
+<span>Back</span>
+</button>
+<span class="hidden md:inline-block text-[11px] text-on-surface-variant font-mono">
+            Config saved to session_cache
+          </span>
+</div>
+<div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+<button class="w-full sm:w-auto px-3 py-2 rounded-lg border border-dashed border-outline text-[11px] font-mono text-on-surface-variant hover:text-on-surface hover:border-outline-variant transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-sm text-amber-600" data-icon="bolt">bolt</span>
+<span>Dev Mode: Quick Autofill &amp; Skip</span>
+</button>
+<button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary text-xs font-semibold tracking-wide transition-all shadow-sm active:scale-[0.98]" type="button">
+<span>Continue to Step 3</span>
+<span class="material-symbols-outlined text-base" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Inline technical note -->
+<p class="text-center text-xs font-mono text-on-surface-variant mt-6">
+<span class="material-symbols-outlined text-xs align-middle" data-icon="tune">tune</span>
+      You can modify these parameters at any time from Settings or via the in-session command palette (<kbd class="px-1.5 py-0.5 rounded bg-surface-container border border-outline-variant text-[10px]">⌘K</kbd>).
+    </p>
+</main>
+<!-- MULTI-COLUMN LANDING FOOTER (Shared Component Alignment) -->
+<footer class="bg-surface-container-low border-t border-outline-variant/30 mt-auto">
+<div class="max-w-7xl mx-auto px-6 py-12 md:py-16 w-full">
+<div class="grid grid-cols-2 md:grid-cols-5 gap-8 mb-10">
+<!-- Brand column -->
+<div class="col-span-2 space-y-3">
+<div class="font-headline text-sm font-bold tracking-tight text-on-surface flex items-center gap-2">
+<span class="w-5 h-5 rounded bg-primary text-white flex items-center justify-center font-mono text-[10px]">IC</span>
+<span>Interview Coach v1.1</span>
+</div>
+<p class="text-xs leading-relaxed text-on-surface-variant max-w-sm">
+            High-fidelity technical interviewer simulator built for L5–L8 engineering roles. Rigorous real-time calibration for systems architecture and scale.
+          </p>
+<div class="flex items-center gap-2 text-xs font-mono text-emerald-700">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+<span>All systems nominal • 99.98% uptime</span>
+</div>
+</div>
+<!-- Links Column 1 -->
+<div class="space-y-2.5">
+<h4 class="font-mono text-xs font-semibold text-on-surface uppercase tracking-wider">Platform</h4>
+<ul class="space-y-1.5 font-body text-xs text-on-surface-variant">
+<li><a class="hover:text-on-surface transition-colors" href="#">Product Architecture</a></li>
+<li><a class="hover:text-on-surface transition-colors" href="#">SOC-2 Compliance</a></li>
+<li><a class="hover:text-on-surface transition-colors" href="#">Methodology</a></li>
+</ul>
+</div>
+<!-- Links Column 2 -->
+<div class="space-y-2.5">
+<h4 class="font-mono text-xs font-semibold text-on-surface uppercase tracking-wider">Resources</h4>
+<ul class="space-y-1.5 font-body text-xs text-on-surface-variant">
+<li><a class="hover:text-on-surface transition-colors" href="#">Documentation</a></li>
+<li><a class="hover:text-on-surface transition-colors" href="#">API Reference</a></li>
+<li><a class="hover:text-on-surface transition-colors" href="#">Security Protocol</a></li>
+</ul>
+</div>
+<!-- Links Column 3 -->
+<div class="space-y-2.5">
+<h4 class="font-mono text-xs font-semibold text-on-surface uppercase tracking-wider">Legal</h4>
+<ul class="space-y-1.5 font-body text-xs text-on-surface-variant">
+<li><a class="hover:text-on-surface transition-colors" href="#">Privacy Policy</a></li>
+<li><a class="hover:text-on-surface transition-colors" href="#">Terms of Service</a></li>
+</ul>
+</div>
+</div>
+<!-- Footer Bottom -->
+<div class="pt-8 border-t border-outline-variant/40 flex flex-col sm:flex-row items-center justify-between gap-4 font-body text-xs text-on-surface-variant">
+<p>© 2025 Interview Coach Inc. All rights reserved. System Operational.</p>
+<div class="flex items-center gap-4 font-mono text-[11px]">
+<span>US-EAST-1 (Node v20.11)</span>
+<span>•</span>
+<span class="text-on-surface">SSL / TLS 1.3 Certified</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach v1.1 - End Session</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#0284c7",
+            "primary-container": "#e0f2fe",
+            "on-primary": "#ffffff",
+            "on-primary-container": "#0369a1",
+            "primary-fixed-dim": "#38bdf8",
+            "surface": "#f8fafc",
+            "surface-dim": "#f1f5f9",
+            "surface-bright": "#ffffff",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f8fafc",
+            "surface-container": "#f1f5f9",
+            "surface-container-high": "#e2e8f0",
+            "surface-container-highest": "#cbd5e1",
+            "on-surface": "#0f172a",
+            "inverse-on-surface": "#f8fafc",
+            "secondary": "#475569",
+            "outline": "#94a3b8",
+            "outline-variant": "#cbd5e1",
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk"],
+            "display": ["Space Grotesk"],
+            "body": ["Public Sans"],
+            "label": ["Public Sans"]
+          },
+        },
+      },
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar Shell -->
+<header class="bg-surface-container-lowest border-b border-outline-variant w-full px-8 flex justify-between items-center h-14 sticky top-0 z-40">
+<div class="flex items-center gap-8">
+<div class="text-headline-sm font-headline font-semibold tracking-tight text-on-surface">Interview Coach v1.1</div>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-sm" href="#">Curriculum</a>
+<a class="border-b-2 border-primary text-primary font-medium py-1 text-sm" href="#">Mock Sessions</a>
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-sm" href="#">System Design</a>
+<a class="text-secondary hover:text-on-surface py-1 transition-colors text-sm" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<div class="hidden md:flex items-center gap-2">
+<button class="text-secondary hover:text-on-surface px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5">
+<span class="material-symbols-outlined text-lg">help</span>
+<span>Docs</span>
+</button>
+<button aria-label="Terminal" class="text-secondary hover:text-on-surface p-2 rounded-lg transition-colors">
+<span class="material-symbols-outlined text-lg" data-icon="terminal">terminal</span>
+</button>
+</div>
+<button class="bg-primary hover:bg-sky-600 text-on-primary text-sm font-medium px-4 py-1.5 rounded-lg transition-colors shadow-sm">
+        Save Progress
+      </button>
+<div class="h-8 w-px bg-outline-variant mx-1"></div>
+<div class="flex items-center gap-3">
+<img alt="User profile avatar placeholder" class="w-8 h-8 rounded-full object-cover border border-outline-variant" data-alt="A professional high-resolution headshot of a software engineer smiling in a brightly lit modern tech office with a clean background, captured with crisp focus and professional lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCH76DbOekvzOiyMp7ICbQ0rMY-8u_yil5xmQvwgCgpHsxIolh3OAvp0vC1IqJCKl1qYVBnrVg6HfTiUf2-Uj-KVBSqLQflDuhURX5lUPlNsCdQWSSDaJMCT4Mx0ju5tkrw1S1g-WETA2GBFS1Yss7i0AZaKQozYrWGTQLT9kELHvi2k_bSkEUgHpyDzQZbgTG65em4O1G5UHY0GueFo5GBR-QagZFdrVi-9cEl9Ui1b8ZrZ_gzi3jahEDIstCt0HGRBDss-61956ly"/>
+</div>
+</div>
+</header>
+<!-- Live Session Background Canvas (SCREEN_3 simulation) -->
+<main class="flex-1 relative flex overflow-hidden">
+<!-- Background Content: Split Code Editor & Interview Panel -->
+<div class="flex-1 grid grid-cols-1 lg:grid-cols-12 opacity-40 pointer-events-none select-none filter blur-[1px]">
+<!-- Left Panel: Problem Statement & Chat -->
+<div class="lg:col-span-5 bg-surface-container-low border-r border-outline-variant p-6 flex flex-col gap-6">
+<div class="flex justify-between items-center">
+<span class="px-2.5 py-1 bg-primary-container text-on-primary-container rounded font-medium text-xs">Algorithmic Mastery</span>
+<span class="text-xs text-secondary font-mono">ID: LC-8492</span>
+</div>
+<h1 class="text-2xl font-headline font-bold">Distributed Rate Limiter Implementation</h1>
+<p class="text-sm text-secondary leading-relaxed">
+          Design a scalable rate limiter that can handle high volumes of concurrent requests across multiple microservices using a sliding window log algorithm.
+        </p>
+<div class="bg-surface-container p-4 rounded-xl border border-outline-variant/60 flex flex-col gap-3">
+<div class="flex items-center gap-2 text-xs font-semibold text-secondary">
+<span class="material-symbols-outlined text-primary text-base">smart_toy</span>
+<span>AI Coach Real-time Feedback</span>
+</div>
+<p class="text-xs text-secondary italic">"Consider optimizing your redis key lookup pattern to avoid potential race conditions during high contention bursts."</p>
+</div>
+</div>
+<!-- Right Panel: Code Editor Mock -->
+<div class="lg:col-span-7 bg-slate-900 text-slate-200 p-6 font-mono text-xs flex flex-col">
+<div class="flex justify-between items-center pb-4 border-b border-slate-800 text-slate-400">
+<div class="flex items-center gap-2">
+<span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+<span class="ml-2 text-slate-300 font-semibold">rate_limiter.py</span>
+</div>
+<span>Python 3.10</span>
+</div>
+<div class="py-4 space-y-2 text-slate-300">
+<p><span class="text-purple-400">import</span> time</p>
+<p><span class="text-purple-400">import</span> redis</p>
+<p class="text-slate-500"># TODO: implement sliding window counter logic</p>
+<p><span class="text-blue-400">class</span> <span class="text-yellow-300">SlidingWindowRateLimiter</span>:</p>
+<p class="pl-4"><span class="text-blue-400">def</span> <span class="text-green-300">__init__</span>(<span class="text-orange-300">self</span>, redis_client, limit=100, window=60):</p>
+<p class="pl-8">self.redis = redis_client</p>
+<p class="pl-8">self.limit = limit</p>
+<p class="pl-8">self.window = window</p>
+</div>
+</div>
+</div>
+<!-- Backdrop Overlay with blur -->
+<div class="absolute inset-0 bg-slate-950/40 backdrop-blur-md z-50 flex items-center justify-center p-4">
+<!-- End Interview Confirmation Modal -->
+<div class="bg-surface-container-lowest border border-outline-variant rounded-xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+<!-- Modal Header / Title area -->
+<div class="p-6 pb-4 flex items-start gap-4">
+<div class="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-200 dark:border-amber-800">
+<span class="material-symbols-outlined text-2xl" data-icon="warning">warning</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<h2 class="text-xl font-headline font-bold text-on-surface">End Interview Session?</h2>
+<button aria-label="Close" class="text-secondary hover:text-on-surface transition-colors p-1 rounded-lg">
+<span class="material-symbols-outlined text-lg" data-icon="close">close</span>
+</button>
+</div>
+<!-- Subtitle & Elapsed time display -->
+<div class="mt-2 flex flex-wrap items-center gap-2">
+<span class="text-sm text-secondary font-medium">Current Session Elapsed: <strong class="text-on-surface font-mono">04:22 / 45:00</strong></span>
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container rounded-full text-xs font-medium">18 modules remaining in progress</span>
+</div>
+</div>
+</div>
+<!-- Warning Message Box -->
+<div class="px-6 py-2">
+<div class="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/60 rounded-lg p-4 text-xs text-amber-900 dark:text-amber-200 leading-relaxed flex gap-3">
+<span class="material-symbols-outlined text-amber-600 dark:text-amber-400 shrink-0 text-lg">error</span>
+<p>
+<strong>Warning:</strong> Ending this session now will finalize your evaluation metrics, save your current transcript, and generate your preliminary debrief report. Unsaved code changes in the sandbox will be committed. This action cannot be undone.
+            </p>
+</div>
+</div>
+<!-- Modal Footer / Action Buttons -->
+<div class="p-6 pt-4 flex items-center justify-end gap-3 bg-surface-container-low border-t border-outline-variant/60">
+<button class="px-4 py-2.5 rounded-lg border border-outline-variant hover:border-outline text-secondary hover:text-on-surface font-medium text-sm transition-colors">
+            Continue Interview
+          </button>
+<button class="px-5 py-2.5 rounded-lg bg-primary hover:bg-sky-600 text-on-primary font-medium text-sm transition-colors shadow-sm flex items-center gap-2">
+<span>End &amp; Evaluate</span>
+<span class="material-symbols-outlined text-base">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

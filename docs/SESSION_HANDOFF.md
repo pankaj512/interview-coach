@@ -251,6 +251,18 @@ Verify: `pnpm typecheck && pnpm test && pnpm build && vite build` (no-DB warn-an
 Verified 2026-09-11: install ok, typecheck ok, test 222 passed (214 prior + 8 new), `tsc -b` ok, `vite build` ok (310.86kB JS / 95.45kB gzip). Live smoke vs postgres:16 ok: submit(JS)→run passed 2/2 hidden-masked→runs list/get→submissions list→mint(`api-key-local-dev`, tools-in-instructions, `Code: 1 submission, not run yet`, correct wss URL, no secret leak)→tool-exec submit(python)→run latest(passed 1/1). Voice-session 503 without credential confirmed correct (`VOICE_NOT_CONFIGURED`, retryable false).
 Tag: `session-7b` after commit.
 
+## UI Rebuild v1.1 — Stitch → Penpot → Code (2026-09-15)
+Status: planned (Phase 1 starting).
+
+Scope: rebuild UI per `docs/interview-coach-ui-specification.md` with public marketing page (unauth), onboarding collects context pre-auth, final step asks to sign in; dev mode allows bypass for local testing. Three-phase plan captured in `docs/ui-rebuild-v1.1-plan.md`.
+
+Phases:
+1) Stitch: create project “Interview Coach v1.1”, define design system (calm/technical palette, Space Grotesk/Manrope headings + Public Sans body, 8px radius, semantic colors, functional motion), generate screens (marketing, onboarding, dashboard, new interview/config, lobby/briefing, live interview with voice states + text fallback + coaching panel, end confirm, evaluation loading, results, transcript review, history, progress, settings, error/empty/loading). Export CSS/markup.
+2) Penpot: recreate all Stitch screens/components with identical tokens, fix overlaps/readability/accessibility, add responsive variants, build component library (buttons/cards/tabs/filters/tables/progress/charts/dialogs/waveform/transcript/nav/CTAs/status chips). Penpot is visual authority.
+3) Code: map Penpot to `packages/web-client` (marketing shell vs app shell), onboarding with local cache + final sign-in gate + dev bypass flag, auth stance as above, implement Dashboard/Lobby/Live/Results/History/Progress/Settings per spec with ARIA/non-color indicators, add config flag (e.g., `DEV_BYPASS_AUTH`) for local-only bypass.
+
+Next actions: start Phase 1 (Stitch project + design system + screen generation) using the plan above.
+
 ## S8 — Hardening + deploy (HLD Phases 7–8, open)
 
 ## S8a — Service hardening: auth gate, real rate limits, quotas, probes/metrics (2026-09-11)

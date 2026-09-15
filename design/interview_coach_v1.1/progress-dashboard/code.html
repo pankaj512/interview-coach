@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="h-full" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Candidate Progress &amp; Analytics - Interview Coach v1.1</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "primary": "#0284c7",
+            "primary-container": "#e0f2fe",
+            "on-primary-container": "#0369a1",
+            "surface-container-lowest": "#ffffff",
+            "surface-container-low": "#f8fafc",
+            "surface-container": "#f1f5f9",
+            "surface-container-high": "#e2e8f0",
+            "on-surface": "#0f172a",
+            "inverse-on-surface": "#f8fafc",
+            "outline": "#cbd5e1",
+            "outline-variant": "#94a3b8",
+            "secondary": "#64748b"
+          },
+          borderRadius: {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          fontFamily: {
+            "headline": ["Space Grotesk", "sans-serif"],
+            "display": ["Space Grotesk", "sans-serif"],
+            "body": ["Public Sans", "sans-serif"],
+            "label": ["Public Sans", "sans-serif"]
+          }
+        },
+      },
+    }
+  </script>
+</head>
+<body class="h-full font-body bg-surface-container-low text-on-surface antialiased flex flex-col">
+<!-- TopNavBar Component -->
+<header class="w-full px-4 sm:px-6 lg:px-8 flex justify-between items-center h-14 bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-50">
+<div class="flex items-center gap-6">
+<div class="text-headline-sm font-headline font-semibold tracking-tight text-on-surface">Interview Coach v1.1</div>
+<nav class="hidden md:flex items-center gap-1">
+<a class="px-3 py-1 text-secondary hover:text-on-surface text-label-md font-label transition-colors" href="#">Curriculum</a>
+<a class="px-3 py-1 text-secondary hover:text-on-surface text-label-md font-label transition-colors" href="#">Mock Sessions</a>
+<a class="px-3 py-1 text-secondary hover:text-on-surface text-label-md font-label transition-colors" href="#">System Design</a>
+<a class="border-b-2 border-primary text-primary font-medium px-3 py-1 text-label-md font-label" href="#">Settings</a>
+</nav>
+</div>
+<div class="flex items-center gap-3">
+<button class="hidden sm:inline-flex items-center px-3 py-1.5 text-xs font-medium text-secondary hover:text-on-surface bg-surface-container hover:bg-surface-container-high rounded transition-colors">
+        Docs
+      </button>
+<button class="inline-flex items-center px-3.5 py-1.5 text-xs font-semibold text-white bg-primary hover:bg-primary/90 rounded transition-colors shadow-sm">
+        Save Progress
+      </button>
+<div class="flex items-center gap-2 pl-2 border-l border-outline-variant">
+<button class="p-1.5 text-secondary hover:text-on-surface rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">help</span>
+</button>
+<button class="p-1.5 text-secondary hover:text-on-surface rounded-full hover:bg-surface-container transition-colors">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</button>
+<img class="w-8 h-8 rounded-full object-cover border border-outline-variant ml-1" data-alt="A professional user profile avatar placeholder with subtle warm backlighting and a clean minimal border frame, captured in crisp high resolution with soft light-mode studio ambiance." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCtpO-t1brx7h-ePyw_3-8nFjkXJd5QPSg35oufgxu9vh7_5qIrhc7hA0KAmAIgG_rueLJL5Vyi41Dbk9F0vgKDaUvXGD0wmbydD_xuDFLCko-a9Y2baabTj4n7LtvR6WOOnhwYAxvnb9AlhbfNha91cjAjyUzGK3bqJKEzJcOWLvuEqXNqXo059BEIEOikaWQNjn7ZDGJbj1PBxrHstpfHMxJYU8U40ClnM6OAC4BAByGStVSIbW746QsfO2Pa5ifvnXCBcLAcu223"/>
+</div>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+<!-- Header Section -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+<div>
+<h1 class="text-3xl font-headline font-bold text-on-surface tracking-tight">Candidate Progress &amp; Analytics</h1>
+<p class="text-secondary text-sm sm:text-base mt-1">Tracking technical growth across coding, system design, and behavioral modules.</p>
+</div>
+<div class="flex items-center gap-2 bg-surface-container-lowest p-1 rounded-lg border border-outline-variant shadow-sm">
+<button class="px-3 py-1 text-xs font-semibold bg-primary text-white rounded">1M</button>
+<button class="px-3 py-1 text-xs font-medium text-secondary hover:text-on-surface rounded transition-colors">3M</button>
+<button class="px-3 py-1 text-xs font-medium text-secondary hover:text-on-surface rounded transition-colors">All</button>
+</div>
+</div>
+<!-- Trend Chart Section -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant shadow-sm">
+<div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-2">
+<div>
+<h2 class="text-lg font-headline font-semibold text-on-surface">Score Progression</h2>
+<p class="text-xs text-secondary">Overall readiness score trajectory over the last 10 mock sessions</p>
+</div>
+<div class="flex items-center gap-4 text-xs font-medium text-secondary">
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-primary inline-block"></span> Coding</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span> System Design</span>
+<span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Behavioral</span>
+</div>
+</div>
+<!-- Simulated Interactive Chart Area -->
+<div class="h-64 w-full relative flex items-end justify-between pt-8 pb-2 px-2 border-b border-outline-variant gap-2 sm:gap-4">
+<!-- Background Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none opacity-40">
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+<div class="border-b border-outline-variant w-full"></div>
+</div>
+<!-- Chart Columns -->
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-28 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-20"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 1</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-32 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-24"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 2</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-36 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-28"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 3</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-32 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-26"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 4</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-40 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-34"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 5</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-44 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-36"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 6</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-48 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-40"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 7</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-52 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-44"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 8</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-56 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-48"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 9</span>
+</div>
+<div class="flex-1 flex flex-col items-center gap-2 z-10 group relative">
+<div class="w-full max-w-[28px] bg-primary/20 rounded-t h-60 relative group-hover:bg-primary/40 transition-all">
+<div class="absolute bottom-0 w-full bg-primary rounded-t h-52"></div>
+</div>
+<span class="text-[10px] text-secondary font-medium">Mock 10</span>
+</div>
+</div>
+</div>
+<!-- Interview-Type Performance Breakdown Cards -->
+<div>
+<h2 class="text-lg font-headline font-semibold text-on-surface mb-4">Interview-Type Performance Breakdown</h2>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+<!-- Card 1: Coding -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="p-2 rounded-lg bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</span>
+<span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">92% Confidence</span>
+</div>
+<h3 class="font-headline font-medium text-on-surface">Coding &amp; Algorithms</h3>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline">8.8</span>
+<span class="text-xs text-secondary">/ 10.0 Avg Score</span>
+</div>
+</div>
+<div class="mt-6 w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 88%"></div>
+</div>
+</div>
+<!-- Card 2: System Design -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="p-2 rounded-lg bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[20px]">architecture</span>
+</span>
+<span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">85% Confidence</span>
+</div>
+<h3 class="font-headline font-medium text-on-surface">System Design</h3>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline">8.2</span>
+<span class="text-xs text-secondary">/ 10.0 Avg Score</span>
+</div>
+</div>
+<div class="mt-6 w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 82%"></div>
+</div>
+</div>
+<!-- Card 3: Backend -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="p-2 rounded-lg bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[20px]">dns</span>
+</span>
+<span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-800">78% Confidence</span>
+</div>
+<h3 class="font-headline font-medium text-on-surface">Backend Architecture</h3>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline">7.6</span>
+<span class="text-xs text-secondary">/ 10.0 Avg Score</span>
+</div>
+</div>
+<div class="mt-6 w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 76%"></div>
+</div>
+</div>
+<!-- Card 4: Behavioral -->
+<div class="bg-surface-container-lowest rounded-xl p-5 border border-outline-variant shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex items-center justify-between mb-3">
+<span class="p-2 rounded-lg bg-primary-container text-on-primary-container">
+<span class="material-symbols-outlined text-[20px]">groups</span>
+</span>
+<span class="text-xs font-semibold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">95% Confidence</span>
+</div>
+<h3 class="font-headline font-medium text-on-surface">Behavioral &amp; Leadership</h3>
+<div class="mt-4 flex items-baseline gap-2">
+<span class="text-2xl font-bold font-headline">9.2</span>
+<span class="text-xs text-secondary">/ 10.0 Avg Score</span>
+</div>
+</div>
+<div class="mt-6 w-full bg-surface-container rounded-full h-2">
+<div class="bg-primary h-2 rounded-full" style="width: 92%"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Two Column Grid for Strengths & Weak Areas -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+<!-- Key Strengths Section -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-headline font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-emerald-600 text-[22px]">verified</span>
+            Key Strengths
+          </h2>
+<span class="text-xs text-secondary">Verified Competencies</span>
+</div>
+<div class="space-y-3">
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-start justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Consistent Hashing</h3>
+<p class="text-xs text-secondary mt-0.5">Demonstrated flawless distributed token ring distribution in mock sessions.</p>
+</div>
+<span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Mastered</span>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-start justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Distributed Consensus</h3>
+<p class="text-xs text-secondary mt-0.5">Accurately explained Raft leadership election and log replication edge cases.</p>
+</div>
+<span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Mastered</span>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-start justify-between">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">API Design</h3>
+<p class="text-xs text-secondary mt-0.5">Strong RESTful taxonomy, idempotency key implementation, and error schemas.</p>
+</div>
+<span class="text-xs font-medium text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200">Mastered</span>
+</div>
+</div>
+</div>
+<!-- Weak Areas Section -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-headline font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-amber-600 text-[22px]">warning</span>
+            Weak Areas &amp; Drills
+          </h2>
+<span class="text-xs text-secondary">Targeted Focus</span>
+</div>
+<div class="space-y-3">
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between gap-4">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Cache Stampede Mitigation</h3>
+<p class="text-xs text-secondary mt-0.5">Struggled with probabilistic early expiration (XFetch) algorithms.</p>
+</div>
+<button class="shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded transition-colors shadow-sm">
+              Start Practice
+            </button>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between gap-4">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Graph Concurrency</h3>
+<p class="text-xs text-secondary mt-0.5">Missed deadlock handling during concurrent topological sorting.</p>
+</div>
+<button class="shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded transition-colors shadow-sm">
+              Start Practice
+            </button>
+</div>
+<div class="p-3.5 rounded-lg bg-surface-container-low border border-outline-variant flex items-center justify-between gap-4">
+<div>
+<h3 class="text-sm font-semibold text-on-surface">Multi-Region Rate Limiting</h3>
+<p class="text-xs text-secondary mt-0.5">Optimization needed for low-latency global token bucket synchronization.</p>
+</div>
+<button class="shrink-0 px-3 py-1.5 bg-primary hover:bg-primary/90 text-white text-xs font-semibold rounded transition-colors shadow-sm">
+              Start Practice
+            </button>
+</div>
+</div>
+</div>
+</div>
+<!-- Recent Improvement Notes & AI Coach Recommendations Log -->
+<div class="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant shadow-sm">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-headline font-semibold text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[22px]">smart_toy</span>
+          AI Coach Recommendations &amp; Notes
+        </h2>
+<span class="text-xs text-secondary">Updated 2 hours ago</span>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-primary">Mock Session #10</span>
+<span class="text-[10px] text-secondary">Yesterday</span>
+</div>
+<p class="text-xs text-on-surface font-medium">"Your communication pace was exceptional. Focus more on quantifying tradeoffs between SQL and NoSQL storage engines early in the requirements phase."</p>
+</div>
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-primary">System Design Drill</span>
+<span class="text-[10px] text-secondary">3 days ago</span>
+</div>
+<p class="text-xs text-on-surface font-medium">"Good recovery after a blank on circuit breaker patterns. Make sure to explicitly mention failure cascading prevention during high traffic spikes."</p>
+</div>
+<div class="p-4 rounded-lg bg-surface-container-low border border-outline-variant space-y-2">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-primary">Coding Kata</span>
+<span class="text-[10px] text-secondary">5 days ago</span>
+</div>
+<p class="text-xs text-on-surface font-medium">"Time complexity analysis was spot on O(N log N). Next time, try to optimize space complexity further by avoiding auxiliary hash maps."</p>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="w-full border-t border-outline-variant py-6 mt-12 bg-surface-container-lowest text-center text-xs text-secondary">
+<p>Interview Coach v1.1 • Candidate Progress &amp; Analytics Dashboard</p>
+</footer>
+</body></html>

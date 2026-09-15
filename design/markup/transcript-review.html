@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach - Transcript Review</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "on-primary-fixed-variant": "#134391",
+              "surface-container-lowest": "#ffffff",
+              "secondary-container": "#d5e3fc",
+              "surface-container-high": "#dce9ff",
+              "secondary-fixed": "#d5e3fc",
+              "on-error-container": "#93000a",
+              "tertiary": "#003f39",
+              "surface-container": "#e5eeff",
+              "on-tertiary-container": "#63d1c3",
+              "tertiary-container": "#005850",
+              "inverse-on-surface": "#eaf1ff",
+              "primary-container": "#1f4b99",
+              "on-secondary-fixed-variant": "#3a485b",
+              "outline": "#747782",
+              "primary-fixed": "#d9e2ff",
+              "on-tertiary-fixed": "#00201d",
+              "surface-container-low": "#eff4ff",
+              "surface-dim": "#cbdbf5",
+              "tertiary-fixed": "#89f5e7",
+              "secondary": "#515f74",
+              "surface-container-highest": "#d3e4fe",
+              "on-background": "#0b1c30",
+              "surface-bright": "#f8f9ff",
+              "on-primary": "#ffffff",
+              "error": "#ba1a1a",
+              "on-tertiary": "#ffffff",
+              "surface": "#f8f9ff",
+              "on-secondary-fixed": "#0d1c2e",
+              "primary-fixed-dim": "#afc6ff",
+              "on-error": "#ffffff",
+              "background": "#f8f9ff",
+              "on-surface": "#0b1c30",
+              "inverse-primary": "#afc6ff",
+              "on-primary-container": "#a5bfff",
+              "secondary-fixed-dim": "#b9c7df",
+              "surface-variant": "#d3e4fe",
+              "inverse-surface": "#213145",
+              "tertiary-fixed-dim": "#6bd8cb",
+              "on-primary-fixed": "#001944",
+              "surface-tint": "#335caa",
+              "on-surface-variant": "#434651",
+              "error-container": "#ffdad6",
+              "on-secondary": "#ffffff",
+              "outline-variant": "#c3c6d3",
+              "primary": "#00347b",
+              "on-tertiary-fixed-variant": "#005049",
+              "on-secondary-container": "#57657a"
+            },
+            borderRadius: {
+              DEFAULT: "0.125rem",
+              lg: "0.25rem",
+              xl: "0.5rem",
+              full: "0.75rem"
+            },
+            spacing: {
+              "space-xs": "0.25rem",
+              "space-sm": "0.5rem",
+              "space-lg": "1.5rem",
+              "margin": "2rem",
+              "space-md": "0.875rem",
+              "gutter-mobile": "0.75rem",
+              "gutter": "1.25rem",
+              "space-xl": "2.25rem",
+              "margin-mobile": "1rem"
+            },
+            fontFamily: {
+              "headline-md": ["Geist"],
+              "body-sm": ["Geist"],
+              "headline-sm": ["Geist"],
+              "code-body": ["JetBrains Mono"],
+              "headline-xl-mobile": ["Geist"],
+              "body-md": ["Geist"],
+              "label-md": ["JetBrains Mono"],
+              "body-lg": ["Geist"],
+              "headline-xl": ["Geist"],
+              "headline-lg": ["Geist"],
+              "label-sm": ["JetBrains Mono"]
+            },
+            fontSize: {
+              "headline-md": ["22px", { lineHeight: "28px", letterSpacing: "-0.01em", fontWeight: "500" }],
+              "body-sm": ["13px", { lineHeight: "18px", fontWeight: "400" }],
+              "headline-sm": ["18px", { lineHeight: "24px", letterSpacing: "-0.005em", fontWeight: "500" }],
+              "code-body": ["13px", { lineHeight: "20px", fontWeight: "400" }],
+              "headline-xl-mobile": ["28px", { lineHeight: "36px", letterSpacing: "-0.015em", fontWeight: "600" }],
+              "body-md": ["14px", { lineHeight: "20px", fontWeight: "400" }],
+              "label-md": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }],
+              "body-lg": ["16px", { lineHeight: "24px", fontWeight: "400" }],
+              "headline-xl": ["36px", { lineHeight: "44px", letterSpacing: "-0.02em", fontWeight: "600" }],
+              "headline-lg": ["28px", { lineHeight: "36px", letterSpacing: "-0.015em", fontWeight: "600" }],
+              "label-sm": ["11px", { lineHeight: "14px", letterSpacing: "0.04em", fontWeight: "500" }]
+            }
+          }
+        }
+      }
+    </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased selection:bg-primary-fixed selection:text-on-primary-fixed">
+<!-- TopNavBar -->
+<header class="fixed top-0 left-0 right-0 z-50 w-full bg-surface/90 dark:bg-surface/90 backdrop-blur-md shadow-sm dark:shadow-none">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="font-headline text-lg font-bold tracking-tight text-on-surface dark:text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-2xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+          Interview Coach
+        </div>
+<nav class="hidden md:flex items-center space-x-8 font-label text-sm font-medium">
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150" href="#">Features</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150" href="#">Methodology</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150" href="#">Pricing</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150" href="#">Docs</a>
+</nav>
+<div class="flex items-center space-x-4">
+<button class="text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors">Sign in</button>
+<button class="bg-primary hover:bg-primary/90 text-on-primary text-sm font-medium px-4 py-2 rounded-lg transition-all duration-150 active:scale-[0.98]">Start practice</button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="max-w-7xl mx-auto px-6 pt-24 pb-16">
+<!-- Session Header -->
+<div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 pb-6 border-b border-outline-variant/30">
+<div>
+<!-- Breadcrumbs -->
+<div class="flex items-center space-x-2 text-xs font-label-md text-on-surface-variant mb-2">
+<a class="hover:underline" href="#">Sessions</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<a class="hover:underline" href="#">System Design</a>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-primary font-medium">Mock #4892 - Distributed Rate Limiter</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Transcript Review: Distributed Rate Limiter</h1>
+</div>
+<div class="flex items-center space-x-3">
+<button class="inline-flex items-center space-x-2 bg-surface-container-lowest border border-outline-variant text-on-surface text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-surface-container-low transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">download</span>
+<span>Export JSON</span>
+</button>
+<button class="inline-flex items-center space-x-2 bg-surface-container-lowest border border-outline-variant text-on-surface text-sm font-medium px-3.5 py-2 rounded-lg hover:bg-surface-container-low transition-colors duration-150">
+<span class="material-symbols-outlined text-[18px]">share</span>
+<span>Share Transcript</span>
+</button>
+</div>
+</div>
+<!-- Main Workbench Grid (Split View: Left Timeline / Right Sidebar) -->
+<div class="grid grid-cols-1 xl:grid-cols-12 gap-8 items-start">
+<!-- Left Analytical Timeline Section (cols 1-8) -->
+<div class="xl:col-span-8 flex flex-col space-y-6">
+<!-- Filter Pills Bar -->
+<div class="flex items-center space-x-2 overflow-x-auto pb-2 scrollbar-none">
+<button class="bg-primary text-on-primary text-xs font-label px-3 py-1.5 rounded-lg font-medium whitespace-nowrap shadow-sm">All Messages</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-label px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors">Strong Answers</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-label px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors">Weak Answers</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-label px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors">Missed Opportunities</button>
+<button class="bg-surface-container-lowest border border-outline-variant text-on-surface-variant hover:text-on-surface text-xs font-label px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition-colors">Key Trade-offs</button>
+</div>
+<!-- Timeline Container -->
+<div class="space-y-4">
+<!-- Turn 1: AI Interviewer -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs">AI</div>
+<div>
+<h3 class="font-headline-sm text-sm font-semibold text-on-surface">AI Interviewer</h3>
+<span class="text-xs font-label-sm text-on-surface-variant">00:12 - Architectural Prompt</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container border border-outline-variant/40 text-on-surface-variant">[PROMPT]</span>
+</div>
+<p class="text-body-md text-on-surface/90 leading-relaxed">
+                Welcome. Let's design a distributed rate limiter capable of handling 10 million requests per second across 3 global regions. Walk me through your high-level component selection, storage layer trade-offs, and how you handle partition tolerance during a network split.
+              </p>
+</div>
+<!-- Turn 2: Candidate (Strong Answer with Code & Tags) -->
+<div class="bg-surface-container-lowest border border-[#CCFBF1] bg-[#F0FDFA]/20 rounded-xl p-5 shadow-sm relative">
+<div class="absolute top-0 right-0 transform translate-x-1 -translate-y-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-[#F0FDFA] border border-[#CCFBF1] text-[#0F766E] shadow-sm font-semibold">[OPTIMAL]</span>
+</div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs">YOU</div>
+<div>
+<h3 class="font-headline-sm text-sm font-semibold text-on-surface">Candidate</h3>
+<span class="text-xs font-label-sm text-on-surface-variant">01:45 - System Design Architecture</span>
+</div>
+</div>
+<div class="flex items-center space-x-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container border border-outline-variant/40 text-on-surface-variant">[O(n)]</span>
+</div>
+</div>
+<p class="text-body-md text-on-surface/90 leading-relaxed mb-4">
+                To achieve 10M RPS globally with sub-millisecond latency, we should deploy a multi-tier architecture utilizing local in-memory sliding window counters backed by Redis Cluster instances partitioned via consistent hashing.
+              </p>
+<!-- Code Snippet Block -->
+<div class="bg-[#0F172A] border border-outline-variant/20 rounded-lg p-4 mb-4 font-code-body text-code-body text-slate-100 overflow-x-auto">
+<div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-xs text-slate-400">
+<span>redis_sliding_window.lua</span>
+<span>Lua Script</span>
+</div>
+<pre><code><span class="text-blue-400">local</span> current = redis.call(<span class="text-amber-300">'INCR'</span>, KEYS[1])
+<span class="text-blue-400">if</span> current == 1 <span class="text-blue-400">then</span>
+    redis.call(<span class="text-amber-300">'EXPIRE'</span>, KEYS[1], ARGV[1])
+<span class="text-blue-400">end</span>
+<span class="text-blue-400">return</span> current</code></pre>
+</div>
+<!-- Answer Categorization Tags -->
+<div class="flex flex-wrap gap-2 pt-2 border-t border-outline-variant/20">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-surface-container text-on-surface-variant">Architecture / Distributed Systems</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-surface-container text-on-surface-variant">Redis &amp; Lua</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-surface-container text-on-surface-variant">Low Latency</span>
+</div>
+</div>
+<!-- Turn 3: AI Interviewer (Follow-up) -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-5 shadow-sm">
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary-fixed flex items-center justify-center text-primary font-bold text-xs">AI</div>
+<div>
+<h3 class="font-headline-sm text-sm font-semibold text-on-surface">AI Interviewer</h3>
+<span class="text-xs font-label-sm text-on-surface-variant">04:20 - Deep Dive Probe</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container border border-outline-variant/40 text-on-surface-variant">[PROBE]</span>
+</div>
+<p class="text-body-md text-on-surface/90 leading-relaxed">
+                That handles the happy path well. However, what happens during a cross-region partition where Redis replication lag spikes to 500ms? How do you prevent quota leakage?
+              </p>
+</div>
+<!-- Turn 4: Candidate (Missed Opportunity / Key Trade-off) -->
+<div class="bg-surface-container-lowest border border-[#FEE2E2] bg-[#FEF2F2]/20 rounded-xl p-5 shadow-sm relative">
+<div class="absolute top-0 right-0 transform translate-x-1 -translate-y-2">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-[#FEF2F2] border border-[#FEE2E2] text-[#B91C1C] shadow-sm font-semibold">[REVIEW]</span>
+</div>
+<div class="flex items-center justify-between mb-3">
+<div class="flex items-center space-x-3">
+<div class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-bold text-xs">YOU</div>
+<div>
+<h3 class="font-headline-sm text-sm font-semibold text-on-surface">Candidate</h3>
+<span class="text-xs font-label-sm text-on-surface-variant">05:15 - Failure Mode Analysis</span>
+</div>
+</div>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-[11px] font-label-sm bg-surface-container border border-outline-variant/40 text-on-surface-variant">[MISSED_EDGE_CASE]</span>
+</div>
+<p class="text-body-md text-on-surface/90 leading-relaxed mb-4">
+                We could rely on eventual consistency and allow slightly higher thresholds during sync delays, falling back to local client-side token bucket rate limiting if the regional coordinator drops connection.
+              </p>
+<!-- Coach Feedback Note -->
+<div class="bg-surface-container-low border border-outline-variant/40 rounded-lg p-3 text-xs text-on-surface-variant flex items-start space-x-2">
+<span class="material-symbols-outlined text-error text-base">info</span>
+<div>
+<span class="font-semibold text-on-surface">Missed Trade-off:</span> Did not discuss the CAP theorem implications on write availability vs strict quota enforcement. Emitting local tokens risks exceeding global limits by up to 15%.
+                </div>
+</div>
+<!-- Answer Categorization Tags -->
+<div class="flex flex-wrap gap-2 pt-3 mt-3 border-t border-outline-variant/20">
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-surface-container text-on-surface-variant">CAP Theorem</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-surface-container text-on-surface-variant">Partition Tolerance</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Sidebar Section (cols 9-12) -->
+<div class="xl:col-span-4 space-y-6">
+<!-- Overall Readiness Score Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-6 shadow-sm">
+<div class="flex items-center justify-between pb-4 mb-4 border-b border-outline-variant/30">
+<span class="font-headline-sm text-sm font-semibold text-on-surface">Overall Readiness</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-label-md bg-[#F0FDFA] border border-[#CCFBF1] text-[#0F766E] font-semibold">[TIER-1 L6 READY]</span>
+</div>
+<div class="flex items-baseline justify-between mb-4">
+<div>
+<span class="text-4xl font-extrabold font-headline text-on-surface tracking-tight">91</span>
+<span class="text-lg font-medium text-on-surface-variant">/100</span>
+</div>
+<span class="text-xs font-label-md text-[#0F766E] font-medium flex items-center">
+<span class="material-symbols-outlined text-sm mr-1">trending_up</span> +4.2% vs avg
+              </span>
+</div>
+<!-- Competency Breakdown Progress Bars -->
+<div class="space-y-3 pt-2">
+<div>
+<div class="flex justify-between text-xs font-label-md mb-1">
+<span class="text-on-surface font-medium">System Architecture</span>
+<span class="text-on-surface-variant font-mono">95%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 95%;"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs font-label-md mb-1">
+<span class="text-on-surface font-medium">Trade-off Analysis</span>
+<span class="text-on-surface-variant font-mono">82%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 82%;"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs font-label-md mb-1">
+<span class="text-on-surface font-medium">Communication &amp; Clarity</span>
+<span class="text-on-surface-variant font-mono">94%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 94%;"></div>
+</div>
+</div>
+<div>
+<div class="flex justify-between text-xs font-label-md mb-1">
+<span class="text-on-surface font-medium">Code Quality &amp; Precision</span>
+<span class="text-on-surface-variant font-mono">89%</span>
+</div>
+<div class="w-full bg-surface-container h-2 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 89%;"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- High-Impact Focus Areas Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-6 shadow-sm">
+<h3 class="font-headline-sm text-sm font-semibold text-on-surface pb-3 mb-4 border-b border-outline-variant/30">High-Impact Focus Areas</h3>
+<div class="space-y-3">
+<div class="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
+<div class="flex items-center space-x-2 mb-1">
+<span class="material-symbols-outlined text-error text-base">warning</span>
+<span class="text-xs font-headline-sm text-on-surface font-medium">CAP Theorem Edge Cases</span>
+</div>
+<p class="text-body-sm text-on-surface-variant pl-6">Deepen understanding of AP vs CP choices during network splits in distributed counters.</p>
+</div>
+<div class="p-3 bg-surface-container-low rounded-lg border border-outline-variant/30">
+<div class="flex items-center space-x-2 mb-1">
+<span class="material-symbols-outlined text-primary text-base">lightbulb</span>
+<span class="text-xs font-headline-sm text-on-surface font-medium">Token Bucket vs Leaky Bucket</span>
+</div>
+<p class="text-body-sm text-on-surface-variant pl-6">Review burst traffic handling behaviors for memory optimization.</p>
+</div>
+</div>
+</div>
+<!-- Quick Action Buttons Card -->
+<div class="bg-surface-container-lowest border border-outline-variant/60 rounded-xl p-6 shadow-sm space-y-3">
+<button class="w-full bg-primary hover:bg-primary/90 text-on-primary text-sm font-medium py-2.5 px-4 rounded-lg transition-all duration-150 flex items-center justify-center space-x-2 shadow-sm active:scale-[0.98]">
+<span class="material-symbols-outlined text-lg">refresh</span>
+<span>Practice Weak Areas</span>
+</button>
+<button class="w-full bg-surface-container-lowest border border-outline-variant hover:bg-surface-container-low text-on-surface text-sm font-medium py-2.5 px-4 rounded-lg transition-colors duration-150 flex items-center justify-center space-x-2">
+<span class="material-symbols-outlined text-lg">picture_as_pdf</span>
+<span>Download PDF Report</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant/30 dark:border-outline-variant/30 w-full mt-16">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col gap-8">
+<div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+<div class="font-headline text-base font-bold text-on-surface dark:text-on-surface flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl" style="font-variation-settings: 'FILL' 1;">terminal</span>
+            Interview Coach Inc.
+          </div>
+<div class="flex flex-wrap gap-x-6 gap-y-2">
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">Documentation</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">API Reference</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">System Architecture</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">Security &amp; SOC-2</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">Privacy Policy</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant text-sm hover:text-on-surface dark:hover:text-on-surface transition-colors duration-150" href="#">Terms of Service</a>
+</div>
+</div>
+<div class="pt-6 border-t border-outline-variant/20 flex flex-col md:flex-row items-center justify-between text-on-surface-variant/80 dark:text-on-surface-variant/80 text-sm font-body">
+<p>© 2024 Interview Coach Inc. Technical preparation platform. All rights reserved.</p>
+<div class="flex items-center space-x-1 mt-4 md:mt-0 text-xs font-label text-on-surface-variant">
+<span class="w-2 h-2 rounded-full bg-emerald-500 inline-block"></span>
+<span>All Systems Operational</span>
+</div>
+</div>
+</div>
+</footer>
+</body></html>

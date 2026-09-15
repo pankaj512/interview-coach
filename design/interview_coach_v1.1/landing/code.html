@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+
+<html class="scroll-smooth" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach — Master High-Stakes Technical Interviews</title>
+<!-- Google Fonts: Space Grotesk (Headline/Display) & Public Sans (Body/Label) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&amp;family=Space+Grotesk:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols Outlined -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS v3 with plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: {
+              DEFAULT: "#1f4b99",
+              50: "#f0f4fc",
+              100: "#e0e9f8",
+              200: "#c7d8f3",
+              600: "#1b4185",
+              700: "#15336b",
+              800: "#11264f"
+            },
+            surface: {
+              DEFAULT: "#ffffff",
+              container: "#f8fafc",
+              "container-low": "#f1f5f9",
+              "container-lowest": "#ffffff"
+            },
+            "on-surface": "#0f172a",
+            "on-surface-variant": "#475569",
+            "outline-variant": "#e2e8f0"
+          },
+          borderRadius: {
+            DEFAULT: "0.25rem",
+            lg: "0.5rem",
+            xl: "0.75rem",
+            full: "9999px"
+          },
+          fontFamily: {
+            headline: ["Space Grotesk", "sans-serif"],
+            display: ["Space Grotesk", "sans-serif"],
+            body: ["Public Sans", "sans-serif"],
+            label: ["Public Sans", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .material-symbols-outlined {
+      font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      display: inline-block;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    .wave-pulse {
+      animation: soundwave 1.4s ease-in-out infinite alternate;
+    }
+    @keyframes soundwave {
+      0% { height: 6px; }
+      100% { height: 28px; }
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body antialiased selection:bg-primary/10 selection:text-primary">
+<!-- ========================================================================= -->
+<!-- 1. TopNavBar (Shared Component Anchor)                                   -->
+<!-- ========================================================================= -->
+<header class="fixed top-0 left-0 right-0 z-50 w-full bg-surface/90 dark:bg-surface/90 backdrop-blur-md border-b border-outline-variant/30 shadow-sm dark:shadow-none transition-all duration-200">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<!-- Brand Logo / Identity -->
+<a class="font-headline text-lg font-bold tracking-tight text-on-surface flex items-center gap-2.5 transition-all duration-150 active:scale-[0.98]" href="#">
+<div class="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[18px]">terminal</span>
+</div>
+<span class="tracking-tight font-headline font-bold text-on-surface">Interview Coach</span>
+<span class="hidden sm:inline-block px-2 py-0.5 text-[11px] font-mono font-medium rounded bg-primary/10 text-primary border border-primary/20">v1.1</span>
+</a>
+<!-- Desktop Navigation Links -->
+<nav class="hidden md:flex items-center gap-8">
+<a class="font-label text-sm font-semibold text-primary transition-colors duration-150 hover:text-primary" href="#features">Features</a>
+<a class="font-label text-sm font-medium text-on-surface-variant transition-colors duration-150 hover:text-primary" href="#methodology">Methodology</a>
+<a class="font-label text-sm font-medium text-on-surface-variant transition-colors duration-150 hover:text-primary" href="#pricing">Pricing</a>
+<a class="font-label text-sm font-medium text-on-surface-variant transition-colors duration-150 hover:text-primary" href="#docs">Docs</a>
+</nav>
+<!-- Trailing Action Buttons -->
+<div class="flex items-center gap-3">
+<a class="hidden sm:inline-flex items-center px-3.5 py-1.5 font-label text-sm font-medium text-on-surface-variant hover:text-on-surface transition-colors duration-150" href="#signin">
+          Sign in
+        </a>
+<a class="inline-flex items-center justify-center px-4 py-2 rounded-lg bg-primary text-white font-label text-sm font-medium hover:bg-primary-600 shadow-sm transition-all duration-150 active:scale-[0.98]" href="#start">
+          Start practice
+        </a>
+</div>
+</div>
+</header>
+<main class="pt-24 md:pt-32">
+<!-- ======================================================================= -->
+<!-- 2. Hero Section                                                         -->
+<!-- ======================================================================= -->
+<section class="relative max-w-7xl mx-auto px-6 pt-6 pb-20 overflow-hidden">
+<!-- Ambient technical grid glow background -->
+<div class="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-70"></div>
+<div class="flex flex-col items-center text-center max-w-4xl mx-auto">
+<!-- Technical release pill badge -->
+<div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface border border-outline-variant shadow-sm text-xs font-mono text-on-surface-variant mb-6 hover:border-primary/40 transition-colors">
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+<span class="font-semibold text-primary">v1.1 Release:</span>
+<span>Real-time latency under 120ms with multimodal speech &amp; reasoning</span>
+</div>
+<!-- Headline & Subheadline -->
+<h1 class="font-headline font-bold text-4xl sm:text-5xl lg:text-6xl tracking-tight text-on-surface mb-6 leading-[1.12]">
+          Master high-stakes technical interviews with <span class="text-primary underline decoration-primary/30 decoration-wavy underline-offset-4">real-time AI guidance</span>.
+        </h1>
+<p class="font-body text-lg sm:text-xl text-on-surface-variant max-w-3xl leading-relaxed mb-8">
+          Simulate rigorous system design and coding loops with low-latency voice, live code sandboxing, and instant rubric-based evaluation calibrated to senior engineering tiers.
+        </p>
+<!-- CTAs -->
+<div class="flex flex-col sm:flex-row items-center gap-3.5 w-full sm:w-auto mb-4">
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-primary text-white font-label text-base font-semibold hover:bg-primary-600 shadow-md shadow-primary/20 transition-all duration-150 active:scale-[0.98]" href="#start">
+<span>Start practice</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</a>
+<a class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-lg bg-surface border border-outline-variant text-on-surface font-label text-base font-medium hover:bg-surface-container hover:border-outline-variant/80 transition-all duration-150" href="#features">
+<span class="material-symbols-outlined text-lg text-on-surface-variant">layers</span>
+<span>View features</span>
+</a>
+</div>
+<!-- Micro-copy -->
+<p class="text-xs text-on-surface-variant/70 font-mono flex items-center gap-2">
+<span class="material-symbols-outlined text-sm text-emerald-600">check_circle</span>
+          No credit card required · Free 3 full mock sessions
+        </p>
+</div>
+<!-- Hero Workspace Simulation Artifact -->
+<div class="mt-14 max-w-6xl mx-auto rounded-xl border border-outline-variant bg-surface shadow-2xl overflow-hidden">
+<!-- Mock IDE Window Header -->
+<div class="bg-surface-container-low border-b border-outline-variant px-4 py-2.5 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<div class="flex items-center gap-2">
+<div class="flex gap-1.5">
+<span class="w-3 h-3 rounded-full bg-slate-300"></span>
+<span class="w-3 h-3 rounded-full bg-slate-300"></span>
+<span class="w-3 h-3 rounded-full bg-slate-300"></span>
+</div>
+<span class="text-slate-400 ml-2">|</span>
+<span class="font-medium text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[15px] text-primary">psychology</span>
+              Staff Engineer Loop: Distributed Rate Limiter
+            </span>
+</div>
+<div class="flex items-center gap-4">
+<span class="flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+<span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+              Audio session active (98ms)
+            </span>
+<span class="hidden md:inline text-slate-500">Timer: 34:12 / 45:00</span>
+</div>
+</div>
+<!-- IDE Split Layout -->
+<div class="grid grid-cols-1 lg:grid-cols-12 min-h-[460px]">
+<!-- Left Pane: Problem Context & Voice Stream -->
+<div class="lg:col-span-5 bg-surface p-5 border-b lg:border-b-0 lg:border-r border-outline-variant flex flex-col justify-between">
+<div class="space-y-4">
+<div class="flex items-center justify-between">
+<span class="px-2 py-0.5 text-xs font-mono font-medium bg-amber-50 text-amber-800 border border-amber-200 rounded">
+                  System Design &amp; Algorithms
+                </span>
+<span class="text-xs font-mono text-on-surface-variant">Calibrated: L6 / Principal</span>
+</div>
+<div>
+<h2 class="font-headline font-semibold text-lg text-on-surface">Design a Sliding Window Token Bucket</h2>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  Support a distributed multi-tenant API gateway handling 100,000 req/sec per cluster. Maintain thread-safety and bounded Redis memory footprints under burst traffic.
+                </p>
+</div>
+<!-- Real-time Voice Waveform & Transcribed Audio -->
+<div class="p-3.5 rounded-lg bg-surface-container border border-outline-variant/60 space-y-2.5">
+<div class="flex items-center justify-between">
+<span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+<span class="material-symbols-outlined text-sm text-primary">mic</span>
+                    Interviewer Voice (Sophia, Staff Infrastructure AI)
+                  </span>
+<!-- Soundwave animation bars -->
+<div class="flex items-center gap-0.5 h-6">
+<span class="w-1 bg-primary rounded-full wave-pulse" style="animation-delay: 0.1s;"></span>
+<span class="w-1 bg-primary rounded-full wave-pulse" style="animation-delay: 0.3s;"></span>
+<span class="w-1 bg-primary rounded-full wave-pulse" style="animation-delay: 0.5s;"></span>
+<span class="w-1 bg-primary rounded-full wave-pulse" style="animation-delay: 0.2s;"></span>
+<span class="w-1 bg-primary rounded-full wave-pulse" style="animation-delay: 0.4s;"></span>
+</div>
+</div>
+<p class="text-xs text-on-surface-variant italic font-body">
+                  "Notice how you are using sorted sets in your current draft. What happens to Redis CPU utilization if 10k clients send bursts simultaneously? How can we avoid O(N) trim overhead?"
+                </p>
+</div>
+</div>
+<!-- In-session Progressive Hint Callout -->
+<div class="mt-4 p-3 rounded-lg bg-primary-50 border border-primary-200">
+<div class="flex items-start gap-2.5">
+<span class="material-symbols-outlined text-primary text-base mt-0.5">lightbulb</span>
+<div class="space-y-0.5">
+<div class="flex items-center gap-2">
+<span class="text-xs font-semibold text-primary-800">Contextual Rubric Nudge (Level 1 Hint)</span>
+<span class="text-[10px] text-primary-700 bg-white/80 px-1 rounded border border-primary-200">Non-penalized</span>
+</div>
+<p class="text-xs text-on-surface-variant">
+                    Consider a fixed-bucket approximation with two counters (current &amp; previous bucket) to reduce write complexity to O(1).
+                  </p>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Pane: Code Sandbox & Monaco Preview -->
+<div class="lg:col-span-7 bg-slate-900 text-slate-100 flex flex-col font-mono text-xs">
+<!-- Sandbox tab bar -->
+<div class="flex items-center justify-between px-4 py-2 bg-slate-950 border-b border-slate-800">
+<div class="flex items-center gap-3">
+<span class="px-2.5 py-1 rounded bg-slate-800 text-white font-medium flex items-center gap-1.5 text-[11px]">
+<span class="text-amber-400">py</span> RateLimiter.py
+                </span>
+<span class="text-slate-400 hover:text-slate-200 cursor-pointer text-[11px]">tests_fuzz.py</span>
+</div>
+<div class="flex items-center gap-2 text-[11px]">
+<span class="text-slate-400">Python 3.12 · JIT Sandbox</span>
+<button class="px-2.5 py-0.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-sans text-xs flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">play_arrow</span> Run
+                </button>
+</div>
+</div>
+<!-- Code Body -->
+<div class="p-4 flex-1 overflow-x-auto leading-relaxed text-slate-300">
+<pre><span class="text-purple-400">import</span> time
+<span class="text-purple-400">from</span> typing <span class="text-purple-400">import</span> Optional
+
+<span class="text-blue-400">class</span> <span class="text-amber-300">SlidingWindowRateLimiter</span>:
+    <span class="text-blue-400">def</span> <span class="text-amber-300">__init__</span>(<span class="text-orange-300">self</span>, capacity: <span class="text-emerald-400">int</span>, refill_rate_per_sec: <span class="text-emerald-400">float</span>):
+        <span class="text-orange-300">self</span>.capacity = capacity
+        <span class="text-orange-300">self</span>.refill_rate = refill_rate_per_sec
+        <span class="text-orange-300">self</span>.tokens = capacity
+        <span class="text-orange-300">self</span>.last_refill = time.monotonic()
+
+    <span class="text-blue-400">def</span> <span class="text-amber-300">allow_request</span>(<span class="text-orange-300">self</span>, cost: <span class="text-emerald-400">int</span> = 1) -&gt; <span class="text-emerald-400">bool</span>:
+        now = time.monotonic()
+        delta = now - <span class="text-orange-300">self</span>.last_refill
+        
+        <span class="text-slate-500"># Refill tokens proportionally without unbounded memory allocation</span>
+        <span class="text-orange-300">self</span>.tokens = min(<span class="text-orange-300">self</span>.capacity, <span class="text-orange-300">self</span>.tokens + delta * <span class="text-orange-300">self</span>.refill_rate)
+        <span class="text-orange-300">self</span>.last_refill = now
+
+        <span class="text-purple-400">if</span> <span class="text-orange-300">self</span>.tokens &gt;= cost:
+            <span class="text-orange-300">self</span>.tokens -= cost
+            <span class="text-purple-400">return</span> <span class="text-emerald-400">True</span>
+        <span class="text-purple-400">return</span> <span class="text-emerald-400">False</span></pre>
+</div>
+<!-- Real-time Test Runner Console Output -->
+<div class="border-t border-slate-800 bg-slate-950/80 p-3 flex items-center justify-between text-[11px]">
+<div class="flex items-center gap-3">
+<span class="text-emerald-400 flex items-center gap-1 font-semibold">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> 18/18 Unit Tests Passing
+                </span>
+<span class="text-slate-400">|</span>
+<span class="text-slate-300">P99 Latency: <span class="text-emerald-300 font-medium">0.14ms</span></span>
+<span class="text-slate-400">|</span>
+<span class="text-slate-300">Fuzzing: 50k concurrency load simulated</span>
+</div>
+<span class="text-slate-400">Score: <strong class="text-white">96/100</strong> (Senior L6)</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ======================================================================= -->
+<!-- 3. Metrics & Social Proof Strip                                         -->
+<!-- ======================================================================= -->
+<section class="border-y border-outline-variant/40 bg-surface-container py-12">
+<div class="max-w-7xl mx-auto px-6">
+<!-- Numerical Metrics Grid -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-8 mb-10 text-center">
+<div class="space-y-1">
+<p class="font-headline font-bold text-3xl sm:text-4xl text-primary">94%</p>
+<p class="font-label text-xs sm:text-sm text-on-surface-variant font-medium">Offer rate within 60 days</p>
+</div>
+<div class="space-y-1">
+<p class="font-headline font-bold text-3xl sm:text-4xl text-on-surface">140,000+</p>
+<p class="font-label text-xs sm:text-sm text-on-surface-variant font-medium">Mock interviews completed</p>
+</div>
+<div class="space-y-1">
+<p class="font-headline font-bold text-3xl sm:text-4xl text-primary">4.9 / 5</p>
+<p class="font-label text-xs sm:text-sm text-on-surface-variant font-medium">Candidate satisfaction rating</p>
+</div>
+<div class="space-y-1">
+<p class="font-headline font-bold text-3xl sm:text-4xl text-on-surface">45+ Rubrics</p>
+<p class="font-label text-xs sm:text-sm text-on-surface-variant font-medium">Calibrated to Tier-1 companies</p>
+</div>
+</div>
+<!-- Social Proof Alumni Destination Badges -->
+<div class="pt-6 border-t border-outline-variant/30 flex flex-col md:flex-row items-center justify-between gap-4">
+<span class="text-xs font-mono uppercase tracking-wider text-on-surface-variant/70 text-center md:text-left">
+            Alumni receiving offers at premier engineering orgs:
+          </span>
+<div class="flex flex-wrap items-center justify-center gap-6 sm:gap-8 font-headline font-semibold text-sm text-slate-400">
+<span class="hover:text-on-surface transition-colors cursor-default">Google</span>
+<span class="hover:text-on-surface transition-colors cursor-default">Stripe</span>
+<span class="hover:text-on-surface transition-colors cursor-default">Meta</span>
+<span class="hover:text-on-surface transition-colors cursor-default">Databricks</span>
+<span class="hover:text-on-surface transition-colors cursor-default">OpenAI</span>
+<span class="hover:text-on-surface transition-colors cursor-default">Amazon</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ======================================================================= -->
+<!-- 4. Core Capabilities Feature Grid (Bento Grid)                         -->
+<!-- ======================================================================= -->
+<section class="max-w-7xl mx-auto px-6 py-24" id="features">
+<div class="max-w-2xl mx-auto text-center mb-16">
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono font-medium uppercase tracking-wider">
+          Engineered for Rigor
+        </span>
+<h2 class="font-headline font-bold text-3xl sm:text-4xl text-on-surface mt-3 mb-4 tracking-tight">
+          Everything required to conquer staff-level engineering loops.
+        </h2>
+<p class="font-body text-base text-on-surface-variant">
+          Not just another quiz bank. Interview Coach v1.1 pairs multimodal conversational LLMs with live sandbox compilers and authoritative evaluation rubrics.
+        </p>
+</div>
+<!-- 6-card Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<!-- Card 1: Realistic Interviewer Personas -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">groups</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">Dynamic Interviewer Personas</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Select between System Architects, Engineering Managers, and Staff Specialists. Each persona dynamically adapts pushback and follow-up probes based on your answers.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Adaptive difficulty</span>
+<span class="text-primary font-medium">L4 → L7 Modes</span>
+</div>
+</div>
+<!-- Card 2: Voice + Text Multimodal -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">graphic_eq</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">Voice + Text Multimodal</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Natural bidirectional audio dialogue under 120ms latency. Practice vocalizing trade-offs, handling real-time interruptions, and diagramming simultaneously.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Interruption handling</span>
+<span class="text-emerald-700 font-medium font-mono">120ms P95</span>
+</div>
+</div>
+<!-- Card 3: In-Session Coaching Hints -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">tips_and_updates</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">In-Session Coaching Hints</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Get intelligent, non-intrusive progressive nudges when you pause or wander off course without spoiling the optimal solution or ruining interview immersion.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Progressive scaffolding</span>
+<span class="text-primary font-medium">3-tier nudges</span>
+</div>
+</div>
+<!-- Card 4: Deep Rubric Evaluation -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">fact_check</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">Deep Rubric Evaluation</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Comprehensive post-session report cards with dimensional grades across code correctness, asymptotic complexity, trade-off depth, and articulation.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Hiring calibration</span>
+<span class="text-primary font-medium">FAANG debrief standard</span>
+</div>
+</div>
+<!-- Card 5: Progress & Skill Graph -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">insights</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">Progress &amp; Skill Graph</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Track competency trajectories across data structures, consensus protocols, cache coherence, and API design. Uncover blind spots before your actual interview loops.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Weakness detection</span>
+<span class="text-primary font-medium">Automatic drills</span>
+</div>
+</div>
+<!-- Card 6: In-Browser Code Sandbox -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 hover:border-primary/50 transition-all duration-200 shadow-sm flex flex-col justify-between group">
+<div>
+<div class="w-10 h-10 rounded-lg bg-primary-50 text-primary flex items-center justify-center mb-4 group-hover:scale-105 transition-transform">
+<span class="material-symbols-outlined text-2xl">data_object</span>
+</div>
+<h3 class="font-headline font-semibold text-lg text-on-surface mb-2">In-Browser Code Sandbox</h3>
+<p class="font-body text-sm text-on-surface-variant leading-relaxed mb-4">
+              Multi-language isolated runtime (Python, Go, Java, C++, TypeScript). Features live unit test runners, memory profilers, and deterministic concurrency race detectors.
+            </p>
+</div>
+<div class="pt-4 border-t border-outline-variant/40 flex items-center justify-between text-xs font-mono text-on-surface-variant">
+<span>Runtimes supported</span>
+<span class="text-primary font-medium">14 Languages</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ======================================================================= -->
+<!-- 5. Value Propositions Deep Dive (Comparison)                           -->
+<!-- ======================================================================= -->
+<section class="bg-surface-container py-24 border-y border-outline-variant/40" id="methodology">
+<div class="max-w-7xl mx-auto px-6">
+<div class="max-w-2xl mx-auto text-center mb-16">
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono font-medium uppercase tracking-wider">
+            Methodology Shift
+          </span>
+<h2 class="font-headline font-bold text-3xl sm:text-4xl text-on-surface mt-3 mb-4 tracking-tight">
+            Stop grinding problems blindly. Train for real human panels.
+          </h2>
+<p class="font-body text-base text-on-surface-variant">
+            Most candidates fail not because they couldn't write code, but because they failed to navigate ambiguity, defend architecture trade-offs, or communicate effectively under time pressure.
+          </p>
+</div>
+<!-- Comparison Table / Split Cards -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+<!-- Traditional Prep Card -->
+<div class="rounded-xl border border-outline-variant/60 bg-surface p-7 opacity-85">
+<div class="flex items-center gap-2 mb-6">
+<span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+<h3 class="font-headline font-semibold text-lg text-on-surface">The Traditional Method</h3>
+</div>
+<ul class="space-y-5 text-sm text-on-surface-variant">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-rose-500 text-base mt-0.5">close</span>
+<span><strong>Passive LeetCode grinding:</strong> Memorizing hundreds of problems without practicing verbal articulation or reasoning aloud under pressure.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-rose-500 text-base mt-0.5">close</span>
+<span><strong>Unreliable peer mocks:</strong> Relying on fellow candidates who lack formal calibration and offer generic "You did fine" feedback.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-rose-500 text-base mt-0.5">close</span>
+<span><strong>Random problem checklists:</strong> Burning weeks on irrelevant algorithmic puzzles rather than the distributed system architectures tested today.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-rose-500 text-base mt-0.5">close</span>
+<span><strong>Silent code execution:</strong> Coding without real-time challenges from an interviewer probing scalability bottlenecks and edge cases.</span>
+</li>
+</ul>
+</div>
+<!-- Interview Coach v1.1 Card -->
+<div class="rounded-xl border-2 border-primary bg-surface p-7 shadow-lg relative">
+<div class="absolute -top-3 right-6 px-3 py-0.5 rounded-full bg-primary text-white text-[11px] font-mono font-medium">
+              Calibrated v1.1 Standard
+            </div>
+<div class="flex items-center gap-2 mb-6">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+<h3 class="font-headline font-semibold text-lg text-primary">Interview Coach v1.1</h3>
+</div>
+<ul class="space-y-5 text-sm text-on-surface">
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-emerald-600 text-base mt-0.5">check_circle</span>
+<span><strong>Real-time vocal feedback:</strong> Conversational audio that challenges design trade-offs in real time and evaluates voice pacing and clarity.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-emerald-600 text-base mt-0.5">check_circle</span>
+<span><strong>Tier-1 hiring rubrics:</strong> Exact scorecards mapped against Meta E5/E6, Google L5/L6, and Stripe Staff rubrics with pinpoint actionable fixes.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-emerald-600 text-base mt-0.5">check_circle</span>
+<span><strong>Adaptive problem sequencing:</strong> Our engine targets your demonstrated architectural weak points rather than generic problem lists.</span>
+</li>
+<li class="flex items-start gap-3">
+<span class="material-symbols-outlined text-emerald-600 text-base mt-0.5">check_circle</span>
+<span><strong>Interactive multi-tenant sandbox:</strong> Run code against custom test suites, concurrency stress tests, and automated boundary fuzzing.</span>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</section>
+<!-- ======================================================================= -->
+<!-- 6. Testimonials Strip                                                   -->
+<!-- ======================================================================= -->
+<section class="max-w-7xl mx-auto px-6 py-24">
+<div class="max-w-2xl mx-auto text-center mb-16">
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono font-medium uppercase tracking-wider">
+          Proven Out in Real Loops
+        </span>
+<h2 class="font-headline font-bold text-3xl sm:text-4xl text-on-surface mt-3 mb-4 tracking-tight">
+          How senior candidates secured offers at top tiers.
+        </h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Testimonial 1 -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 flex flex-col justify-between shadow-sm">
+<div class="space-y-3">
+<div class="flex text-amber-500">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+              "The latency in voice dialogue was the game changer. In my Stripe Staff loop, the interviewer questioned my consensus approach just like Sophia (the AI persona) did during practice. I landed the offer with zero surprises."
+            </p>
+</div>
+<div class="pt-4 mt-6 border-t border-outline-variant/40 flex items-center justify-between">
+<div>
+<p class="font-headline font-semibold text-sm text-on-surface">Alexei Morozov</p>
+<p class="text-xs text-on-surface-variant font-mono">Staff SRE @ Stripe</p>
+</div>
+<span class="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">Offer Accepted</span>
+</div>
+</div>
+<!-- Testimonial 2 -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 flex flex-col justify-between shadow-sm">
+<div class="space-y-3">
+<div class="flex text-amber-500">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+              "Other platforms give you binary pass/fail test cases. Interview Coach gave me dimensional rubric grades on communication clarity and edge case identification. That was the exact difference between an L5 downlevel and an L6 offer."
+            </p>
+</div>
+<div class="pt-4 mt-6 border-t border-outline-variant/40 flex items-center justify-between">
+<div>
+<p class="font-headline font-semibold text-sm text-on-surface">Priyah Patel</p>
+<p class="text-xs text-on-surface-variant font-mono">Principal Engineer @ Databricks</p>
+</div>
+<span class="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">L6 Offer</span>
+</div>
+</div>
+<!-- Testimonial 3 -->
+<div class="rounded-xl border border-outline-variant bg-surface p-6 flex flex-col justify-between shadow-sm">
+<div class="space-y-3">
+<div class="flex text-amber-500">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="text-sm text-on-surface-variant leading-relaxed">
+              "As a self-taught engineer moving into senior infrastructure roles, I struggled with system design conversations. The progressive hints taught me how to unblock myself gracefully without sounding uncertain."
+            </p>
+</div>
+<div class="pt-4 mt-6 border-t border-outline-variant/40 flex items-center justify-between">
+<div>
+<p class="font-headline font-semibold text-sm text-on-surface">Marcus Vance</p>
+<p class="text-xs text-on-surface-variant font-mono">Senior Backend @ Discord</p>
+</div>
+<span class="text-xs font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-medium">Senior Loop</span>
+</div>
+</div>
+</div>
+</section>
+<!-- ======================================================================= -->
+<!-- 7. Pricing Teaser                                                       -->
+<!-- ======================================================================= -->
+<section class="bg-surface-container py-24 border-t border-outline-variant/40" id="pricing">
+<div class="max-w-7xl mx-auto px-6">
+<div class="max-w-2xl mx-auto text-center mb-16">
+<span class="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-mono font-medium uppercase tracking-wider">
+            Predictable Pricing
+          </span>
+<h2 class="font-headline font-bold text-3xl sm:text-4xl text-on-surface mt-3 mb-4 tracking-tight">
+            Invest in your next career compensation bracket.
+          </h2>
+<p class="font-body text-base text-on-surface-variant">
+            A single level jump can represent a $50k-$150k difference in total annual compensation. Prepare with professional tooling.
+          </p>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-6xl mx-auto items-stretch">
+<!-- Starter Plan -->
+<div class="rounded-xl border border-outline-variant bg-surface p-8 flex flex-col justify-between shadow-sm">
+<div>
+<h3 class="font-headline font-semibold text-xl text-on-surface">Starter</h3>
+<p class="text-xs text-on-surface-variant mt-1 mb-6">Essential diagnostics for early preparation</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="font-headline font-bold text-4xl text-on-surface">$0</span>
+<span class="text-xs text-on-surface-variant font-mono">/ forever free</span>
+</div>
+<ul class="space-y-3.5 text-sm text-on-surface-variant">
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>3 full multimodal voice mock sessions</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Standard coding sandbox (5 languages)</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Basic pass/fail complexity feedback</span>
+</li>
+<li class="flex items-center gap-2.5 text-slate-400">
+<span class="material-symbols-outlined text-base">close</span>
+<span>No Tier-1 rubric breakdowns</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/40">
+<a class="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-lg bg-surface border border-outline-variant hover:bg-surface-container font-label text-sm font-semibold text-on-surface transition-colors" href="#start">
+                Start practice free
+              </a>
+</div>
+</div>
+<!-- Pro Practice Plan (Featured) -->
+<div class="rounded-xl border-2 border-primary bg-surface p-8 flex flex-col justify-between shadow-xl relative scale-100 lg:scale-[1.03]">
+<div class="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-0.5 rounded-full bg-primary text-white text-xs font-mono font-medium shadow-sm">
+              Most Popular Candidate Choice
+            </div>
+<div>
+<div class="flex items-center justify-between">
+<h3 class="font-headline font-semibold text-xl text-primary">Pro Practice</h3>
+<span class="px-2 py-0.5 rounded bg-primary/10 text-primary text-xs font-mono font-medium">Billed monthly</span>
+</div>
+<p class="text-xs text-on-surface-variant mt-1 mb-6">Unlimited mock loops with granular coaching</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="font-headline font-bold text-4xl text-on-surface">$39</span>
+<span class="text-xs text-on-surface-variant font-mono">/ month · cancel anytime</span>
+</div>
+<ul class="space-y-3.5 text-sm text-on-surface">
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base font-semibold">check</span>
+<span><strong>Unlimited</strong> voice mocks (sub-120ms latency)</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base font-semibold">check</span>
+<span>System Design &amp; Staff-tier architecture loops</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base font-semibold">check</span>
+<span>Full rubric evaluation calibrated to FAANG debriefs</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base font-semibold">check</span>
+<span>Progressive non-penalized coaching hints</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base font-semibold">check</span>
+<span>Skill graph tracking &amp; targeted weakness drills</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/40">
+<a class="w-full inline-flex items-center justify-center py-3 px-4 rounded-lg bg-primary hover:bg-primary-600 font-label text-sm font-semibold text-white shadow-md shadow-primary/20 transition-all duration-150 active:scale-[0.98]" href="#start">
+                Start practice
+              </a>
+</div>
+</div>
+<!-- Team / Bootcamp Plan -->
+<div class="rounded-xl border border-outline-variant bg-surface p-8 flex flex-col justify-between shadow-sm">
+<div>
+<h3 class="font-headline font-semibold text-xl text-on-surface">Team / Bootcamp</h3>
+<p class="text-xs text-on-surface-variant mt-1 mb-6">For universities, bootcamps &amp; cohort managers</p>
+<div class="flex items-baseline gap-1 mb-6">
+<span class="font-headline font-bold text-4xl text-on-surface">$189</span>
+<span class="text-xs text-on-surface-variant font-mono">/ seat / quarter</span>
+</div>
+<ul class="space-y-3.5 text-sm text-on-surface-variant">
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>All Pro capabilities included</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Cohort benchmark analytics dashboard</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Custom institutional rubric authoring</span>
+</li>
+<li class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-primary text-base">check</span>
+<span>Dedicated curriculum engineering support</span>
+</li>
+</ul>
+</div>
+<div class="mt-8 pt-6 border-t border-outline-variant/40">
+<a class="w-full inline-flex items-center justify-center py-2.5 px-4 rounded-lg bg-surface border border-outline-variant hover:bg-surface-container font-label text-sm font-semibold text-on-surface transition-colors" href="#contact">
+                Contact Enterprise
+              </a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final High-Impact CTA Strip -->
+<section class="max-w-7xl mx-auto px-6 py-20">
+<div class="rounded-2xl bg-primary text-white p-10 md:p-14 flex flex-col md:flex-row items-center justify-between gap-8 shadow-xl">
+<div class="max-w-2xl text-center md:text-left">
+<h2 class="font-headline font-bold text-2xl sm:text-3xl md:text-4xl tracking-tight leading-snug">
+            Ready to pass your upcoming technical loops with total confidence?
+          </h2>
+<p class="font-body text-primary-100 text-base mt-2">
+            Experience our 120ms voice simulation with zero setup. Start in under 30 seconds.
+          </p>
+</div>
+<div class="flex-shrink-0">
+<a class="inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-lg bg-white text-primary font-label text-base font-semibold hover:bg-primary-50 shadow transition-all duration-150 active:scale-[0.98]" href="#start">
+<span>Start practice now</span>
+<span class="material-symbols-outlined text-lg">arrow_forward</span>
+</a>
+</div>
+</div>
+</section>
+</main>
+<!-- ========================================================================= -->
+<!-- 8. Footer (Shared Component Anchor)                                       -->
+<!-- ========================================================================= -->
+<footer class="w-full bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant/30">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col gap-8">
+<!-- Top Tier: Brand, Links Columns -->
+<div class="grid grid-cols-2 md:grid-cols-5 gap-8">
+<!-- Brand identity block -->
+<div class="col-span-2 space-y-3">
+<a class="font-headline text-base font-bold text-on-surface flex items-center gap-2" href="#">
+<div class="w-6 h-6 rounded bg-primary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px]">terminal</span>
+</div>
+<span>Interview Coach</span>
+</a>
+<p class="font-body text-sm text-on-surface-variant/80 max-w-sm leading-relaxed">
+            High-fidelity technical interview preparation platform powered by real-time voice, low-latency sandboxing, and calibrated hiring rubrics.
+          </p>
+<div class="flex items-center gap-2 pt-1">
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+<span class="text-xs font-mono text-on-surface-variant">Systems Operational · Latency 98ms</span>
+</div>
+</div>
+<!-- Column 1: Platform -->
+<div class="space-y-3">
+<p class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Product</p>
+<ul class="space-y-2 text-sm">
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#features">Features</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#methodology">Methodology</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#pricing">Pricing</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Rubric Calibration</a></li>
+</ul>
+</div>
+<!-- Column 2: Resources / Docs -->
+<div class="space-y-3">
+<p class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Resources</p>
+<ul class="space-y-2 text-sm">
+<li><a class="font-label text-primary font-medium hover:text-on-surface transition-colors duration-150" href="#">Documentation</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">API Reference</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">System Architecture</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Security &amp; SOC-2</a></li>
+</ul>
+</div>
+<!-- Column 3: Legal & Trust -->
+<div class="space-y-3">
+<p class="font-headline text-xs font-semibold uppercase tracking-wider text-on-surface-variant">Legal</p>
+<ul class="space-y-2 text-sm">
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Privacy Policy</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Terms of Service</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Subprocessor List</a></li>
+<li><a class="font-label text-on-surface-variant text-sm hover:text-on-surface transition-colors duration-150" href="#">Cookie Preferences</a></li>
+</ul>
+</div>
+</div>
+<!-- Bottom Tier: Exact Copyright Notice -->
+<div class="pt-6 border-t border-outline-variant/30 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs font-body text-on-surface-variant/80">
+<p>© 2024 Interview Coach Inc. Technical preparation platform. All rights reserved.</p>
+<p class="font-mono">Engineered with precision for senior engineering loops.</p>
+</div>
+</div>
+</footer>
+</body></html>

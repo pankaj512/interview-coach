@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interview Coach v1.1 - Onboarding Preferences</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-variant": "#d3e4fe",
+            "on-tertiary-container": "#63d1c3",
+            "surface-container-high": "#dce9ff",
+            "on-secondary-container": "#57657a",
+            "error": "#ba1a1a",
+            "primary": "#00347b",
+            "on-surface": "#0b1c30",
+            "secondary-fixed": "#d5e3fc",
+            "secondary-container": "#d5e3fc",
+            "outline": "#747782",
+            "secondary": "#515f74",
+            "surface-bright": "#f8f9ff",
+            "on-primary": "#ffffff",
+            "on-tertiary-fixed": "#00201d",
+            "surface-container-lowest": "#ffffff",
+            "on-secondary": "#ffffff",
+            "on-primary-fixed-variant": "#134391",
+            "surface-container-highest": "#d3e4fe",
+            "on-secondary-fixed-variant": "#3a485b",
+            "on-primary-fixed": "#001944",
+            "primary-fixed": "#d9e2ff",
+            "surface-dim": "#cbdbf5",
+            "error-container": "#ffdad6",
+            "on-primary-container": "#a5bfff",
+            "inverse-primary": "#afc6ff",
+            "surface-tint": "#335caa",
+            "background": "#f8f9ff",
+            "primary-container": "#1f4b99",
+            "inverse-on-surface": "#eaf1ff",
+            "tertiary-container": "#005850",
+            "tertiary": "#003f39",
+            "secondary-fixed-dim": "#b9c7df",
+            "on-surface-variant": "#434651",
+            "on-error-container": "#93000a",
+            "on-secondary-fixed": "#0d1c2e",
+            "on-background": "#0b1c30",
+            "inverse-surface": "#213145",
+            "surface": "#f8f9ff",
+            "primary-fixed-dim": "#afc6ff",
+            "on-tertiary-fixed-variant": "#005049",
+            "tertiary-fixed-dim": "#6bd8cb",
+            "surface-container-low": "#eff4ff",
+            "on-error": "#ffffff",
+            "on-tertiary": "#ffffff",
+            "surface-container": "#e5eeff",
+            "tertiary-fixed": "#89f5e7",
+            "outline-variant": "#c3c6d3"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.125rem",
+            "lg": "0.25rem",
+            "xl": "0.5rem",
+            "full": "0.75rem"
+          },
+          "spacing": {
+            "space-xl": "2.25rem",
+            "margin-mobile": "1rem",
+            "space-sm": "0.5rem",
+            "space-md": "0.875rem",
+            "margin": "2rem",
+            "gutter": "1.25rem",
+            "space-xs": "0.25rem",
+            "gutter-mobile": "0.75rem",
+            "space-lg": "1.5rem"
+          },
+          "fontFamily": {
+            "headline-sm": ["Geist"],
+            "code-body": ["JetBrains Mono"],
+            "body-sm": ["Geist"],
+            "headline-xl": ["Geist"],
+            "body-md": ["Geist"],
+            "body-lg": ["Geist"],
+            "headline-lg": ["Geist"],
+            "headline-md": ["Geist"],
+            "label-sm": ["JetBrains Mono"],
+            "label-md": ["JetBrains Mono"],
+            "headline-xl-mobile": ["Geist"]
+          },
+          "fontSize": {
+            "headline-sm": ["18px", { "lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "500" }],
+            "code-body": ["13px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-sm": ["13px", { "lineHeight": "18px", "fontWeight": "400" }],
+            "headline-xl": ["36px", { "lineHeight": "44px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+            "body-md": ["14px", { "lineHeight": "20px", "fontWeight": "400" }],
+            "body-lg": ["16px", { "lineHeight": "24px", "fontWeight": "400" }],
+            "headline-lg": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }],
+            "headline-md": ["22px", { "lineHeight": "28px", "letterSpacing": "-0.01em", "fontWeight": "500" }],
+            "label-sm": ["11px", { "lineHeight": "14px", "letterSpacing": "0.04em", "fontWeight": "500" }],
+            "label-md": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+            "headline-xl-mobile": ["28px", { "lineHeight": "36px", "letterSpacing": "-0.015em", "fontWeight": "600" }]
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-surface text-on-surface font-body-md antialiased min-h-screen flex flex-col selection:bg-primary-container selection:text-on-primary">
+<!-- TopNavBar -->
+<header class="bg-surface/90 dark:bg-surface/90 backdrop-blur-md fixed top-0 left-0 right-0 z-50 w-full shadow-sm dark:shadow-none border-b border-outline-variant/30 dark:border-outline-variant/30">
+<div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+<div class="flex items-center gap-8">
+<a class="font-headline text-lg font-bold tracking-tight text-on-surface dark:text-on-surface flex items-center gap-2" href="#">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">terminal</span>
+          Interview Coach v1.1
+        </a>
+<nav class="hidden md:flex items-center gap-6">
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150 font-label text-sm" href="#">Features</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150 font-label text-sm" href="#">Methodology</a>
+<a class="text-on-surface-variant dark:text-on-surface-variant font-medium transition-colors hover:text-primary dark:hover:text-primary duration-150 font-label text-sm" href="#">Pricing</a>
+<a class="text-primary dark:text-primary font-semibold font-label text-sm" href="#">Docs</a>
+</nav>
+</div>
+<div class="flex items-center gap-4">
+<button class="px-4 py-2 text-sm font-label text-on-surface-variant hover:text-on-surface transition-colors">
+          Save &amp; Exit
+        </button>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow pt-24 pb-16 px-6 max-w-5xl mx-auto w-full">
+<!-- Multi-step Progress Indicator -->
+<div class="mb-8">
+<div class="flex items-center justify-between mb-2">
+<span class="font-label-md text-primary font-semibold">STEP 2 OF 4: PREFERENCES</span>
+<span class="font-label-md text-on-surface-variant">50% Completed</span>
+</div>
+<div class="grid grid-cols-4 gap-2">
+<div class="h-1.5 bg-primary rounded-full"></div>
+<div class="h-1.5 bg-primary-container rounded-full"></div>
+<div class="h-1.5 bg-surface-container-high rounded-full"></div>
+<div class="h-1.5 bg-surface-container-high rounded-full"></div>
+</div>
+<div class="flex justify-between mt-2 text-xs text-on-surface-variant font-code-body">
+<span class="text-primary font-medium">1. Role &amp; Level</span>
+<span class="text-primary font-medium">2. Preferences</span>
+<span>3. Practice Style &amp; AI</span>
+<span>4. Account &amp; Save</span>
+</div>
+</div>
+<!-- Notice Banner -->
+<div class="bg-surface-container-low border border-outline-variant/40 rounded-xl p-4 mb-8 flex items-start gap-3">
+<span class="material-symbols-outlined text-primary mt-0.5">info</span>
+<div class="flex-grow text-body-sm text-on-surface-variant">
+<span>Guest Mode: Your preferences are saved locally on this browser. You'll be prompted to sign in or create an account at the final step to sync across devices.</span>
+<div class="mt-1 font-code-body text-xs text-primary font-semibold">[Dev Mode: Auth Bypass Available]</div>
+</div>
+</div>
+<div class="mb-8">
+<h1 class="font-headline-lg text-on-surface">Configure Your Technical Parameters</h1>
+<p class="text-body-md text-on-surface-variant mt-1">Tailor the simulated interview environment to match your target domain, experience level, and preferred interaction modalities.</p>
+</div>
+<!-- Form Sections -->
+<form class="space-y-8" onsubmit="event.preventDefault();">
+<!-- Section 1: Target Role & Specialty -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">1. Target Role &amp; Specialty</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Select your primary engineering discipline and architectural domain focus.</p>
+<div class="relative mb-4">
+<select class="w-full bg-surface border border-outline/40 rounded-lg px-3 py-2.5 text-on-surface font-body-md focus:border-primary focus:ring-1 focus:ring-primary">
+<option>Software Engineer · Distributed Backend &amp; Microservices</option>
+<option>Software Engineer · Full Stack &amp; Web Architecture</option>
+<option>Staff Engineer · Infrastructure &amp; Cloud Scale</option>
+<option>Engineering Manager · Technical Leadership</option>
+</select>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container-low border border-outline-variant/40 text-label-md text-on-surface">
+<span class="material-symbols-outlined text-xs text-primary">check</span> Distributed Systems
+          </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container-low border border-outline-variant/40 text-label-md text-on-surface">
+<span class="material-symbols-outlined text-xs text-primary">check</span> Kubernetes
+          </span>
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-surface-container-low border border-outline-variant/40 text-label-md text-on-surface">
+<span class="material-symbols-outlined text-xs text-primary">check</span> API Architecture
+          </span>
+</div>
+</div>
+<!-- Section 2: Seniority & Career Level -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">2. Seniority &amp; Career Level</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Determines the algorithmic complexity and system design depth of generated prompts.</p>
+<div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all">
+<div class="font-code-body text-xs text-on-surface-variant mb-1">[0-2Y]</div>
+<div class="font-body-md font-medium text-on-surface">Junior / Entry</div>
+</div>
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all">
+<div class="font-code-body text-xs text-on-surface-variant mb-1">[3-5Y]</div>
+<div class="font-body-md font-medium text-on-surface">Mid-Level</div>
+</div>
+<div class="border-2 border-primary bg-primary-fixed/10 rounded-lg p-4 cursor-pointer transition-all relative">
+<span class="absolute top-2 right-2 material-symbols-outlined text-primary text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div class="font-code-body text-xs text-primary font-semibold mb-1">[6-9Y]</div>
+<div class="font-body-md font-medium text-on-surface">Senior Engineer</div>
+</div>
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all">
+<div class="font-code-body text-xs text-on-surface-variant mb-1">[10+Y]</div>
+<div class="font-body-md font-medium text-on-surface">Staff / Principal</div>
+</div>
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all">
+<div class="font-code-body text-xs text-on-surface-variant mb-1">[EXEC]</div>
+<div class="font-body-md font-medium text-on-surface">Leadership</div>
+</div>
+</div>
+</div>
+<!-- Section 3: Primary Preparation Goals -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">3. Primary Preparation Goals</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Select all focus areas you want prioritized in your coaching sessions.</p>
+<div class="space-y-3">
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low cursor-pointer transition-colors">
+<input checked="" class="rounded border-outline text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<div>
+<span class="font-body-md font-medium text-on-surface">Master System Design architecture</span>
+<p class="text-body-sm text-on-surface-variant">Scale-out patterns, caching strategies, partitioning, and fault tolerance.</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low cursor-pointer transition-colors">
+<input checked="" class="rounded border-outline text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<div>
+<span class="font-body-md font-medium text-on-surface">Improve live tech problem solving &amp; articulation</span>
+<p class="text-body-sm text-on-surface-variant">Communicating trade-offs clearly while writing clean algorithmic code under time pressure.</p>
+</div>
+</label>
+<label class="flex items-center gap-3 p-3 rounded-lg border border-outline-variant/30 hover:bg-surface-container-low cursor-pointer transition-colors">
+<input class="rounded border-outline text-primary focus:ring-primary w-4 h-4" type="checkbox"/>
+<div>
+<span class="font-body-md font-medium text-on-surface">Behavioral &amp; Leadership competencies</span>
+<p class="text-body-sm text-on-surface-variant">STAR method structuring, cross-functional conflict resolution, and project ownership.</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Section 4: Interview Track Focus -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">4. Interview Track Focus</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Choose the primary format for your immediate mock interview sprint.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all flex items-start gap-3">
+<input class="mt-1 text-primary focus:ring-primary" name="track" type="radio"/>
+<div>
+<div class="font-body-md font-medium text-on-surface">Behavioral Assessment</div>
+<p class="text-body-sm text-on-surface-variant mt-0.5">Engineering culture fit, past project retrospectives, and team dynamics.</p>
+</div>
+</div>
+<div class="border-2 border-primary bg-primary-fixed/10 rounded-lg p-4 cursor-pointer transition-all flex items-start gap-3 relative">
+<input checked="" class="mt-1 text-primary focus:ring-primary" name="track" type="radio"/>
+<div>
+<div class="font-body-md font-medium text-on-surface">System Design</div>
+<p class="text-body-sm text-on-surface-variant mt-0.5">Distributed component trade-offs, capacity estimation, and architectural specs.</p>
+</div>
+</div>
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all flex items-start gap-3">
+<input class="mt-1 text-primary focus:ring-primary" name="track" type="radio"/>
+<div>
+<div class="font-body-md font-medium text-on-surface">Technical &amp; Live Coding</div>
+<p class="text-body-sm text-on-surface-variant mt-0.5">Data structures, algorithmic efficiency, and test-driven implementation.</p>
+</div>
+</div>
+<div class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer hover:border-primary transition-all flex items-start gap-3">
+<input class="mt-1 text-primary focus:ring-primary" name="track" type="radio"/>
+<div>
+<div class="font-body-md font-medium text-on-surface">Executive / Director Round</div>
+<p class="text-body-sm text-on-surface-variant mt-0.5">Org strategy, technical roadmap planning, and budgeting.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Section 5: Interaction Modality -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">5. Interaction Modality</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Select how your AI interviewer communicates with you during sessions.</p>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<label class="border-2 border-primary bg-primary-fixed/10 rounded-lg p-4 cursor-pointer flex items-center justify-between">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">mic</span>
+<div>
+<div class="font-body-md font-medium text-on-surface flex items-center gap-2">
+                  Voice Mode <span class="bg-primary text-on-primary text-label-sm px-1.5 py-0.5 rounded">RECOMMENDED</span>
+</div>
+<p class="text-body-sm text-on-surface-variant">Real-time conversational voice interaction with low latency.</p>
+</div>
+</div>
+<input checked="" class="text-primary focus:ring-primary" name="modality" type="radio"/>
+</label>
+<label class="border border-outline-variant/40 rounded-lg p-4 cursor-pointer flex items-center justify-between hover:border-primary transition-all">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-on-surface-variant">chat</span>
+<div>
+<div class="font-body-md font-medium text-on-surface">Text Mode</div>
+<p class="text-body-sm text-on-surface-variant">Standard text-based chat interface with code console.</p>
+</div>
+</div>
+<input class="text-primary focus:ring-primary" name="modality" type="radio"/>
+</label>
+</div>
+</div>
+<!-- Section 6: Default Practice Duration -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm">
+<label class="block font-headline-sm text-on-surface mb-2">6. Default Practice Duration</label>
+<p class="text-body-sm text-on-surface-variant mb-4">Set the target timer duration for mock practice sessions.</p>
+<div class="grid grid-cols-3 gap-4">
+<button class="border border-outline-variant/40 rounded-lg py-3 text-center hover:border-primary transition-all font-label text-sm text-on-surface" type="button">
+            15m <span class="block text-xs text-on-surface-variant font-normal">Quick Sprint</span>
+</button>
+<button class="border-2 border-primary bg-primary-fixed/10 rounded-lg py-3 text-center font-label text-sm text-primary font-semibold" type="button">
+            30m <span class="block text-xs text-primary font-medium">RECOMMENDED</span>
+</button>
+<button class="border border-outline-variant/40 rounded-lg py-3 text-center hover:border-primary transition-all font-label text-sm text-on-surface" type="button">
+            45m <span class="block text-xs text-on-surface-variant font-normal">Deep Dive</span>
+</button>
+</div>
+</div>
+<!-- Section 7: Data & Coaching Analytics Consent -->
+<div class="bg-surface-container-lowest border border-outline-variant/40 rounded-xl p-6 shadow-sm flex items-center justify-between">
+<div>
+<label class="block font-headline-sm text-on-surface">7. Data &amp; Coaching Analytics Consent</label>
+<p class="text-body-sm text-on-surface-variant mt-1">Allow anonymous performance metrics to refine your personalized AI coaching vector models.</p>
+</div>
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+</label>
+</div>
+<!-- Footer Action Buttons -->
+<div class="flex items-center justify-between pt-4">
+<button class="px-6 py-2.5 rounded-lg border border-outline-variant text-on-surface-variant hover:bg-surface-container-low transition-colors font-label text-sm" type="button">
+          Back
+        </button>
+<button class="px-6 py-2.5 rounded-lg bg-primary text-on-primary hover:bg-primary/90 transition-colors font-label text-sm flex items-center gap-2" type="submit">
+          Continue <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</button>
+</div>
+</form>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest dark:bg-surface-container-lowest border-t border-outline-variant/30 dark:border-outline-variant/30 w-full mt-auto">
+<div class="max-w-7xl mx-auto px-6 py-12 flex flex-col gap-8">
+<div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+<div class="font-headline text-base font-bold text-on-surface dark:text-on-surface">Interview Coach Inc.</div>
+<div class="flex flex-wrap gap-6 text-on-surface-variant text-sm">
+<a class="hover:text-on-surface transition-colors duration-150" href="#">Documentation</a>
+<a class="hover:text-on-surface transition-colors duration-150" href="#">API Reference</a>
+<a class="hover:text-on-surface transition-colors duration-150" href="#">System Architecture</a>
+<a class="hover:text-on-surface transition-colors duration-150" href="#">Security &amp; SOC-2</a>
+<a class="hover:text-on-surface transition-colors duration-150" href="#">Privacy Policy</a>
+<a class="hover:text-on-surface transition-colors duration-150" href="#">Terms of Service</a>
+</div>
+</div>
+<div class="text-xs text-on-surface-variant/80 dark:text-on-surface-variant/80 font-body">
+        © 2024 Interview Coach Inc. Technical preparation platform. All rights reserved.
+      </div>
+</div>
+</footer>
+</body></html>
