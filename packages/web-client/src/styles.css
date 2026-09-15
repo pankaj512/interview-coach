@@ -1,9 +1,11 @@
 /* Interview Coach — application stylesheet (ux-spec §3/§4/§34).
  *
  * Every value comes from tokens.css. Voice green (var(--voice-solid)) is
- * reserved for voice activity only; the primary CTA is near-white. State is
+ * reserved for voice activity only; the primary CTA uses brand blue. State is
  * never color-alone — components always render icon + label.
  */
+
+@import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&display=swap");
 
 * {
   box-sizing: border-box;
@@ -19,7 +21,7 @@ body {
   margin: 0;
   background: var(--bg-base);
   color: var(--ink-base);
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
   font-size: var(--fs-body);
   font-weight: var(--fw-regular);
 }
@@ -30,6 +32,13 @@ h3,
 h4,
 p {
   margin: 0;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: "Space Grotesk", "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 button {

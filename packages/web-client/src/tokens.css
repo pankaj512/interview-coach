@@ -8,33 +8,32 @@
  */
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
-  /* 3.1 Color (color.dark) */
-  --bg-base: #0e1116;
-  --bg-sunken: #0a0d12;
-  --surface-base: #161b22;
-  --surface-raised: #1f2630;
-  --surface-overlay: #262e39;
-  --line-base: #2a313b;
-  --line-strong: #3d4653;
-  --ink-base: #e8eaed;
-  --ink-muted: #9aa3af;
-  --ink-faint: #6b7480;
-  --voice-solid: #34d399;
-  --voice-wash: #14322a;
-  --success: #34d399;
-  --warning-solid: #f5b544;
-  --warning-wash: #3a2e1a;
-  --danger-solid: #f26d6d;
-  --danger-wash: #3a2226;
-  --info-solid: #6ea8fe;
-  --info-wash: #1e2a3f;
+  /* Light theme colors (Space Grotesk/Public Sans palette from Stitch HTML) */
+  --bg-base: #f8fafc;
+  --bg-sunken: #f1f5f9;
+  --surface-base: #ffffff;
+  --surface-raised: #f8fafc;
+  --surface-overlay: #f1f5f9;
+  --line-base: #e2e8f0;
+  --line-strong: #cbd5e1;
+  --ink-base: #0f172a;
+  --ink-muted: #475569;
+  --ink-faint: #94a3b8;
+  --voice-solid: #10b981;
+  --voice-wash: #ecfdf3;
+  --success: #16a34a;
+  --warning-solid: #d97706;
+  --warning-wash: #fef3c7;
+  --danger-solid: #dc2626;
+  --danger-wash: #fee2e2;
+  --info-solid: #2563eb;
+  --info-wash: #eff6ff;
 
-  /* Primary CTA is near-white, NOT voice green — voice.solid is reserved
-   * for voice activity only (Phase D principle 2). */
-  --cta-base: #e8eaed;
-  --cta-ink: #0e1116;
+  /* Primary CTA uses brand blue */
+  --cta-base: #1f4b99;
+  --cta-ink: #ffffff;
 
   /* 3.2 Space / radius / border */
   --s-4: 4px;
