@@ -48,6 +48,7 @@ describe("history view model", () => {
         {
           id: "eval_1",
           interviewId: "iv_1",
+          status: "completed",
           dimensions: { correctness: { score: 4 }, communication: { score: 3 } },
           hintsUsed: 2,
           strengths: ["clear reasoning"],

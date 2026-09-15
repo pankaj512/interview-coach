@@ -38,7 +38,10 @@
 //   GET    /api/problems                        (S5: browser + selection)
 //   GET    /api/problems/:id
 //   POST   /api/interviews/:id/responses        (S5: persist candidate answers)
-//   POST   /api/interviews/:id/evaluation       (S5: structured eval pipeline)
+//   GET    /api/interviews/:id/evaluation       (Phase 10: async evaluation result)
+//   GET    /api/interviews                      (Phase 9: user history list)
+//   POST   /api/interviews/:id/transcript       (Phase 9: append transcript)
+//   GET    /api/interviews/:id/transcript       (Phase 9: read transcript)
 //   POST   /api/interviews/:id/submissions      (S7a: submit candidate code)
 //   GET    /api/interviews/:id/submissions      (S7a: list submissions)
 //   POST   /api/interviews/:id/submissions/:subId/runs (S7a: execute + tests)
@@ -54,7 +57,6 @@ import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import { z } from "zod";
 import {
-  EVALUATION_DIMENSIONS,
   InterviewService,
   SubmissionService,
   ToolService,
@@ -65,10 +67,10 @@ import {
   asSubmissionId,
   asTopicId,
   asUserId,
-  finalizeEvaluation,
   selectProblems,
   TOOL_NAMES,
   type CodeExecutor,
+  type EvaluationModel,
   type InterviewConfiguration,
   type InterviewId,
   type RecommendationId,
@@ -118,6 +120,8 @@ import {
 } from "./voice-session.js";
 import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
 import { assembleSessionContext, type SessionContext } from "./session-context.js";
+import { EvaluationService } from "./evaluation.js";
+import { createEvaluationModelFromEnv } from "./evaluation-model.js";
 import { LocalCodeRunner } from "./code-runner.js";
 
 export interface BuildAppDeps {
@@ -127,6 +131,10 @@ export interface BuildAppDeps {
   readonly codeRunner?: CodeExecutor;
   /** Phase 4: injectable so tests use a deterministic fake, never a live LLM. */
   readonly recommendationModel?: RecommendationModel;
+  /** Phase 10: injectable so tests use a deterministic fake, never a live LLM. */
+  readonly evaluationModel?: EvaluationModel;
+  /** Phase 10: tests set true so `end` runs the evaluation synchronously. */
+  readonly evaluationRunSynchronously?: boolean;
   readonly logger?: boolean;
 }
 
@@ -257,32 +265,6 @@ const transcriptSchema = z.object({
 const listInterviewsQuerySchema = z.object({
   candidateId: z.string().min(1).max(200).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
-});
-
-const dimensionScoreSchema = z.object({
-  score: z.number().int().min(0).max(5),
-  notes: z.string().min(1).max(1000).optional(),
-});
-
-// S5: structured evaluation pipeline (HLD 5.5). Dimensions are validated
-// against the frozen HLD set; overallScore/recommendation are computed when
-// omitted (evaluation-pipeline.finalizeEvaluation).
-const evaluationSchema = z.object({
-  dimensions: z
-    .record(z.string(), dimensionScoreSchema)
-    .refine(
-      (dims) =>
-        Object.keys(dims).every((k) =>
-          (EVALUATION_DIMENSIONS as readonly string[]).includes(k),
-        ),
-      { message: `dimensions keys must be within ${EVALUATION_DIMENSIONS.join(", ")}` },
-    )
-    .optional(),
-  hintsUsed: z.number().int().min(0).max(1000).optional(),
-  strengths: z.array(z.string().min(1).max(500)).max(20).optional(),
-  weaknesses: z.array(z.string().min(1).max(500)).max(20).optional(),
-  recommendation: z.enum(["hire", "lean_hire", "lean_no_hire", "no_hire"]).optional(),
-  overallScore: z.number().int().min(0).max(100).optional(),
 });
 
 // S7a sandbox (HLD 6.1/6.3): candidate code submission + test execution.
@@ -419,6 +401,21 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     curriculumProgress: deps.repos.curriculumProgress,
     profiles: deps.repos.profiles,
     model: recommendationModel,
+  });
+  // Phase 10: async evaluation over a server-side LLM port. Unconfigured in
+  // local dev by default, so the deterministic fallback scores the interview.
+  const evaluationModel =
+    deps.evaluationModel ?? createEvaluationModelFromEnv(config.llm);
+  const evaluationService = new EvaluationService({
+    repos: deps.repos,
+    interviews,
+    curricula,
+    profiles,
+    skills,
+    model: evaluationModel,
+    ...(deps.evaluationRunSynchronously === undefined
+      ? {}
+      : { runSynchronously: deps.evaluationRunSynchronously }),
   });
   // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
   // a fake via deps.codeRunner; container isolation lands in S8.
@@ -969,9 +966,12 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     if (!state.ok) return sendDomainError(reply, state.error);
     const status = state.value.interview.status;
     if (status === "completed") {
+      // Idempotent: a repeat end still ensures an evaluation job exists.
+      await evaluationService.enqueue(id);
+      const refreshed = (await deps.repos.interviews.findById(id)) ?? state.value.interview;
       return reply.send({
         ok: true,
-        interview: serializeInterview(state.value.interview),
+        interview: serializeInterview(refreshed),
         transitioned: false,
       });
     }
@@ -980,7 +980,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       if (!done.ok) return sendDomainError(reply, done.error);
       metrics.countInterviewTransition(done.value.status);
       request.log.info({ interviewId: id, to: "completed" }, "interview.lifecycle");
-      return reply.send({ ok: true, interview: serializeInterview(done.value), transitioned: true });
+      await evaluationService.enqueue(id);
+      const refreshed = (await deps.repos.interviews.findById(id)) ?? done.value;
+      return reply.send({ ok: true, interview: serializeInterview(refreshed), transitioned: true });
     }
     if (status === "in_progress" || status === "paused") {
       const completing = await interviews.beginCompleting(id);
@@ -989,7 +991,10 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       if (!done.ok) return sendDomainError(reply, done.error);
       metrics.countInterviewTransition(done.value.status);
       request.log.info({ interviewId: id, to: "completed" }, "interview.lifecycle");
-      return reply.send({ ok: true, interview: serializeInterview(done.value), transitioned: true });
+      // Phase 10: completion is immediate; the evaluation runs asynchronously.
+      await evaluationService.enqueue(id);
+      const refreshed = (await deps.repos.interviews.findById(id)) ?? done.value;
+      return reply.send({ ok: true, interview: serializeInterview(refreshed), transitioned: true });
     }
     return sendApiError(
       reply,
@@ -1229,54 +1234,20 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
-  // S5: structured evaluation pipeline (HLD 5.5/5.8). Computes overallScore
-  // and derives recommendation when omitted; explicit values are kept.
-  // Allowed while running, completing, or completed (post-interview).
-  app.post("/api/interviews/:id/evaluation", async (request, reply) => {
+  // Phase 10: the interview's evaluation. `null` until the async job finishes;
+  // the interview's `evaluationStatus` carries pending/completed/failed. The
+  // manual S5 form path is retired — `end` enqueues automatically.
+  app.get("/api/interviews/:id/evaluation", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
     }
-    const parsed = evaluationSchema.safeParse(request.body ?? {});
-    if (!parsed.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
-    }
-    const id = asInterviewId(params.data.id);
-    const existing = await deps.repos.interviews.findById(id);
-    if (existing === null) {
-      return sendApiError(reply, 404, "NOT_FOUND", `Interview ${params.data.id} does not exist`, false);
-    }
-    // Resolve the effective hint count BEFORE deriving the recommendation
-    // (audit I5-1): when the caller omits hintsUsed (as the finalize form
-    // does), the stored hint-accounting row supplies the real count, so the
-    // heavy-hinting downgrade actually fires.
-    let effectiveHintsUsed = parsed.data.hintsUsed;
-    if (effectiveHintsUsed === undefined) {
-      const stored = await deps.repos.evaluations.findByInterview(id);
-      effectiveHintsUsed = stored?.hintsUsed ?? 0;
-    }
-    const finalized = finalizeEvaluation({
-      ...(parsed.data.dimensions === undefined ? {} : { dimensions: parsed.data.dimensions }),
-      hintsUsed: effectiveHintsUsed,
-      ...(parsed.data.strengths === undefined ? {} : { strengths: parsed.data.strengths }),
-      ...(parsed.data.weaknesses === undefined ? {} : { weaknesses: parsed.data.weaknesses }),
-      ...(parsed.data.recommendation === undefined
-        ? {}
-        : { recommendation: parsed.data.recommendation }),
-      ...(parsed.data.overallScore === undefined ? {} : { overallScore: parsed.data.overallScore }),
+    const result = await evaluationService.getEvaluation(asInterviewId(params.data.id));
+    if (!result.ok) return sendDomainError(reply, result.error);
+    return reply.send({
+      ok: true,
+      evaluation: result.value === null ? null : serializeEvaluation(result.value),
     });
-    const recorded = await interviews.recordEvaluation(id, {
-      dimensions: finalized.dimensions,
-      hintsUsed: finalized.hintsUsed,
-      strengths: [...finalized.strengths],
-      weaknesses: [...finalized.weaknesses],
-      ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
-      ...(finalized.recommendation === null ? {} : { recommendation: finalized.recommendation }),
-    });
-    if (!recorded.ok) return sendDomainError(reply, recorded.error);
-    metrics.countEvaluationRecorded();
-    request.log.info({ interviewId: params.data.id }, "evaluation.recorded");
-    return reply.status(201).send({ ok: true, evaluation: serializeEvaluation(recorded.value) });
   });
 
   // S7a sandbox routes (HLD 6.1–6.3). Submissions are backend-owned state;

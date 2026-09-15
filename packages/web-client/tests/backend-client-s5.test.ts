@@ -51,16 +51,18 @@ describe("BackendClient S5", () => {
     expect(bodies[bodies.length - 1]).toMatchObject({ kind: "approach" });
   });
 
-  it("submits evaluations and returns the serialized body", async () => {
+  it("fetches the async evaluation and returns the serialized body", async () => {
     const client = new BackendClient(
       "http://localhost:3000",
       fakeFetch(() => ({
-        status: 201,
+        status: 200,
         body: {
           ok: true,
           evaluation: {
             id: "eval_1",
             interviewId: "int_1",
+            status: "completed",
+            source: "fallback",
             dimensions: { approach: { score: 4 } },
             hintsUsed: 1,
             strengths: [],
@@ -73,11 +75,10 @@ describe("BackendClient S5", () => {
         },
       })),
     );
-    const evaluation = await client.submitEvaluation("int_1", {
-      dimensions: { approach: { score: 4 } },
-    });
-    expect(evaluation.overallScore).toBe(80);
-    expect(evaluation.recommendation).toBe("lean_hire");
+    const evaluation = await client.getEvaluation("int_1");
+    expect(evaluation?.overallScore).toBe(80);
+    expect(evaluation?.recommendation).toBe("lean_hire");
+    expect(evaluation?.source).toBe("fallback");
   });
 
   it("sends tool args as arguments", async () => {

@@ -13,6 +13,8 @@ export * from "./lifecycle.js";
 export * from "./candidate-response.js";
 export * from "./interview-message.js";
 export * from "./evaluation.js";
+export * from "./evaluation-job.js";
+export * from "./evaluation-model.js";
 export * from "./interview-event.js";
 export * from "./repositories.js";
 export * from "./interview-service.js";

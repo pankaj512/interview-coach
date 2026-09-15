@@ -13,7 +13,6 @@ import type {
   ProblemListQuery,
   ProblemSelectInput,
   RecordResponseInput,
-  EvaluationInput,
   RunCodeInput,
   SerializedEvaluation,
   SerializedInterview,
@@ -514,11 +513,11 @@ export class BackendClient {
     return { interview: body.interview, responseCount: body.responseCount };
   }
 
-  async submitEvaluation(id: string, input: EvaluationInput): Promise<SerializedEvaluation> {
-    const body = await this.request<{ ok: true; evaluation: SerializedEvaluation }>(
-      "POST",
+  // Phase 10: the async evaluation result (null until the job completes).
+  async getEvaluation(id: string): Promise<SerializedEvaluation | null> {
+    const body = await this.request<{ ok: true; evaluation: SerializedEvaluation | null }>(
+      "GET",
       `/api/interviews/${encodeURIComponent(id)}/evaluation`,
-      { ...input },
     );
     return body.evaluation;
   }

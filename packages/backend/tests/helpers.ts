@@ -10,6 +10,7 @@ import {
   importCatalogTopics,
   importCurriculum,
   type CurriculumRaw,
+  type EvaluationModel,
   type RecommendationModel,
   type RepositorySet,
 } from "@interview-coach/domain";
@@ -22,7 +23,10 @@ export interface TestBackend extends BuiltBackend {
 }
 
 export function buildTestBackend(
-  options: { readonly recommendationModel?: RecommendationModel } = {},
+  options: {
+    readonly recommendationModel?: RecommendationModel;
+    readonly evaluationModel?: EvaluationModel;
+  } = {},
 ): TestBackend {
   const repos = createInMemoryRepositories();
   const built = buildApp({
@@ -37,6 +41,11 @@ export function buildTestBackend(
     ...(options.recommendationModel === undefined
       ? {}
       : { recommendationModel: options.recommendationModel }),
+    ...(options.evaluationModel === undefined
+      ? {}
+      : { evaluationModel: options.evaluationModel }),
+    // Phase 10: run the evaluation job inline so HTTP tests are deterministic.
+    evaluationRunSynchronously: true,
     logger: false,
   });
   return { ...built, repos };

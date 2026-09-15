@@ -9,6 +9,7 @@ import type {
   CurriculumId,
   TopicId,
   RecommendationId,
+  EvaluationJobId,
 } from "./ids.js";
 import type { UserAccount, UserSession } from "./user.js";
 import type { UserProfile } from "./profile.js";
@@ -17,6 +18,7 @@ import type { UserCurriculumProgress, UserSkillState } from "./skill.js";
 import type { Recommendation } from "./recommendation.js";
 import type { CandidateResponse } from "./candidate-response.js";
 import type { InterviewMessage } from "./interview-message.js";
+import type { EvaluationJob } from "./evaluation-job.js";
 import type { CodeRun, CodeSubmission } from "./submission.js";
 import type { Evaluation } from "./evaluation.js";
 import type { Interview } from "./interview.js";
@@ -61,6 +63,15 @@ export interface EvaluationRepository {
 export interface InterviewMessageRepository {
   append(message: InterviewMessage): Promise<void>;
   listByInterview(interviewId: InterviewId): Promise<readonly InterviewMessage[]>;
+}
+
+// Phase 10: durable evaluation jobs. `findByInterview` returns the latest job
+// (the one the status API reports); `listPending` is the runner's work queue.
+export interface EvaluationJobRepository {
+  save(job: EvaluationJob): Promise<void>;
+  findById(id: EvaluationJobId): Promise<EvaluationJob | null>;
+  findByInterview(interviewId: InterviewId): Promise<EvaluationJob | null>;
+  listPending(): Promise<readonly EvaluationJob[]>;
 }
 
 export interface EventRepository {
@@ -218,6 +229,41 @@ export class InMemoryInterviewMessageRepository implements InterviewMessageRepos
   ): Promise<readonly InterviewMessage[]> {
     return this.messages
       .filter((m) => m.interviewId === interviewId)
+      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+  }
+}
+
+export class InMemoryEvaluationJobRepository implements EvaluationJobRepository {
+  private readonly store = new Map<EvaluationJobId, EvaluationJob>();
+
+  async save(job: EvaluationJob): Promise<void> {
+    this.store.set(job.id, job);
+  }
+
+  async findById(id: EvaluationJobId): Promise<EvaluationJob | null> {
+    return this.store.get(id) ?? null;
+  }
+
+  // Latest job for the interview (createdAt desc, updatedAt tie-break).
+  async findByInterview(interviewId: InterviewId): Promise<EvaluationJob | null> {
+    let latest: EvaluationJob | null = null;
+    for (const job of this.store.values()) {
+      if (job.interviewId !== interviewId) continue;
+      if (
+        latest === null ||
+        job.createdAt.getTime() > latest.createdAt.getTime() ||
+        (job.createdAt.getTime() === latest.createdAt.getTime() &&
+          job.updatedAt.getTime() >= latest.updatedAt.getTime())
+      ) {
+        latest = job;
+      }
+    }
+    return latest;
+  }
+
+  async listPending(): Promise<readonly EvaluationJob[]> {
+    return [...this.store.values()]
+      .filter((job) => job.status === "pending")
       .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
   }
 }
@@ -539,6 +585,7 @@ export interface RepositorySet {
   readonly responses: ResponseRepository;
   readonly messages: InterviewMessageRepository;
   readonly evaluations: EvaluationRepository;
+  readonly evaluationJobs: EvaluationJobRepository;
   readonly events: EventRepository;
   readonly submissions: SubmissionRepository;
   readonly runs: RunRepository;
@@ -557,6 +604,7 @@ export function createInMemoryRepositories(): RepositorySet & {
   readonly responses: InMemoryResponseRepository;
   readonly messages: InMemoryInterviewMessageRepository;
   readonly evaluations: InMemoryEvaluationRepository;
+  readonly evaluationJobs: InMemoryEvaluationJobRepository;
   readonly events: InMemoryEventRepository;
   readonly submissions: InMemorySubmissionRepository;
   readonly runs: InMemoryRunRepository;
@@ -574,6 +622,7 @@ export function createInMemoryRepositories(): RepositorySet & {
     responses: new InMemoryResponseRepository(),
     messages: new InMemoryInterviewMessageRepository(),
     evaluations: new InMemoryEvaluationRepository(),
+    evaluationJobs: new InMemoryEvaluationJobRepository(),
     events: new InMemoryEventRepository(),
     submissions: new InMemorySubmissionRepository(),
     runs: new InMemoryRunRepository(),

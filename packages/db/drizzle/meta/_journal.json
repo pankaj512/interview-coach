@@ -57,6 +57,13 @@
       "when": 1789395088256,
       "tag": "0007_grey_the_hand",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789455889987,
+      "tag": "0008_bouncy_talon",
+      "breakpoints": true
     }
   ]
 }

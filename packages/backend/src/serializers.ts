@@ -60,6 +60,10 @@ export interface SerializedStateSnapshot {
 export interface SerializedEvaluation {
   readonly id: string;
   readonly interviewId: string;
+  readonly topicId?: string;
+  readonly status: string;
+  readonly source?: string;
+  readonly jobId?: string;
   readonly dimensions: Evaluation["dimensions"];
   readonly hintsUsed: number;
   readonly strengths: readonly string[];
@@ -123,10 +127,14 @@ export function serializeEvaluation(evaluation: Evaluation): SerializedEvaluatio
   return {
     id: evaluation.id,
     interviewId: evaluation.interviewId,
+    status: evaluation.status,
     dimensions: evaluation.dimensions,
     hintsUsed: evaluation.hintsUsed,
     strengths: evaluation.strengths,
     weaknesses: evaluation.weaknesses,
+    ...(evaluation.topicId === undefined ? {} : { topicId: evaluation.topicId }),
+    ...(evaluation.source === undefined ? {} : { source: evaluation.source }),
+    ...(evaluation.jobId === undefined ? {} : { jobId: evaluation.jobId }),
     ...(evaluation.recommendation === undefined
       ? {}
       : { recommendation: evaluation.recommendation }),

@@ -101,6 +101,10 @@ export interface Problem {
 export interface SerializedEvaluation {
   readonly id: string;
   readonly interviewId: string;
+  readonly topicId?: string;
+  readonly status: "pending" | "completed" | "failed";
+  readonly source?: "llm" | "fallback";
+  readonly jobId?: string;
   readonly dimensions: Record<string, { readonly score: number; readonly notes?: string }>;
   readonly hintsUsed: number;
   readonly strengths: readonly string[];
@@ -233,20 +237,6 @@ export interface RecordResponseInput {
 // S7: structured evaluation (POST .../evaluation). Dimensions use the HLD
 // 5.8 set; the client renders whatever keys the backend returns so the
 // 6-vs-8 bar question (design spec §8 vs HLD) needs no client change.
-export interface DimensionScoreInput {
-  readonly score: number;
-  readonly notes?: string;
-}
-
-export interface EvaluationInput {
-  readonly dimensions?: Record<string, DimensionScoreInput>;
-  readonly hintsUsed?: number;
-  readonly strengths?: readonly string[];
-  readonly weaknesses?: readonly string[];
-  readonly recommendation?: string;
-  readonly overallScore?: number;
-}
-
 // S7a sandbox (HLD Phase 6): code submissions + test runs. Structural
 // mirrors of the backend serializers; hidden cases arrive masked
 // (pass/fail only — the backend never stores hidden actuals).

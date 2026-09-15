@@ -318,6 +318,12 @@ export const evaluations = pgTable(
     interviewId: text("interview_id")
       .notNull()
       .references(() => interviews.id, { onDelete: "cascade" }),
+    // Learning-loop Phase 10: provenance + job linkage. Plain text (no FK) so
+    // an evaluation outlives a deleted job row / curriculum re-seed.
+    topicId: text("topic_id"),
+    status: text("status").notNull().default("completed"),
+    source: text("source"),
+    jobId: text("job_id"),
     dimensions: jsonb("dimensions").notNull().$type<
       Partial<
         Record<
@@ -342,6 +348,30 @@ export const evaluations = pgTable(
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
   },
   (t) => [index("evaluations_interview_id_idx").on(t.interviewId)],
+);
+
+// Learning-loop Phase 10: durable async evaluation jobs. Cascades with the
+// interview; the runner claims pending rows. status validity is enforced by
+// the domain and a CHECK in the migration.
+export const evaluationJobs = pgTable(
+  "evaluation_jobs",
+  {
+    id: text("id").primaryKey(),
+    interviewId: text("interview_id")
+      .notNull()
+      .references(() => interviews.id, { onDelete: "cascade" }),
+    status: text("status").notNull(),
+    attempts: integer("attempts").notNull(),
+    lastError: text("last_error"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("evaluation_jobs_interview_id_idx").on(t.interviewId),
+    index("evaluation_jobs_status_idx").on(t.status),
+  ],
 );
 
 export const interviewEvents = pgTable(

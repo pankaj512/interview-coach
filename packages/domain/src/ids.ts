@@ -15,6 +15,8 @@ export type RecommendationId = string & { readonly __brand: "RecommendationId" }
 // Learning-loop Phase 9: a persisted transcript message (structured, no raw
 // audio). UUID-minted like the other per-interview artefacts.
 export type MessageId = string & { readonly __brand: "MessageId" };
+// Learning-loop Phase 10: an async evaluation job.
+export type EvaluationJobId = string & { readonly __brand: "EvaluationJobId" };
 // Learning-loop Phase 3: curriculum is stable seeded config, so these IDs are
 // deterministic slugs (no UUID minting) — see curriculum.ts.
 export type CurriculumId = string & { readonly __brand: "CurriculumId" };
@@ -61,6 +63,10 @@ export function newMessageId(): MessageId {
   return `msg_${randomUUID()}` as MessageId;
 }
 
+export function newEvaluationJobId(): EvaluationJobId {
+  return `ejob_${randomUUID()}` as EvaluationJobId;
+}
+
 // Explicit casts for stable/seeded IDs (catalog import, tests, S2 seeding).
 export function asUserId(raw: string): UserId {
   return raw as UserId;
@@ -100,6 +106,10 @@ export function asRecommendationId(raw: string): RecommendationId {
 
 export function asMessageId(raw: string): MessageId {
   return raw as MessageId;
+}
+
+export function asEvaluationJobId(raw: string): EvaluationJobId {
+  return raw as EvaluationJobId;
 }
 
 export function asCurriculumId(raw: string): CurriculumId {

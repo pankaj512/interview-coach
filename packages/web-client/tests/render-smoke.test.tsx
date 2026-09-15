@@ -65,6 +65,8 @@ const interview: SerializedInterview = {
 const evaluation: SerializedEvaluation = {
   id: "eval_1",
   interviewId: "int_1",
+  status: "completed",
+  source: "llm",
   dimensions: { correctness: { score: 8 }, communication: { score: 7.5 } },
   hintsUsed: 1,
   strengths: ["Clear API reasoning"],

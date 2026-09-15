@@ -8,6 +8,7 @@ import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import type {
   EvaluationRepository,
+  EvaluationJobRepository,
   EventRepository,
   InterviewRepository,
   InterviewMessageRepository,
@@ -38,6 +39,7 @@ import type {
   CodeRun,
   CodeSubmission,
   Evaluation,
+  EvaluationJob,
   EvaluationRecommendation,
   EvaluationStatus,
   Interview,
@@ -62,6 +64,7 @@ import type {
 } from "@interview-coach/domain";
 import type {
   CurriculumId,
+  EvaluationJobId,
   InterviewId,
   ModuleId,
   ProblemId,
@@ -483,6 +486,10 @@ export class DrizzleEvaluationRepository implements EvaluationRepository {
     const values = {
       id: evaluation.id,
       interviewId: evaluation.interviewId,
+      topicId: evaluation.topicId ?? null,
+      status: evaluation.status,
+      source: evaluation.source ?? null,
+      jobId: evaluation.jobId ?? null,
       dimensions: { ...evaluation.dimensions } as Evaluation["dimensions"],
       hintsUsed: evaluation.hintsUsed,
       strengths: [...evaluation.strengths],
@@ -534,16 +541,88 @@ function toEvaluation(row: typeof schema.evaluations.$inferSelect): Evaluation {
   return {
     id: row.id as Evaluation["id"],
     interviewId: row.interviewId as InterviewId,
+    status: row.status as Evaluation["status"],
     dimensions,
     hintsUsed: row.hintsUsed,
     strengths: row.strengths,
     weaknesses: row.weaknesses,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
+    ...(row.topicId === null ? {} : { topicId: row.topicId as TopicId }),
+    ...(row.source === null
+      ? {}
+      : { source: row.source as NonNullable<Evaluation["source"]> }),
+    ...(row.jobId === null
+      ? {}
+      : { jobId: row.jobId as NonNullable<Evaluation["jobId"]> }),
     ...(row.recommendation === null
       ? {}
       : { recommendation: row.recommendation as EvaluationRecommendation }),
     ...(row.overallScore === null ? {} : { overallScore: row.overallScore }),
+  };
+}
+
+export class DrizzleEvaluationJobRepository implements EvaluationJobRepository {
+  constructor(private readonly db: Db) {}
+
+  async save(job: EvaluationJob): Promise<void> {
+    const values = {
+      id: job.id,
+      interviewId: job.interviewId,
+      status: job.status,
+      attempts: job.attempts,
+      lastError: job.lastError ?? null,
+      createdAt: job.createdAt,
+      updatedAt: job.updatedAt,
+      startedAt: job.startedAt ?? null,
+      completedAt: job.completedAt ?? null,
+    };
+    await this.db
+      .insert(schema.evaluationJobs)
+      .values(values)
+      .onConflictDoUpdate({ target: schema.evaluationJobs.id, set: values });
+  }
+
+  async findById(id: EvaluationJobId): Promise<EvaluationJob | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.evaluationJobs)
+      .where(eq(schema.evaluationJobs.id, id))
+      .limit(1);
+    return rows[0] === undefined ? null : toEvaluationJob(rows[0]);
+  }
+
+  async findByInterview(interviewId: InterviewId): Promise<EvaluationJob | null> {
+    const rows = await this.db
+      .select()
+      .from(schema.evaluationJobs)
+      .where(eq(schema.evaluationJobs.interviewId, interviewId))
+      .orderBy(desc(schema.evaluationJobs.createdAt), desc(schema.evaluationJobs.updatedAt))
+      .limit(1);
+    return rows[0] === undefined ? null : toEvaluationJob(rows[0]);
+  }
+
+  async listPending(): Promise<readonly EvaluationJob[]> {
+    const rows = await this.db
+      .select()
+      .from(schema.evaluationJobs)
+      .where(eq(schema.evaluationJobs.status, "pending"))
+      .orderBy(asc(schema.evaluationJobs.createdAt));
+    return rows.map(toEvaluationJob);
+  }
+}
+
+function toEvaluationJob(row: typeof schema.evaluationJobs.$inferSelect): EvaluationJob {
+  return {
+    id: row.id as EvaluationJob["id"],
+    interviewId: row.interviewId as InterviewId,
+    status: row.status as EvaluationJob["status"],
+    attempts: row.attempts,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    ...(row.lastError === null ? {} : { lastError: row.lastError }),
+    ...(row.startedAt === null ? {} : { startedAt: row.startedAt }),
+    ...(row.completedAt === null ? {} : { completedAt: row.completedAt }),
   };
 }
 
@@ -1295,6 +1374,7 @@ export function createDrizzleRepositories(db: Db): RepositorySet {
     responses: new DrizzleResponseRepository(db),
     messages: new DrizzleInterviewMessageRepository(db),
     evaluations: new DrizzleEvaluationRepository(db),
+    evaluationJobs: new DrizzleEvaluationJobRepository(db),
     events: new DrizzleEventRepository(db),
     submissions: new DrizzleSubmissionRepository(db),
     runs: new DrizzleRunRepository(db),

@@ -17,6 +17,8 @@ import {
   asRecommendationId,
   asTopicId,
   asUserId,
+  createEvaluation,
+  createEvaluationJob,
   createProblem,
   createRecommendation,
   createUserCurriculumProgress,
@@ -332,6 +334,65 @@ describe("postgres persistence", () => {
     const deleted = await reconnected.repos.interviews.deleteById(id);
     expect(deleted).toBe(true);
     expect(await reconnected.repos.messages.listByInterview(id)).toHaveLength(0);
+  }));
+
+  it("persists evaluation jobs + provenance, survives restart, and cascades", withDb(ctx, async (t) => {
+    const service = new InterviewService({ ...t.repos });
+    const candidateId = asUserId("user_phase10_persist");
+    const created = await service.createInterview({
+      candidateId,
+      configuration: { interviewType: "dsa" },
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    const id = created.value.id;
+
+    const job = createEvaluationJob({ interviewId: id, now: new Date("2026-09-14T10:00:00.000Z") });
+    await t.repos.evaluationJobs.save(job);
+    expect(await t.repos.evaluationJobs.findByInterview(id)).toEqual(job);
+    expect((await t.repos.evaluationJobs.listPending()).map((j) => j.id)).toContain(job.id);
+
+    const evaluation = createEvaluation({
+      interviewId: id,
+      topicId: asTopicId("topic_arrays"),
+      status: "completed",
+      source: "fallback",
+      jobId: job.id,
+      dimensions: { correctness: { score: 4 } },
+      hintsUsed: 1,
+      overallScore: 80,
+      now: new Date("2026-09-14T10:00:05.000Z"),
+    });
+    if (!evaluation.ok) throw new Error(evaluation.error.message);
+    await t.repos.evaluations.save(evaluation.value);
+
+    // Restart survival.
+    await t.handle.close();
+    const fresh = createDatabase(process.env["TEST_DATABASE_URL"]);
+    try {
+      const repos = createDrizzleRepositories(fresh.db);
+      expect(await repos.evaluationJobs.findByInterview(id)).toMatchObject({
+        id: job.id,
+        status: "pending",
+        attempts: 0,
+      });
+      expect(await repos.evaluations.findByInterview(id)).toMatchObject({
+        status: "completed",
+        source: "fallback",
+        topicId: "topic_arrays",
+        jobId: job.id,
+        overallScore: 80,
+      });
+    } finally {
+      await fresh.close();
+    }
+    const reconnected = await connectTestDb();
+    if (reconnected === null) throw new Error("DB vanished mid-test");
+    ctx.current = reconnected;
+
+    // Hard delete cascades jobs + evaluations.
+    expect(await reconnected.repos.interviews.deleteById(id)).toBe(true);
+    expect(await reconnected.repos.evaluationJobs.findByInterview(id)).toBeNull();
+    expect(await reconnected.repos.evaluations.findByInterview(id)).toBeNull();
   }));
 
   it("round-trips a user profile, survives restart, and cascades with the account", withDb(ctx, async (t) => {

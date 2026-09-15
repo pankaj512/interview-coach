@@ -1,5 +1,6 @@
 import type { InterviewId, ProblemId, RecommendationId, TopicId, UserId } from "./ids.js";
 import type {
+  EvaluationStatus,
   Interview,
   InterviewConfiguration,
   InterviewStatus,
@@ -484,6 +485,25 @@ export class InterviewService {
     await this.repos.evaluations.save(created.value);
     await this.recordEvent(id, "evaluation.recorded");
     return created;
+  }
+
+  // Phase 10: track the async evaluation lifecycle on the interview. The
+  // service calls this when a job is enqueued (pending), succeeds (completed),
+  // or exhausts retries (failed).
+  async markEvaluationStatus(
+    id: InterviewId,
+    status: EvaluationStatus,
+  ): Promise<Result<Interview>> {
+    const interview = await this.repos.interviews.findById(id);
+    if (interview === null) return err(this.notFound(id));
+    if (interview.evaluationStatus === status) return ok(interview);
+    const next: Interview = {
+      ...interview,
+      evaluationStatus: status,
+      updatedAt: this.clock.now(),
+    };
+    await this.repos.interviews.save(next);
+    return ok(next);
   }
 
   // S5 hint accounting: every issued hint increments the interview's

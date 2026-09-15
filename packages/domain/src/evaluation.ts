@@ -1,5 +1,6 @@
-import type { EvaluationId, InterviewId } from "./ids.js";
+import type { EvaluationId, EvaluationJobId, InterviewId, TopicId } from "./ids.js";
 import { newEvaluationId } from "./ids.js";
+import type { EvaluationStatus } from "./interview.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
@@ -38,9 +39,22 @@ export type EvaluationRecommendation =
   | "lean_no_hire"
   | "no_hire";
 
+// Phase 10: an evaluation row is the product of an async job. "pending" rows
+// are not persisted by the pipeline (the job carries the pending state); a
+// persisted evaluation is normally "completed", or "failed" when the model
+// and fallback both produced nothing usable. The status union lives with the
+// interview (it mirrors `interviews.evaluation_status`).
+
+// Phase 10 provenance: the LLM produced it, or the deterministic fallback did.
+export type EvaluationSource = "llm" | "fallback";
+
 export interface Evaluation {
   readonly id: EvaluationId;
   readonly interviewId: InterviewId;
+  readonly topicId?: TopicId;
+  readonly status: EvaluationStatus;
+  readonly source?: EvaluationSource;
+  readonly jobId?: EvaluationJobId;
   readonly dimensions: Partial<Record<EvaluationDimension, DimensionScore>>;
   readonly hintsUsed: number;
   readonly strengths: readonly string[];
@@ -53,6 +67,10 @@ export interface Evaluation {
 
 export interface CreateEvaluationInput {
   readonly interviewId: InterviewId;
+  readonly topicId?: TopicId;
+  readonly status?: EvaluationStatus;
+  readonly source?: EvaluationSource;
+  readonly jobId?: EvaluationJobId;
   readonly dimensions?: Partial<Record<EvaluationDimension, DimensionScore>>;
   readonly hintsUsed?: number;
   readonly strengths?: readonly string[];
@@ -118,12 +136,16 @@ export function createEvaluation(
   return ok({
     id: newEvaluationId(),
     interviewId: input.interviewId,
+    status: input.status ?? "completed",
     dimensions,
     hintsUsed,
     strengths: input.strengths ?? [],
     weaknesses: input.weaknesses ?? [],
     createdAt: now,
     updatedAt: now,
+    ...(input.topicId === undefined ? {} : { topicId: input.topicId }),
+    ...(input.source === undefined ? {} : { source: input.source }),
+    ...(input.jobId === undefined ? {} : { jobId: input.jobId }),
     ...(input.recommendation === undefined
       ? {}
       : { recommendation: input.recommendation }),
