@@ -420,7 +420,9 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     profiles,
     skills,
     skillUpdates,
+    recommendations,
     model: evaluationModel,
+    metrics,
     ...(deps.evaluationRunSynchronously === undefined
       ? {}
       : { runSynchronously: deps.evaluationRunSynchronously }),

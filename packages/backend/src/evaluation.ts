@@ -39,6 +39,8 @@ import type { CurriculumService } from "./curriculum.js";
 import type { ProfileService } from "./profile.js";
 import type { SkillService } from "./skills.js";
 import type { SkillUpdateService } from "./skill-update.js";
+import type { RecommendationService } from "./recommendation.js";
+import type { BackendMetrics } from "./metrics.js";
 import { assembleEvaluationContext, type AssembleEvaluationContextInput } from "./evaluation-context.js";
 
 export interface EvaluationServiceDeps {
@@ -48,10 +50,13 @@ export interface EvaluationServiceDeps {
   readonly profiles: ProfileService;
   readonly skills: SkillService;
   readonly skillUpdates: SkillUpdateService;
+  readonly recommendations: RecommendationService;
   readonly model: EvaluationModel;
   readonly clock?: Clock;
   /** Tests set true so `enqueue` awaits the job instead of scheduling it. */
   readonly runSynchronously?: boolean;
+  /** Phase 12 loop counters (optional so unit tests can omit them). */
+  readonly metrics?: BackendMetrics;
 }
 
 export interface EnqueueResult {
@@ -67,9 +72,11 @@ export class EvaluationService {
   private readonly profiles: ProfileService;
   private readonly skills: SkillService;
   private readonly skillUpdates: SkillUpdateService;
+  private readonly recommendations: RecommendationService;
   private readonly model: EvaluationModel;
   private readonly clock: Clock;
   private readonly runSynchronously: boolean;
+  private readonly metrics: BackendMetrics | undefined;
 
   constructor(deps: EvaluationServiceDeps) {
     this.repos = deps.repos;
@@ -78,9 +85,11 @@ export class EvaluationService {
     this.profiles = deps.profiles;
     this.skills = deps.skills;
     this.skillUpdates = deps.skillUpdates;
+    this.recommendations = deps.recommendations;
     this.model = deps.model;
     this.clock = deps.clock ?? systemClock;
     this.runSynchronously = deps.runSynchronously ?? false;
+    this.metrics = deps.metrics;
   }
 
   // Idempotent: returns null when a real evaluation already exists, the active
@@ -189,6 +198,14 @@ export class EvaluationService {
         userId: input.candidateId as UserId,
       });
       if (!skillUpdate.ok) throw skillUpdate.error;
+      // Phase 12: close the learning loop. A fresh skill update invalidates the
+      // current recommendation and regenerates it from the new state. This is
+      // best-effort: the evaluation is already persisted and must not be lost,
+      // and an unregenerated recommendation self-heals via the Dashboard's
+      // auto-generate when `current` is null.
+      if (skillUpdate.value.applied) {
+        await this.regenerateRecommendation(input.candidateId as UserId);
+      }
       await this.interviews.markEvaluationStatus(job.interviewId, "completed");
       await this.repos.evaluationJobs.save({
         ...job,
@@ -233,6 +250,22 @@ export class EvaluationService {
 
   async currentJob(interviewId: InterviewId): Promise<EvaluationJob | null> {
     return this.repos.evaluationJobs.findByInterview(interviewId);
+  }
+
+  // Phase 12: supersede the current recommendation and generate a replacement
+  // from the updated learning state. Best-effort: never fails the evaluation.
+  private async regenerateRecommendation(userId: UserId): Promise<void> {
+    try {
+      await this.recommendations.invalidateCurrent(userId);
+      const generated = await this.recommendations.generate(userId);
+      if (!generated.ok) {
+        this.metrics?.countRecommendationRegenerationFailure();
+        return;
+      }
+      this.metrics?.countRecommendationRegenerated();
+    } catch {
+      this.metrics?.countRecommendationRegenerationFailure();
+    }
   }
 
   private async propose(

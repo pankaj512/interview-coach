@@ -617,3 +617,25 @@ Open for Phase 12 (Adaptive learning loop): supersede/invalidate the current rec
 Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB (`TEST_DATABASE_URL`) persistence and a live HTTP smoke.
 Verified 2026-09-15: typecheck ok, test 439 passed (418 prior + 17 domain skill-update + 4 backend skill-update; no-DB warn-and-pass) and 439 with live-DB `TEST_DATABASE_URL` (db persistence 11/11 incl. `last_evaluation_id`), `tsc -b` ok, `vite build` ok (327.83kB JS / 98.60kB gzip; CSS 28.82kB / 5.22kB gzip — unchanged, no client edits). Migration `0009` applied to dev + `interview_coach_test`. Live HTTP smoke (in-process inject, dev DB, LLM unconfigured): register → create (`topicId: topic_arrays`) → assign `prob_move-zeroes` → ready → start → `end` → `GET /api/skills` returned the topic skill (`masteryLevel:"not_started"`, `successfulAttempts:0`, `totalAttempts:1`, `lastOutcome:"partial"`) + progress (`currentTopicId:"topic_arrays"`, `completedTopicIds:[]`) — the fallback evaluation drove the update.
 Tag: `session-phase11` after commit.
+
+## Phase 12 — Adaptive learning loop (2026-09-15)
+Status: done (verified below). Roadmap Phase 12, sub-phases 12.1–12.4. Closes the loop: evaluation → skill/curriculum update → new recommendation. No new API/DB/frontend (the Dashboard/Lobby already read `GET /api/recommendations/current`).
+
+Done:
+* Backend (`packages/backend/src/recommendation.ts`): `RecommendationService.invalidateCurrent(userId, curriculumId)` supersedes every non-superseded proposal and returns the transition count; `generate` now calls it instead of duplicating the supersede loop (behavior unchanged).
+* Loop trigger (`packages/backend/src/evaluation.ts`): `EvaluationService` takes `recommendations` + optional `metrics`. After `SkillUpdateService.apply` reports `applied`, `runJob` calls `regenerateRecommendation(userId)` = `invalidateCurrent` → `generate`, wrapped best-effort (a failure is counted, never fails the job; the evaluation is already persisted and a null `current` self-heals via the Dashboard's auto-generate). Gated on `applied` so a retry of the same evaluation does not churn the recommendation.
+* Metrics (`metrics.ts`, `prometheus.ts`): `recommendationsRegenerated` / `recommendationRegenerationFailures` in the JSON snapshot + `interview_coach_recommendations_regenerated_total` / `interview_coach_recommendation_regeneration_failures_total`.
+* Wiring (`app.ts`): passes `recommendations` + `metrics` into `EvaluationService`.
+* Tests: backend `learning-loop` (4: supersession after an evaluation; advance to the next topic after mastering one; failure keeps the same topic/problem = no oscillation; loop metric counts).
+
+Decisions locked:
+* Regeneration is a **backend operation inside the async evaluation job**, never a route or realtime tool (ADR-002). `generate`'s existing supersede step is now the shared `invalidateCurrent`.
+* Best-effort: an evaluation is never lost to a recommendation failure; the Dashboard's existing auto-generate (Phase 5) is the self-heal when `current` is null.
+* Trigger only when the skill update was actually applied — an `already_applied` retry does not supersede/regenerate again.
+* No DB migration (uses `recommendations.status` transitions from Phase 4).
+
+Open for Phase 13 (History & progress): server-backed History/Progress/Weak-Areas views from the existing list/skills/recommendation APIs; retire browser-local `history.ts`/`progress.ts`.
+
+Verify: `pnpm install && pnpm typecheck && pnpm test && pnpm build && pnpm --filter @interview-coach/web-client build` plus live-DB (`TEST_DATABASE_URL`) persistence and a live HTTP smoke.
+Verified 2026-09-15: typecheck ok, test 443 passed (439 prior + 4 backend learning-loop; no-DB warn-and-pass) and 443 with live-DB `TEST_DATABASE_URL`, `tsc -b` ok, `vite build` ok (327.83kB JS / 98.60kB gzip; CSS 28.82kB / 5.22kB gzip — unchanged, no client edits). No migration. Live HTTP smoke (in-process inject, dev DB, LLM unconfigured): register → `POST /api/recommendations` (`topic_arrays`/`prob_move-zeroes`) → accept → create bound to the recommendation → assign → ready → start → `end` → `GET /api/recommendations/current` returned a **new active** recommendation while the accepted one is `superseded` → metrics `recommendationsRegenerated: 1`, `recommendationRegenerationFailures: 0`.
+Tag: `session-phase12` after commit.

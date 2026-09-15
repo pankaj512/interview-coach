@@ -77,6 +77,28 @@ export class RecommendationService {
     return this.recommendations.findCurrentByUser(userId, curriculumId);
   }
 
+  // Phase 12: supersede every non-superseded proposal so `current` is
+  // unambiguous. Called explicitly by the learning loop (after a skill update)
+  // and internally by `generate` before persisting the replacement. Idempotent;
+  // returns how many rows transitioned.
+  async invalidateCurrent(
+    userId: UserId,
+    curriculumId: CurriculumId = DSA_CURRICULUM_ID,
+  ): Promise<number> {
+    const now = this.clock();
+    const existing = await this.recommendations.listByUser(userId, curriculumId);
+    let superseded = 0;
+    for (const prior of existing) {
+      if (prior.status === "superseded") continue;
+      const next = supersedeRecommendation(prior, now);
+      if (next.ok) {
+        await this.recommendations.save(next.value);
+        superseded += 1;
+      }
+    }
+    return superseded;
+  }
+
   async generate(
     userId: UserId,
     curriculumId: CurriculumId = DSA_CURRICULUM_ID,
@@ -135,12 +157,7 @@ export class RecommendationService {
     const now = this.clock();
     // Supersede every prior non-superseded proposal so `current` is unambiguous
     // (Phase 12 regenerates after evaluation using this same transition).
-    const existing = await this.recommendations.listByUser(userId, curriculumId);
-    for (const prior of existing) {
-      if (prior.status === "superseded") continue;
-      const superseded = supersedeRecommendation(prior, now);
-      if (superseded.ok) await this.recommendations.save(superseded.value);
-    }
+    await this.invalidateCurrent(userId, curriculumId);
 
     const created = createRecommendation({
       userId,
