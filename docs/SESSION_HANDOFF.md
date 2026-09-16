@@ -701,3 +701,12 @@ Open: remaining plan items (marketing↔app shells, onboarding local-cache +
 final sign-in gate + `DEV_BYPASS_AUTH`, voice-state ARIA audit, 768/1024px
 responsive pass per screen) + the 3 pre-existing failures above.
 Tag: `session-ui-v11-batch1` after commit.
+
+## UI Rebuild v1.1 — DROPPED (2026-09-16)
+Status: dropped per user decision. The parallel Stitch → code UI track
+(`docs/ui-rebuild-v1.1-plan.md`, `design/interview_coach_v1.1/`, landed
+restyles + batch 1 primitives/screens) stops here; no further UI-rebuild work.
+Landed UI code stays as-is (no revert). `docs/ui-rebuild-v1.1-plan.md` is kept
+for history, not as active plan; `design/` assets removed (2026-09-16).
+Next active work returns to the learning-loop
+roadmap (Phase 13 — History & progress).

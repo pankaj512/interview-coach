@@ -4,8 +4,7 @@
 // Eyebrow, SectionTitle, SectionHead, Badge, Pill, ChipList, Segmented,
 // RadioCard, ProgressItem, ProgressTrack, CtaCard, TableShell, CoachPanel,
 // VoiceRail, TimelineRow, FormCard, Wave, Dialog, StatCard, ScoreRow, Field.
-// Pure UI — no data fetching. Visual language follows
-// `design/interview_coach_v1.1/calm_technical_engineer/DESIGN.md`:
+// Pure UI — no data fetching. Visual language (landed v1.1 Stitch → code):
 // white cards, 1px #E2E8F0 borders, 8px card radius, 4px controls,
 // Space Grotesk headings + Public Sans body + JetBrains Mono telemetry.
 
