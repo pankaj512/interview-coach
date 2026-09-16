@@ -5,6 +5,10 @@
 > This document describes the proposed end-to-end UI, including
 > navigation, screens, interview flow, voice interaction, feedback,
 > settings, and important UI states.
+>
+> Conventions: **MVP is DSA-only and voice-only.** Sections marked
+> **v2-future** are explicitly out of the MVP and kept for later tracks.
+> Backend scoring is canonical: overall 0-100 plus 7 dimensions x 0-5.
 
 ------------------------------------------------------------------------
 
@@ -148,6 +152,10 @@ Display:
 
 # 5. New Interview Screen
 
+> **v2-future.** Manual interview configuration was retired: the MVP starts
+> practice from the server recommendation (Dashboard -> Lobby). Kept for a
+> future where manual selection returns.
+
 This screen configures an interview before starting.
 
 ## Layout
@@ -189,9 +197,12 @@ This screen configures an interview before starting.
 
 # 6. Interview Types
 
+> **MVP: DSA (Coding) only.** Every other track in this section is
+> **v2-future**.
+
 The initial UI should support:
 
-### Coding
+### Coding / DSA (MVP)
 
 Focus:
 
@@ -201,7 +212,7 @@ Focus:
 -   Complexity
 -   Code reasoning
 
-### System Design
+### System Design (v2-future)
 
 Focus:
 
@@ -213,7 +224,7 @@ Focus:
 -   Reliability
 -   Trade-offs
 
-### Backend
+### Backend (v2-future)
 
 Focus:
 
@@ -225,7 +236,7 @@ Focus:
 -   Authentication
 -   Reliability
 
-### Behavioral
+### Behavioral (v2-future)
 
 Focus:
 
@@ -235,7 +246,7 @@ Focus:
 -   Conflict
 -   Decision making
 
-### Resume / Project Deep Dive
+### Resume / Project Deep Dive (v2-future)
 
 The interviewer asks questions based on the candidate's projects and
 experience.
@@ -275,33 +286,31 @@ starting.
 
 ------------------------------------------------------------------------
 
-# 8. Interview Preparation Screen
+# 8. Lobby (Interview Preparation)
 
-Before the interview begins, show a short briefing.
+The Lobby runs automated setup checks, installer-style: it fetches the
+recommended problem, initializes the voice session, and requests microphone
+permission, showing each step as it completes. The main interview screen
+opens automatically as soon as every requirement is met.
 
 ``` text
 ┌───────────────────────────────────────────────────────────────┐
-│                     Interview Ready                           │
+│Lobby                                     DSA · Easy · 30 min  │
 │                                                               │
-│ Backend Engineering Interview                                 │
-│ Difficulty: Hard                                              │
-│ Duration: 45 minutes                                          │
-│ Mode: Realistic Interview                                     │
+│Recommended practice                                           │
+│Arrays · Move Zeroes (Easy)                                    │
+│Why: continue current topic                                    │
 │                                                               │
-│ You will be evaluated on:                                     │
+│Setup checks                                                   │
+│[ok] Problem loaded                                            │
+│[...] Microphone permission                                    │
+│[ ] Voice session ready                                        │
 │                                                               │
-│ • Problem solving                                              │
-│ • Technical depth                                              │
-│ • Communication                                                │
-│ • Trade-off analysis                                           │
-│                                                               │
-│ The interviewer may interrupt with follow-up questions.       │
-│                                                               │
-│              [ Begin Interview ]                              │
+│The interview opens automatically once every check passes.     │
 └───────────────────────────────────────────────────────────────┘
 ```
 
-This screen prevents accidental interview starts and sets expectations.
+The checklist prevents accidental starts and sets expectations. Readiness is polled, never pre-minted: the voice-session mint fires at the transition into the interview, because minting auto-starts it server-side.
 
 ------------------------------------------------------------------------
 
@@ -311,37 +320,31 @@ This is the most important screen in the product.
 
 The UI should be intentionally minimal.
 
+MVP notes: the header shows the DSA interview only. The problem pane shows
+the title in the MVP; statement text and sample cases arrive later via
+external lookup for the problem URL. The editor offers C++ / JS / Python
+with per-problem boilerplate. One Test button runs the sample cases through
+the sandbox (C++/JS/Python, properly isolated - never local execution, which
+is retired on security grounds). There is no Submit button: the interviewer
+has access to the candidate code and judges correctness conversationally.
+
 ## Desktop layout
 
 ``` text
 ┌────────────────────────────────────────────────────────────────────┐
-│ Backend Interview                           18:42 elapsed   ● LIVE │
+│ DSA Interview · Easy                                 04:12   ● LIVE│
 ├───────────────────────────────────────┬────────────────────────────┤
+│ Problem                               │ Editor    [C++ v]          │
 │                                       │                            │
-│ Interviewer                           │ Interview Progress         │
+│ Move Zeroes                           │ /* boilerplate for the     │
+│                                       │    problem appears here */ │
 │                                       │                            │
-│ "Design a URL shortening service.    │  ● Requirements            │
-│  Let's start with the requirements." │  ● API                      │
-│                                       │  ○ Architecture              │
-│                                       │  ○ Scaling                   │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
-│                                       │                            │
+│ Sample cases                          │                            │
+│ case_1: in [0,1,0,3,12]               │                            │
+│         out [1,3,12,0,0]              │                            │
+│ case_2: in [0]  out [0]               │                            │
 ├───────────────────────────────────────┴────────────────────────────┤
-│                                                                    │
-│                     ● Listening                                     │
-│                                                                    │
-│                       🎙                                            │
-│                                                                    │
-│ [ Mute ]  [ Pause ]                       [ End Interview ]         │
+│ [ Test sample cases ]                          [ End Interview ]   │
 └────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -371,9 +374,12 @@ Avoid excessive information.
 
 # 11. Interview Conversation Area
 
-The conversation area is the primary focus.
+> **Not applicable to the DSA MVP**: no visible conversation area. Whether
+> other interview types show one is a future decision. The client still
+> forwards voice transcript events to the backend silently, because
+> server-side transcript persistence depends on it.
 
-For voice interviews, text transcripts should still be visible.
+For voice interviews on future tracks, text transcripts should still be visible.
 
 Example:
 
@@ -402,50 +408,20 @@ Voice is a core part of the experience.
 
 ## Voice states
 
-The UI should clearly distinguish:
+The UI communicates voice state through an icon plus the voice indicator
+(S13). There is no persistent text label of who is speaking; accessible
+names live in tooltips and screen-reader labels.
 
-### Connecting
+| State | Icon | Notes |
+|---|---|---|
+| Connecting | hollow circle, pulsing | |
+| Listening | filled dot | resting state |
+| Candidate speaking | waveform bars animating with input amplitude | |
+| AI thinking | spinner | |
+| Interviewer speaking | speaker icon with radiating waves | |
+| Error | warning triangle | offers Reconnect; reassure the session is safe |
 
-``` text
-○ Connecting...
-```
-
-### Listening
-
-``` text
-● Listening
-```
-
-### User speaking
-
-``` text
-● You're speaking
-```
-
-### AI thinking
-
-``` text
-◌ Thinking...
-```
-
-### AI speaking
-
-``` text
-● Interviewer speaking
-```
-
-### Paused
-
-``` text
-Ⅱ Interview paused
-```
-
-### Error
-
-``` text
-! Voice connection lost
-[ Reconnect ]
-```
+There is no Paused state in the MVP (no pause control).
 
 ------------------------------------------------------------------------
 
@@ -475,19 +451,13 @@ Its purpose is to communicate state.
 
 # 14. Microphone Controls
 
-Primary controls:
+The interview screen offers exactly one control:
 
--   Mute / Unmute
--   Pause / Resume
--   End Interview
+-   End Interview (requires confirmation, S20)
 
-Secondary controls can include:
-
--   Change input device
--   Change output device
--   Toggle transcript
-
-The **End Interview** action should require confirmation.
+There is no Mute / Pause / Resume and no secondary device or transcript
+controls in the MVP. Microphone and speaker setup live in the Lobby checks
+(S8); the AI voice type lives in Settings (S30).
 
 ------------------------------------------------------------------------
 
@@ -516,6 +486,10 @@ than like a voice recording.
 
 # 16. Text Fallback
 
+> **Not in the MVP.** The app is voice-only: no text composer, no
+> voice/text toggle. The content below is kept for a future track that
+> needs it.
+
 If voice is unavailable, the candidate should be able to switch to text.
 
 ``` text
@@ -533,30 +507,15 @@ and text.
 
 # 17. Interview Controls
 
-The candidate should have access to:
-
-### Pause
-
-Temporarily stops the interview.
+The candidate has access to exactly one control:
 
 ### End
 
-Ends the session and opens the completion flow.
+Ends the session (with confirmation) and opens the completion flow (S20).
 
-### Transcript
-
-Shows/hides the conversation transcript.
-
-### Settings
-
-Allows safe changes such as:
-
--   Audio device
--   Voice volume
--   Transcript visibility
-
-Critical interview configuration should not be casually changeable after
-the session begins.
+There is no Pause, Transcript toggle, or in-interview Settings in the MVP.
+Critical interview configuration is never changeable after the session
+begins.
 
 ------------------------------------------------------------------------
 
@@ -583,6 +542,9 @@ deliberately restricted.
 ------------------------------------------------------------------------
 
 # 19. Interview Progress
+
+> **v2-future.** Progress checklists are not applicable to DSA interviews.
+> Kept for a future structured track.
 
 For structured interviews, show progress.
 
@@ -654,29 +616,26 @@ The results screen should be highly actionable.
 
 ``` text
 ┌───────────────────────────────────────────────────────────────┐
-│ Interview Results                                             │
-│ Backend Engineering · Hard · 32 min                           │
+│Interview Results                                              │
+│DSA · Arrays · Easy · 12 min                                   │
 │                                                               │
-│                        8.1 / 10                               │
-│                         Strong                                │
+│                        72 / 100                               │
+│                       proficient                              │
 │                                                               │
-│ ┌────────────┐ ┌────────────┐ ┌────────────┐ ┌────────────┐ │
-│ │ Technical  │ │ Problem    │ │ Communi-   │ │ Trade-offs  │ │
-│ │  8.5       │ │ Solving    │ │ cation     │ │  7.6       │ │
-│ │             │ │  8.2       │ │  7.9       │ │             │ │
-│ └────────────┘ └────────────┘ └────────────┘ └────────────┘ │
+│ problem_understanding  4     approach         4               │
+│ communication          3     coding           4               │
+│ testing_debugging      3     complexity       3               │
+│ independence           2                                      │
 │                                                               │
-│ What went well                                                │
+│What went well                                                 │
 │                                                               │
-│ ✓ Strong API reasoning                                        │
-│ ✓ Good scalability discussion                                 │
+│> Strong two-pointer structure                                 │
 │                                                               │
-│ Improve next                                                  │
+│Improve next                                                   │
 │                                                               │
-│ → Explain consistency trade-offs more clearly                 │
-│ → Discuss failure handling earlier                             │
+│-> State the complexity before coding                          │
 │                                                               │
-│ [ Review Interview ] [ Practice Weak Areas ]                   │
+│[ Review Interview ] [ Practice Weak Areas ]                   │
 └───────────────────────────────────────────────────────────────┘
 ```
 
@@ -684,19 +643,19 @@ The results screen should be highly actionable.
 
 # 23. Evaluation Categories
 
-The exact scoring system can evolve, but the UI should support
-categories such as:
+Scoring is backend-canonical and the UI renders it verbatim: overall
+0-100 plus these 7 DSA dimensions, each 0-5 with evidence and feedback:
 
--   Technical correctness
--   Problem solving
--   System design
--   Communication
--   Trade-off analysis
--   Depth of knowledge
--   Code quality
--   Requirement clarification
+-   `problem_understanding`
+-   `approach`
+-   `communication`
+-   `coding`
+-   `testing_debugging`
+-   `complexity_analysis`
+-   `independence`
 
-Not every interview type needs every category.
+Future interview types may define their own dimension sets; the results
+screen renders whatever keys the backend returns.
 
 ------------------------------------------------------------------------
 
@@ -730,6 +689,9 @@ Feedback should be specific and tied to actual interview moments.
 ------------------------------------------------------------------------
 
 # 25. Transcript Review
+
+> **v2-future for the MVP.** No transcript review screen ships in the MVP.
+> Server-side transcripts are still captured (they feed evaluation).
 
 The candidate can review the complete interview.
 
@@ -900,6 +862,7 @@ Settings should be organized into sections.
 -   Microphone
 -   Speaker
 -   Voice
+-   AI voice type (interviewer voice)
 -   Volume
 -   Input sensitivity
 -   Test microphone
@@ -930,6 +893,10 @@ product later targets non-technical users.
 ------------------------------------------------------------------------
 
 # 31. CLI UI
+
+> **Out of scope.** The CLI is an external regression harness, not this
+> product's UI. These sections stay only so the harness mirrors the same
+> information architecture.
 
 The CLI should follow the same product information architecture.
 
@@ -1244,15 +1211,9 @@ The primary journey should be:
 ``` text
 Dashboard
    ↓
-New Interview
+Recommended practice
    ↓
-Choose Interview Type
-   ↓
-Choose Difficulty
-   ↓
-Choose Mode
-   ↓
-Interview Briefing
+Lobby (automated checks)
    ↓
 Start Interview
    ↓
@@ -1283,15 +1244,14 @@ The first version should avoid building every screen immediately.
 
 ### MVP screens
 
-1.  Start/New Interview
-2.  Interview screen
-3.  Voice states
-4.  Text transcript
-5.  Pause/end controls
-6.  Evaluation/loading
-7.  Results
-8.  Basic interview history
-9.  Settings
+1.  Lobby with automated setup checks
+2.  DSA interview screen (problem + editor)
+3.  Voice states (icon indicator)
+4.  End control + confirmation
+5.  Evaluation/loading
+6.  Results (overall /100, 7 dimensions x /5)
+7.  Server-backed interview history
+8.  Settings
 
 ### Defer
 
@@ -1302,6 +1262,10 @@ The first version should avoid building every screen immediately.
 -   Gamification
 -   Resume management
 -   Complex personalization
+-   Manual interview configuration (v2-future)
+-   Text fallback / text mode
+-   Transcript review UI (v2-future)
+-   Non-DSA interview tracks (v2-future)
 
 ------------------------------------------------------------------------
 
