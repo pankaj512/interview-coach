@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dashboard - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav .inner { max-width: 1020px; margin: 0 auto; padding: var(--space-sm) var(--space-lg); display: flex; align-items: center; gap: var(--space-md); min-height: 60px; flex-wrap: wrap; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin-right: var(--space-md); white-space: nowrap; }
+  .nav a { font-size: 14px; color: var(--muted); text-decoration: none; padding: 6px 2px; border-bottom: 2px solid transparent; }
+  .nav a.active { color: var(--text); font-weight: 600; border-bottom-color: var(--primary); }
+  .nav .who { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); font-size: 14px; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--primary); color: var(--primary-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .wrap { max-width: 1020px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: 0 0 4px; }
+  .prep { color: var(--muted); margin: 0 0 var(--space-lg); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); margin-bottom: var(--space-lg); }
+  .card h2 { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: var(--space-sm) 0; }
+  .card h2:first-child { margin-top: 0; }
+  .rec { background: linear-gradient(135deg, #003629 0%, #1b4d3e 100%); color: #f3f0ec; border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg) var(--space-xl); margin-bottom: var(--space-lg); }
+  .rec h2 { font-family: var(--font-display); font-weight: 500; font-size: 26px; margin: var(--space-sm) 0; color: #ffffff; }
+  .rec p { color: #cfe3d8; font-size: 14px; margin: 0; }
+  .rec code { font-family: var(--font-mono); font-size: 13px; color: #ffffff; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #f3f0ec; margin-right: 6px; }
+  .lvl { font-family: var(--font-sans); font-size: 13px; font-weight: 500; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: 2px 10px; border-radius: var(--radius-full); vertical-align: middle; white-space: nowrap; }
+  .btn.light { background: #fcf9f5; border-color: #fcf9f5; color: #003629; }
+  .btn.line { background: transparent; border-color: rgba(255,255,255,.45); color: #f3f0ec; }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 10px 18px; font-weight: 500; border: 1px solid var(--primary); background: var(--primary); color: var(--primary-ink); }
+  .btn.ghost { background: transparent; color: var(--text); border-color: var(--border-strong); }
+  .cta { display: flex; flex-wrap: wrap; gap: var(--space-sm); margin-top: var(--space-md); }
+  .track { height: 8px; border-radius: var(--radius-full); background: var(--track); margin: var(--space-sm) 0 var(--space-md); }
+  .fill { height: 100%; border-radius: var(--radius-full); background: var(--primary); }
+  .mod { display: flex; align-items: baseline; gap: var(--space-sm); padding: 8px 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .mod > span:first-child { flex: 1; }
+  .mod .pct { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--muted); white-space: nowrap; }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+  .item { display: flex; gap: var(--space-sm); padding: var(--space-sm) 0; border-top: 1px solid var(--border); }
+  .item:first-of-type { border-top: 0; }
+  .tick { width: 24px; height: 24px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; background: var(--primary-soft); color: var(--primary-deep); }
+  .tick.warn { background: var(--danger-soft); color: var(--danger); }
+  .item strong { display: block; font-size: 14px; }
+  .item .ev { display: block; font-size: 13px; color: var(--muted); margin-top: 2px; }
+  ul.tight { margin: var(--space-sm) 0 0; padding-left: 18px; font-size: 14px; display: grid; gap: 6px; }
+  table.mastery { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: var(--space-sm); }
+  table.mastery th { text-align: left; color: var(--faint); font-weight: 500; font-size: 12px; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  table.mastery td { padding: 8px; border-bottom: 1px solid var(--border); }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: var(--radius-full); background: var(--surface-low); border: 1px solid var(--border); }
+  .pill.hot { background: var(--primary-soft); color: var(--primary-deep); border-color: transparent; }
+</style>
+</head>
+<body>
+<div class="nav"><div class="inner">
+  <span class="brand">Interview Coach</span>
+  <a href="#" class="active">Dashboard</a><a href="#">History</a><a href="#">Progress</a><a href="#">Settings</a>
+  <span class="who"><span class="avatar">M</span>Maya</span>
+</div></div>
+<div class="wrap">
+  <h1>Good evening, Maya</h1>
+  <p class="prep">Preparing for Senior Backend Engineer · DSA</p>
+  <div class="rec">
+    <span class="tag">Continue topic</span><span class="tag">Curriculum default</span>
+    <h2>Arrays · Move Zeroes <span class="lvl">Easy</span></h2>
+    <p>One more success moves Arrays from <code>learning</code> to <code>developing</code>.</p>
+    <div class="cta"><button class="btn light">Start practice</button><button class="btn line">New suggestion</button></div>
+  </div>
+  <div class="card">
+    <h2>Curriculum progress</h2>
+    <div class="track"><div class="fill" style="width:18%"></div></div>
+    <div class="mod"><span>Foundations &amp; Core Linear Structures</span><span class="pct">4 / 9 topics</span></div>
+    <div class="mod"><span>Hashing &amp; Two Pointers</span><span class="pct">1 / 7 topics</span></div>
+    <div class="mod"><span>Current topic: Arrays</span><span class="pct">in progress</span></div>
+  </div>
+  <div class="cols">
+    <div class="card"><h2>Strengths</h2>
+      <div class="item"><span class="tick">✓</span><div><strong>Two-pointer structure</strong><span class="ev">Clean in-place loop in Move Zeroes.</span></div></div>
+      <div class="item"><span class="tick">✓</span><div><strong>In-place discipline</strong><span class="ev">No extra array allocated.</span></div></div>
+    </div>
+    <div class="card"><h2>Focus areas</h2>
+      <div class="item"><span class="tick warn">→</span><div><strong>Complexity narration</strong><span class="ev">State O(n) time before coding, not after prompting.</span></div></div>
+      <div class="item"><span class="tick warn">→</span><div><strong>Edge-case probing</strong><span class="ev">Empty input missed twice running.</span></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>Topic mastery</h2>
+    <table class="mastery">
+      <tr><th>Topic</th><th>Level</th><th>Attempts</th></tr>
+      <tr><td>Arrays</td><td><span class="pill hot">learning</span></td><td>1 / 1</td></tr>
+      <tr><td>Strings</td><td><span class="pill">not started</span></td><td>0 / 0</td></tr>
+      <tr><td>Hash Map</td><td><span class="pill">not started</span></td><td>0 / 0</td></tr>
+    </table>
+  </div>
+</div>
+</body>
+</html>

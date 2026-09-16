@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Results - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav .inner { max-width: 860px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; gap: var(--space-md); height: 60px; flex-wrap: wrap; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin-right: var(--space-md); white-space: nowrap; }
+  .nav a { font-size: 14px; color: var(--muted); text-decoration: none; padding: 6px 2px; border-bottom: 2px solid transparent; }
+  .nav a.active { color: var(--text); font-weight: 600; border-bottom-color: var(--primary); }
+  .nav .who { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); font-size: 14px; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--primary); color: var(--primary-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
+  .meta { display: flex; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: var(--space-sm); }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: 0; }
+  .hero { display: flex; align-items: center; gap: var(--space-lg); margin: var(--space-lg) 0; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
+  .score { font-family: var(--font-display); font-size: 56px; line-height: 1; }
+  .score small { font-size: 20px; color: var(--faint); }
+  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 3px 12px; border-radius: var(--radius-full); background: var(--primary-soft); color: var(--primary-deep); }
+  .dims { display: grid; gap: var(--space-sm); margin: var(--space-lg) 0; }
+  .dim { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-md); padding: var(--space-md); }
+  .dim .top { display: flex; align-items: baseline; gap: var(--space-sm); }
+  .dim code { font-family: var(--font-mono); font-size: 13px; font-weight: 500; }
+  .dim .val { margin-left: auto; font-family: var(--font-mono); font-size: 13px; color: var(--muted); }
+  .track { height: 6px; border-radius: var(--radius-full); background: var(--track); margin-top: var(--space-sm); }
+  .fill { height: 100%; border-radius: var(--radius-full); background: var(--primary); }
+  .fill.low { background: var(--review); }
+  .ev { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); }
+  .item { display: flex; gap: var(--space-sm); padding: var(--space-sm) 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .item:first-of-type { border-top: 0; }
+  .tick { width: 24px; height: 24px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex: none; background: var(--primary-soft); color: var(--primary-deep); }
+  .tick.warn { background: var(--danger-soft); color: var(--danger); }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-lg); }
+  .card h2 { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: 0 0 var(--space-sm); }
+  ul.tight { margin: 0; padding-left: 18px; font-size: 14px; display: grid; gap: 6px; }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 10px 18px; font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+  .row { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); }
+</style>
+</head>
+<body>
+<div class="nav"><div class="inner">
+  <span class="brand">Interview Coach</span>
+  <a href="#">Dashboard</a><a href="#" class="active">History</a><a href="#">Progress</a><a href="#">Settings</a>
+  <span class="who"><span class="avatar">M</span>Maya</span>
+</div></div>
+<div class="wrap">
+  <div class="meta"><span>Interview Results</span><span>·</span><span>DSA · Arrays · Easy · 12 min</span></div>
+  <h1>Move Zeroes, reviewed</h1>
+  <div class="hero">
+    <div class="score">72<small> / 100</small></div>
+    <div><span class="badge">proficient</span><p style="color:var(--muted);font-size:14px;margin:8px 0 0">Backend-derived from 7 validated dimensions. Source: Curriculum default.</p></div>
+  </div>
+  <div class="dims">
+    <div class="dim"><div class="top"><code>problem_understanding</code><span class="val">4 / 5</span></div><div class="track"><div class="fill" style="width:80%"></div></div><p class="ev">Restated the goal before coding.</p></div>
+    <div class="dim"><div class="top"><code>approach</code><span class="val">4 / 5</span></div><div class="track"><div class="fill" style="width:80%"></div></div><p class="ev">Chose two pointers; justified over extra array.</p></div>
+    <div class="dim"><div class="top"><code>communication</code><span class="val">3 / 5</span></div><div class="track"><div class="fill" style="width:60%"></div></div><p class="ev">Narrated the happy path; went quiet on edge cases.</p></div>
+    <div class="dim"><div class="top"><code>coding</code><span class="val">4 / 5</span></div><div class="track"><div class="fill" style="width:80%"></div></div><p class="ev">Clean loop, in-place as required.</p></div>
+    <div class="dim"><div class="top"><code>testing_debugging</code><span class="val">3 / 5</span></div><div class="track"><div class="fill" style="width:60%"></div></div><p class="ev">Ran samples; did not probe empty input.</p></div>
+    <div class="dim"><div class="top"><code>complexity_analysis</code><span class="val">3 / 5</span></div><div class="track"><div class="fill" style="width:60%"></div></div><p class="ev">Stated O(n) time after prompting.</p></div>
+    <div class="dim"><div class="top"><code>independence</code><span class="val">2 / 5</span></div><div class="track"><div class="fill low" style="width:40%"></div></div><p class="ev">Needed a nudge on pointer init.</p></div>
+  </div>
+  <div class="cols">
+    <div class="card"><h2>What went well</h2>
+      <div class="item"><span class="tick">✓</span><span>Strong two-pointer structure</span></div>
+      <div class="item"><span class="tick">✓</span><span>In-place discipline held</span></div>
+    </div>
+    <div class="card"><h2>Improve next</h2>
+      <div class="item"><span class="tick warn">→</span><span>State complexity before coding</span></div>
+      <div class="item"><span class="tick warn">→</span><span>Probe empty/single-element inputs</span></div>
+    </div>
+  </div>
+  <div class="row"><button class="btn">Review interview</button><button class="btn primary">Practice weak areas</button></div>
+</div>
+</body>
+</html>

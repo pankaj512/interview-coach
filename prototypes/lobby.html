@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Lobby - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav .inner { max-width: 960px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; gap: var(--space-md); height: 60px; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 18px; }
+  .nav .ctx { font-size: 14px; color: var(--muted); }
+  .nav .who { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); font-size: 14px; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--primary); color: var(--primary-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .wrap { max-width: 960px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
+  .eyebrow { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: var(--space-sm) 0; }
+  .sub { color: var(--muted); margin-top: 0; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
+  .card h2 { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: 0 0 var(--space-sm); }
+  .rec { background: linear-gradient(135deg, #003629 0%, #1b4d3e 100%); color: #f3f0ec; border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
+  .rec h2 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin: var(--space-sm) 0; color: #ffffff; }
+  .rec .reason { color: #cfe3d8; font-size: 14px; margin: 4px 0; }
+  .rec code { font-family: var(--font-mono); font-size: 13px; color: #ffffff; }
+  .tag { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #f3f0ec; }
+  .lvl { font-family: var(--font-sans); font-size: 13px; font-weight: 500; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: 2px 10px; border-radius: var(--radius-full); vertical-align: middle; white-space: nowrap; }
+  .checks { list-style: none; margin: var(--space-md) 0 0; padding: 0; }
+  .checks li { display: flex; gap: var(--space-sm); align-items: center; padding: var(--space-sm) 0; border-top: 1px solid var(--border); font-size: 15px; }
+  .checks li:first-child { border-top: 0; }
+  .mark { width: 22px; height: 22px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
+  .mark.ok { background: var(--primary-soft); color: var(--primary-deep); }
+  .mark.busy { border: 2px solid var(--border-strong); border-top-color: var(--primary); animation: spin 1s linear infinite; }
+  .mark.todo { border: 2px solid var(--border-strong); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .detail { color: var(--faint); font-size: 13px; margin-left: auto; }
+  .banner { display: none; margin-top: var(--space-lg); background: var(--primary); color: var(--primary-ink); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg); font-weight: 500; }
+  .banner.show { display: block; }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 10px 18px; border: 1px solid var(--border); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+  .row { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); }
+  .reason { color: var(--muted); font-size: 14px; }
+  code { font-family: var(--font-mono); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="nav"><div class="inner">
+  <span class="brand">Interview Coach</span>
+  <span class="ctx">Lobby · DSA · Easy · 30 min</span>
+  <span class="who"><span class="avatar">M</span>Maya</span>
+</div></div>
+<div class="wrap">
+  <h1>Preparing your interview</h1>
+  <p class="sub">Each check opens the interview automatically once everything passes. No mint happens before that moment.</p>
+  <div class="grid">
+    <div class="rec">
+      <span class="tag">Continue topic</span>
+      <h2>Arrays · Move Zeroes <span class="lvl">Easy</span></h2>
+      <p class="reason">Why: continue current topic — one more success moves Arrays to <code>developing</code>.</p>
+      <p class="reason">Objective: two-pointer discipline under interview pressure.</p>
+    </div>
+    <div class="card">
+      <h2>Setup checks</h2>
+      <ul class="checks" id="checks">
+        <li><span class="mark ok">✓</span> Problem loaded <span class="detail">prob_move-zeroes</span></li>
+        <li><span class="mark busy" id="micMark"></span> <span id="micLabel">Microphone permission…</span> <span class="detail" id="micDetail">requesting</span></li>
+        <li><span class="mark todo" id="voiceMark"></span> Voice session ready <span class="detail" id="voiceDetail">waiting on mic</span></li>
+      </ul>
+    </div>
+  </div>
+  <div class="banner" id="banner">All checks green — opening your interview…</div>
+  <div class="row">
+    <button class="btn primary" id="simulate">Simulate: checks complete</button>
+    <button class="btn" id="reset">Reset</button>
+  </div>
+</div>
+<script>
+  const banner = document.getElementById('banner');
+  document.getElementById('simulate').onclick = () => {
+    document.getElementById('micMark').className = 'mark ok';
+    document.getElementById('micMark').textContent = '✓';
+    document.getElementById('micLabel').textContent = 'Microphone permission granted';
+    document.getElementById('micDetail').textContent = 'input level ok';
+    document.getElementById('voiceMark').className = 'mark ok';
+    document.getElementById('voiceMark').textContent = '✓';
+    document.getElementById('voiceDetail').textContent = 'mint on transition';
+    banner.classList.add('show');
+  };
+  document.getElementById('reset').onclick = () => banner.classList.remove('show');
+</script>
+</body>
+</html>
