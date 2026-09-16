@@ -9,8 +9,7 @@ server-side: profile -> curriculum -> recommendation -> interview ->
 async evaluation -> skill update -> next recommendation.
 
 > TODO (confirm): MVP scope is DSA-only; broader tracks (System Design,
-> Behavioral, ML, Resume-based) come later per `docs/implementation-roadmap.md`
-> Phase 10 (old Phase 9).
+> Behavioral, ML, Resume-based) come later as build-plan item V2-5.
 
 ## 2. Users - Who is this for?
 
@@ -39,8 +38,9 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 - Adaptive loop (evaluation -> skill update -> regenerated recommendation)
 - Server-backed History, Progress, Weak-Areas views
 
-Stabilization next (unchecked in `build-plan.md`): green typecheck/tests,
-UI cleanup after the dropped rebuild track, loop verification.
+Next (unchecked in `build-plan.md` 14-19): green main, UI prototype,
+isolated multi-language sandbox, fresh UI rebuild, problem content
+enrichment, loop verification.
 
 ## 4. Data - What are we storing?
 
@@ -92,8 +92,9 @@ Intentional, keep as-is (per user interview):
   and code are all under review.
 - Rework direction: throw away screens/components and rebuild on the kept
   wiring (`api/backend-client`, voice-client/tool-forwarder, backend APIs).
-  `docs/interview-coach-ui-specification.md` is no longer authoritative;
-  the replacement spec emerges from new mockups (`/prototype`) first.
+  `docs/interview-coach-ui-specification.md` was surgically updated to the
+  DSA-only voice-only direction and stands as the current spec; new mockups
+  (`/prototype`, build-plan item 15) refine it before the rebuild.
 - Ritual flow is expected to stay (Landing -> Sign-in -> Onboarding ->
   Dashboard -> Lobby -> Live -> Evaluating -> Results ->
   Transcript/Feedback -> History/Progress/Weak-Areas/Settings) unless the
