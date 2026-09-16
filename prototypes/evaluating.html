@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Evaluating - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .wrap { max-width: 640px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); text-align: center; }
+  .eyebrow { font-size: 12px; letter-spacing: .04em; text-transform: uppercase; color: var(--faint); font-weight: 500; }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: var(--space-sm) 0; }
+  .sub { color: var(--muted); }
+  .spinner { width: 44px; height: 44px; margin: var(--space-lg) auto; border-radius: var(--radius-full); border: 4px solid var(--surface-high); border-top-color: var(--primary); animation: spin 1s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); margin-top: var(--space-lg); text-align: left; }
+  .stages { list-style: none; margin: 0; padding: 0; }
+  .stages li { display: flex; gap: var(--space-sm); align-items: center; padding: var(--space-sm) 0; border-top: 1px solid var(--border); font-size: 14px; }
+  .stages li:first-child { border-top: 0; }
+  .mark { width: 22px; height: 22px; border-radius: var(--radius-full); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: none; }
+  .mark.ok { background: var(--primary-soft); color: var(--primary-deep); }
+  .mark.busy { border: 2px solid var(--border-strong); border-top-color: var(--primary); animation: spin 1s linear infinite; }
+  .mark.todo { border: 2px solid var(--border-strong); }
+  .detail { color: var(--faint); font-size: 13px; margin-left: auto; }
+  .alert { display: none; background: var(--danger-soft); color: var(--danger); border-radius: var(--radius-md); padding: var(--space-md) var(--space-lg); font-size: 14px; font-weight: 500; margin-top: var(--space-lg); text-align: left; }
+  .alert.show { display: block; }
+  .row { display: flex; gap: var(--space-sm); margin-top: var(--space-md); justify-content: center; }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 10px 18px; font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+  .fine { font-size: 12px; color: var(--faint); margin-top: var(--space-md); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Move Zeroes · DSA · Easy</p>
+  <h1>Analyzing your interview</h1>
+  <p class="sub">Structured scoring runs async after End. Results appear automatically; nothing here needs a click.</p>
+  <div class="spinner" role="progressbar" aria-label="Evaluation in progress"></div>
+  <div class="card"><ul class="stages">
+    <li><span class="mark ok">✓</span> Transcript captured <span class="detail">3 responses</span></li>
+    <li><span class="mark busy"></span> Scoring 7 dimensions <span class="detail">coding…</span></li>
+    <li><span class="mark todo"></span> Updating skills <span class="detail">waiting</span></li>
+    <li><span class="mark todo"></span> Regenerating recommendation <span class="detail">waiting</span></li>
+  </ul></div>
+  <div class="alert" id="evalError">Evaluation failed and the fallback produced nothing usable. Your interview is saved; retry scoring or continue to history.</div>
+  <div class="row">
+    <button class="btn primary">View results when ready</button>
+    <button class="btn" id="toggleErr" style="padding:6px 10px;font-size:12px">Preview: scoring failure</button>
+  </div>
+  <p class="fine">A failed evaluation never loses the interview; the fallback path keeps history intact.</p>
+</div>
+<script>
+  document.getElementById('toggleErr').onclick = () => document.getElementById('evalError').classList.toggle('show');
+</script>
+</body>
+</html>

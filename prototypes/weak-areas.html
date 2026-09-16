@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Weak areas - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav .inner { max-width: 860px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; gap: var(--space-md); height: 60px; flex-wrap: wrap; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin-right: var(--space-md); white-space: nowrap; }
+  .nav a { font-size: 14px; color: var(--muted); text-decoration: none; padding: 6px 2px; border-bottom: 2px solid transparent; }
+  .nav .who { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); font-size: 14px; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--primary); color: var(--primary-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 var(--space-lg); }
+  .rec { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); margin-bottom: var(--space-md); }
+  .rec .top { display: flex; align-items: baseline; gap: var(--space-sm); flex-wrap: wrap; }
+  .rec h2 { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: 0; }
+  .rec .why { font-size: 13px; color: var(--muted); margin: var(--space-sm) 0 0; }
+  .rec code { font-family: var(--font-mono); font-size: 12px; background: var(--surface-low); padding: 1px 6px; border-radius: var(--radius-sm); }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: var(--radius-full); background: var(--danger-soft); color: var(--danger); border-color: transparent; }
+  .row { display: flex; gap: var(--space-sm); margin-top: var(--space-md); }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 8px 16px; font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); font-size: 14px; }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+</style>
+</head>
+<body>
+<div class="nav"><div class="inner">
+  <span class="brand">Interview Coach</span>
+  <a href="#">Dashboard</a><a href="#">Progress</a>
+  <span class="who"><span class="avatar">M</span>Maya</span>
+</div></div>
+<div class="wrap">
+  <h1>Recommended practice</h1>
+  <p class="sub">Weak areas recur across sessions. Each card targets one dimension with one problem.</p>
+  <div class="rec">
+    <div class="top"><span class="pill">complexity_analysis · 2/5</span><h2>State the cost before you code</h2></div>
+    <p class="why">Flagged in 2 of the last 3 sessions. Practice: open with time and space on <code>prob_move-zeroes</code>, then defend it under follow-ups.</p>
+    <div class="row"><button class="btn primary">Practice: Move Zeroes</button></div>
+  </div>
+  <div class="rec">
+    <div class="top"><span class="pill">testing_debugging · 2/5</span><h2>Probe the edges out loud</h2></div>
+    <p class="why">Empty and single-element inputs missed twice. Practice: enumerate cases before running samples on <code>prob_two-sum</code>.</p>
+    <div class="row"><button class="btn primary">Practice: Two Sum</button></div>
+  </div>
+  <div class="rec">
+    <div class="top"><span class="pill">independence · 2/5</span><h2>Finish without the nudge</h2></div>
+    <p class="why">Needed pointer-init help last session. Practice: a clean solo run of <code>prob_valid-anagram</code> with hints off.</p>
+    <div class="row"><button class="btn primary">Practice: Valid Anagram</button></div>
+  </div>
+</div>
+</body>
+</html>

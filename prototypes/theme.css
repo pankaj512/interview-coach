@@ -32,6 +32,14 @@
   --review: #97472e;
   --track: #e5e2de;
 
+  /* on-dark surfaces (text/controls over the primary-deep gradient) */
+  --on-dark: #f3f0ec;
+  --on-dark-bright: #ffffff;
+  --on-dark-dim: #cfe3d8;
+  --on-dark-wash: rgba(255,255,255,.14);
+  --on-dark-line: rgba(255,255,255,.22);
+  --on-dark-line-strong: rgba(255,255,255,.45);
+
   /* type */
   --font-display: "Newsreader", Georgia, serif;
   --font-sans: "Inter", system-ui, -apple-system, sans-serif;

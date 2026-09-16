@@ -20,12 +20,12 @@
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-lg); margin-top: var(--space-lg); }
   .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
   .card h2 { font-family: var(--font-display); font-weight: 500; font-size: 20px; margin: 0 0 var(--space-sm); }
-  .rec { background: linear-gradient(135deg, #003629 0%, #1b4d3e 100%); color: #f3f0ec; border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
-  .rec h2 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin: var(--space-sm) 0; color: #ffffff; }
-  .rec .reason { color: #cfe3d8; font-size: 14px; margin: 4px 0; }
-  .rec code { font-family: var(--font-mono); font-size: 13px; color: #ffffff; }
-  .tag { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 12px; border-radius: var(--radius-full); background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); color: #f3f0ec; }
-  .lvl { font-family: var(--font-sans); font-size: 13px; font-weight: 500; background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.22); padding: 2px 10px; border-radius: var(--radius-full); vertical-align: middle; white-space: nowrap; }
+  .rec { background: linear-gradient(135deg, var(--primary-deep) 0%, var(--primary) 100%); color: var(--on-dark); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: var(--space-lg); }
+  .rec h2 { font-family: var(--font-display); font-weight: 500; font-size: 24px; margin: var(--space-sm) 0; color: var(--on-dark-bright); }
+  .rec .reason { color: var(--on-dark-dim); font-size: 14px; margin: 4px 0; }
+  .rec code { font-family: var(--font-mono); font-size: 13px; color: var(--on-dark-bright); }
+  .tag { display: inline-block; font-size: 12px; font-weight: 500; padding: 3px 12px; border-radius: var(--radius-full); background: var(--on-dark-wash); border: 1px solid var(--on-dark-line); color: var(--on-dark); }
+  .lvl { font-family: var(--font-sans); font-size: 13px; font-weight: 500; background: var(--on-dark-wash); border: 1px solid var(--on-dark-line); padding: 2px 10px; border-radius: var(--radius-full); vertical-align: middle; white-space: nowrap; }
   .checks { list-style: none; margin: var(--space-md) 0 0; padding: 0; }
   .checks li { display: flex; gap: var(--space-sm); align-items: center; padding: var(--space-sm) 0; border-top: 1px solid var(--border); font-size: 15px; }
   .checks li:first-child { border-top: 0; }

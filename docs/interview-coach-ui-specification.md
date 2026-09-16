@@ -9,6 +9,12 @@
 > Conventions: **MVP is DSA-only and voice-only.** Sections marked
 > **v2-future** are explicitly out of the MVP and kept for later tracks.
 > Backend scoring is canonical: overall 0-100 plus 7 dimensions x 0-5.
+>
+> Locked target: `prototypes/theme.css` plus one mockup per ritual-flow
+> screen under `prototypes/` (`landing`, `onboarding`, `dashboard`,
+> `lobby`, `live`, `evaluating`, `results`, `transcript`, `history`,
+> `progress`, `weak-areas`, `settings`). Where this doc and a mockup
+> disagree, the mockup wins and this doc must be amended.
 
 ------------------------------------------------------------------------
 
@@ -48,26 +54,27 @@ The application should use a simple application shell:
 │  History      │                                                 │
 │  Progress     │                                                 │
 │               │                                                 │
-│  Settings     │                                                 │
+ │  Settings     │                                                 │
 │               │                                                 │
 └───────────────┴─────────────────────────────────────────────────┘
 ```
-
-For the CLI-first implementation, the same information architecture
-should exist conceptually even if the visual presentation is
-terminal-based.
 
 ------------------------------------------------------------------------
 
 # 3. Navigation
 
-Primary navigation:
+Primary navigation (authenticated shell):
 
--   **Dashboard**
--   **New Interview**
+-   **Dashboard** (recommendation CTA + progress)
 -   **Interview History**
--   **Progress**
+-   **Progress** (includes weak areas)
 -   **Settings**
+
+There is no manual "New Interview" screen in the MVP: practice starts
+from the server recommendation (Dashboard CTA -> Lobby). Pre-auth,
+a public marketing landing page pitches the product and offers
+sign-in / create-account, and first-run onboarding
+captures role, level, and goals before the dashboard.
 
 Optional future sections:
 
@@ -99,54 +106,58 @@ practice.
 ┌───────────────────────────────────────────────────────────────┐
 │ Interview Coach                                               │
 │                                                               │
-│ Good afternoon                                                │
-│ Ready for your next interview?                                │
+│ Learning loop                                                 │
+│ Ready for your next interview?                 [ Edit goal ]  │
 │                                                               │
-│ ┌──────────────────────┐  ┌────────────────────────────────┐ │
-│ │  Start Interview     │  │  Continue Practice             │ │
-│ │                      │  │                                │ │
-│ │  Choose interview →  │  │  Last session: System Design   │ │
-│ └──────────────────────┘  └────────────────────────────────┘ │
+│ Preparing for: Senior Backend Engineer · DSA    [ Update ]    │
 │                                                               │
-│ Recent Performance                                            │
+│ ┌───────────────────────────────────────────────────────────┐ │
+│ │ Arrays · Move Zeroes  [Easy]                               │ │
+│ │ One more success moves Arrays to developing.               │ │
+│ │ [ Start practice ]  [ New suggestion ]                     │ │
+│ └───────────────────────────────────────────────────────────┘ │
 │                                                               │
-│  Overall        Problem Solving       Communication           │
-│    7.8/10            8.2/10               7.4/10             │
+│ Curriculum progress                              18%          │
+│  Foundations & Core Linear Structures      4 / 9 topics       │
 │                                                               │
-│ Recent Interviews                                             │
+│ Strengths                    │  Focus areas                   │
+│  Two-pointer structure       │  Complexity narration          │
 │                                                               │
-│  System Design     8.1/10     Today                           │
-│  Coding            7.4/10     Yesterday                      │
-│  Backend API       8.3/10     Sep 9                          │
+│ Topic mastery                                               │
+│  Arrays        learning        2 / 3 attempts                  │
+└───────────────────────────────────────────────────────────────┘
+```
 └───────────────────────────────────────────────────────────────┘
 ```
 
 ## Dashboard components
 
-### Start Interview
+### Recommendation CTA
 
-Primary CTA.
+Primary CTA. Starts practice from the server recommendation
+(`Start practice`) or asks for a fresh one (`New suggestion`).
+There is no manual interview picker in the MVP.
 
-Clicking it opens the interview configuration screen.
+### Curriculum progress
 
-### Continue Practice
-
-Appears when an unfinished or recent session exists.
+Module rows with per-topic counts plus a completion bar, derived from
+server skill state.
 
 ### Performance summary
 
 Show a small number of meaningful metrics rather than a large analytics
-dashboard.
+dashboard: overall score /100, strengths, and focus areas.
 
 ### Recent interviews
 
 Display:
 
--   Interview type
--   Score
+-   Problem and topic
+-   Score (/100) and recommendation (`hire` / `lean_hire` / ...)
 -   Date
 -   Duration
 -   Status
+-   Review link
 
 ------------------------------------------------------------------------
 
@@ -666,7 +677,7 @@ The candidate should be able to drill into feedback.
 Example:
 
 ``` text
-Communication — 7.9 / 10
+Communication — 3 / 5 (overall 72 / 100)
 
 Strengths
 ─────────
@@ -675,13 +686,13 @@ You explained the API boundaries clearly.
 Opportunities
 ─────────────
 You jumped into implementation before clarifying
-the expected traffic.
+the edge cases.
 
 Example improvement
 ───────────────────
 Start by asking:
 
-"What scale are we designing for?"
+"What inputs can be empty here?"
 ```
 
 Feedback should be specific and tied to actual interview moments.
@@ -690,10 +701,8 @@ Feedback should be specific and tied to actual interview moments.
 
 # 25. Transcript Review
 
-> **v2-future for the MVP.** No transcript review screen ships in the MVP.
-> Server-side transcripts are still captured (they feed evaluation).
-
-The candidate can review the complete interview.
+The candidate can review the complete interview (server-captured
+transcript, browser-forwarded and backend-validated).
 
 ``` text
 18:32
@@ -727,35 +736,27 @@ Potential labels:
 
 # 26. Interview History
 
-The history page provides a searchable list of previous interviews.
+The history page lists previous interviews (server-kept record; detail
+views re-fetch canonical state). An empty state covers new accounts
+("No interviews to show yet" + `Start practice`).
 
 ``` text
 ┌───────────────────────────────────────────────────────────────┐
 │ Interview History                                             │
 │                                                               │
-│ Search interviews...                     Filter ▼             │
-│                                                               │
-│ Today                                                         │
-│ ───────────────────────────────────────────────────────────── │
-│ Backend Engineering     8.1/10      32 min      Review →      │
-│                                                               │
-│ Yesterday                                                      │
-│ ───────────────────────────────────────────────────────────── │
-│ Coding                  7.4/10      41 min      Review →      │
-│                                                               │
-│ Sep 9                                                          │
-│ ───────────────────────────────────────────────────────────── │
-│ System Design           8.3/10      38 min      Review →      │
+│ Problem           Topic       Date     Score      Evaluation  │
+│ Move Zeroes       Arrays      Sep 14   72 / 100   hire        │
+│ Two Sum           Hash Map    Sep 11   64 / 100   lean_hire   │
+│ Valid Anagram     Strings     Sep 09   48 / 100   lean_no_hire│
 └───────────────────────────────────────────────────────────────┘
 ```
 
 Filters:
 
--   Interview type
 -   Score
 -   Date
 -   Difficulty
--   Mode
+-   Recommendation
 
 ------------------------------------------------------------------------
 
@@ -794,22 +795,19 @@ The goal is to emphasize **progress**, not gamification.
 
 # 28. Weak Areas
 
-Example:
+Recurring weak dimensions surface as practice cards, one dimension and
+one problem per card:
 
 ``` text
-Areas to Improve
+Recommended practice
 
-System Design
-████████░░  8.0
+complexity_analysis · 2/5
+State the cost before you code
+Practice: Move Zeroes                      [ Practice ]
 
-Distributed Systems
-██████░░░░  6.4   ← Focus area
-
-Communication
-████████░░  7.8
-
-Database Design
-███████░░░  7.1
+testing_debugging · 2/5
+Probe the edges out loud
+Practice: Two Sum                          [ Practice ]
 ```
 
 The user should be able to start targeted practice directly from a weak
@@ -822,22 +820,19 @@ area.
 Example:
 
 ``` text
-Distributed Systems
+Move Zeroes (Arrays · Easy)
 
 Your recent weakness:
-Failure handling and consistency trade-offs
+complexity_analysis — stated O(n) time only after prompting
 
 Recommended practice:
 
-[ 15-minute focused interview ]
+[  Start Practice: Move Zeroes  ]
 
 Focus:
-• Replication
-• Consistency
-• Failure modes
-• Recovery
-
-[ Start Practice ]
+• Stating time/space before coding
+• Two-pointer discipline
+• Empty/single-element inputs
 ```
 
 This creates a loop:
@@ -848,124 +843,33 @@ This creates a loop:
 
 # 30. Settings
 
-Settings should be organized into sections.
+Settings covers account, history, and session controls.
 
-## General
+## Account
 
--   Theme
--   Language
--   Notifications
--   Default interview duration
+-   Display name and email
+-   Role / level (links to profile editing)
+-   Sign in / sign out / create account
 
-## Voice
+## Interview history
 
--   Microphone
--   Speaker
--   Voice
--   AI voice type (interviewer voice)
--   Volume
--   Input sensitivity
--   Test microphone
-
-## Interview
-
--   Default mode
--   Default difficulty
--   Automatic transcript
--   Feedback preferences
-
-## AI
-
--   Provider
--   Model
--   Endpoint
--   Advanced model configuration
-
-AI settings should be hidden or simplified for normal users if the
-product later targets non-technical users.
+-   Clear interview history (two-step confirm; deletes transcripts,
+    evaluations, and derived skill state — never the curriculum catalog)
 
 ## Privacy
 
 -   Transcript retention
--   Delete interview history
 -   Export data
 
 ------------------------------------------------------------------------
 
-# 31. CLI UI
+# 31. CLI Harness (Out of Scope)
 
 > **Out of scope.** The CLI is an external regression harness, not this
-> product's UI. These sections stay only so the harness mirrors the same
-> information architecture.
-
-The CLI should follow the same product information architecture.
-
-Example:
-
-``` text
-$ interview-coach
-
-╭──────────────────────────────────────╮
-│          INTERVIEW COACH             │
-│                                      │
-│  Practice like it's the real thing.  │
-╰──────────────────────────────────────╯
-
-  1. Start interview
-  2. Continue interview
-  3. Interview history
-  4. Progress
-  5. Settings
-  6. Exit
-
-Select an option:
-```
-
-------------------------------------------------------------------------
-
-# 32. CLI Interview Screen
-
-Example:
-
-``` text
-╭────────────────────────────────────────────────────────────╮
-│ BACKEND INTERVIEW                         18:42   ● LIVE    │
-├────────────────────────────────────────────────────────────┤
-│                                                            │
-│ INTERVIEWER                                                │
-│                                                            │
-│ Design a URL shortening service.                           │
-│ Start by clarifying the requirements.                      │
-│                                                            │
-│ CANDIDATE                                                  │
-│                                                            │
-│ I would first ask about expected traffic...                │
-│                                                            │
-├────────────────────────────────────────────────────────────┤
-│ ● Listening                                                 │
-│                                                            │
-│ [M] Mute   [P] Pause   [T] Transcript   [Q] End            │
-╰────────────────────────────────────────────────────────────╯
-```
-
-Keyboard commands should be easy to discover.
-
-------------------------------------------------------------------------
-
-# 33. CLI Keyboard Controls
-
-Suggested controls:
-
-  Key     Action
-  ------- ----------------------
-  `M`     Mute/unmute
-  `P`     Pause/resume
-  `T`     Toggle transcript
-  `H`     Help
-  `Q`     End interview
-  `Esc`   Close current dialog
-
-Do not overload keys with multiple meanings.
+> product's UI. It mirrors the same information architecture
+> (recommendation -> lobby checks -> live voice -> evaluation ->
+> results -> history) but ships no product screens; its key bindings
+> are harness tooling, not specified here.
 
 ------------------------------------------------------------------------
 
@@ -1209,29 +1113,27 @@ Voice must never be the only way to interact with the product.
 The primary journey should be:
 
 ``` text
-Dashboard
+Landing
    ↓
-Recommended practice
+Sign-in -> Onboarding (role, level, goals)
+   ↓
+Dashboard (recommended next)
    ↓
 Lobby (automated checks)
    ↓
-Start Interview
+Live voice interview (End is the only control)
    ↓
-Voice/Text Conversation
+Evaluating (async scoring)
    ↓
-End Interview
+Results (/100 + 7 x /5)
    ↓
-AI Evaluation
+Transcript review / Detailed feedback
    ↓
-Results
+History / Progress / Weak areas
    ↓
-Detailed Feedback
+Targeted practice
    ↓
-Weak Areas
-   ↓
-Targeted Practice
-   ↓
-Next Interview
+Next recommendation
 ```
 
 This loop is the heart of the product.
@@ -1244,14 +1146,19 @@ The first version should avoid building every screen immediately.
 
 ### MVP screens
 
-1.  Lobby with automated setup checks
-2.  DSA interview screen (problem + editor)
-3.  Voice states (icon indicator)
-4.  End control + confirmation
-5.  Evaluation/loading
-6.  Results (overall /100, 7 dimensions x /5)
-7.  Server-backed interview history
-8.  Settings
+1.  Landing (public marketing page: pitch, scoring proof, CTAs)
+2.  Onboarding (role, level, goals; pre-auth cached locally)
+3.  Dashboard (recommendation CTA, curriculum progress)
+4.  Lobby with automated setup checks
+5.  DSA interview screen (problem + editor)
+6.  Voice states (icon indicator)
+7.  End control + confirmation
+8.  Evaluation/loading
+9.  Results (overall /100, 7 dimensions x /5)
+10. Transcript review
+11. Server-backed interview history
+12. Progress + weak areas
+13. Settings (account, clear history, sign-out)
 
 ### Defer
 
@@ -1264,7 +1171,6 @@ The first version should avoid building every screen immediately.
 -   Complex personalization
 -   Manual interview configuration (v2-future)
 -   Text fallback / text mode
--   Transcript review UI (v2-future)
 -   Non-DSA interview tracks (v2-future)
 
 ------------------------------------------------------------------------
@@ -1293,7 +1199,7 @@ Interview Session State
               UI Layer
 ```
 
-This makes the voice UI, CLI, and future web UI easier to keep
+This makes the voice UI and web UI easier to keep
 consistent.
 
 ------------------------------------------------------------------------
@@ -1332,7 +1238,7 @@ COMPLETED
 ERROR
 ```
 
-The same state model should be usable by both voice and text interfaces.
+The same state model drives the voice interface.
 
 ------------------------------------------------------------------------
 
@@ -1369,9 +1275,10 @@ The interaction loop should remain interview-oriented.
 
 The ideal experience is:
 
-> Open Interview Coach → choose an interview → start → speak naturally →
-> receive realistic follow-ups → finish → understand exactly what went
-> well and what to improve → immediately practice the weak areas.
+> Open Interview Coach → start from your recommended next interview →
+> speak naturally → receive realistic follow-ups → finish → understand
+> exactly what went well and what to improve → immediately practice
+> the weak areas.
 
 The UI should make that loop **fast, calm, and obvious**.
 

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transcript - InterviewCoach prototype</title>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,500&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  body { background: var(--bg); color: var(--text); font-family: var(--font-sans); margin: 0; }
+  .nav { background: var(--surface); border-bottom: 1px solid var(--border); }
+  .nav .inner { max-width: 860px; margin: 0 auto; padding: 0 var(--space-lg); display: flex; align-items: center; gap: var(--space-md); height: 60px; flex-wrap: wrap; }
+  .brand { font-family: var(--font-display); font-weight: 500; font-size: 18px; margin-right: var(--space-md); white-space: nowrap; }
+  .nav a { font-size: 14px; color: var(--muted); text-decoration: none; padding: 6px 2px; border-bottom: 2px solid transparent; }
+  .nav .who { margin-left: auto; display: flex; align-items: center; gap: var(--space-sm); font-size: 14px; color: var(--muted); }
+  .avatar { width: 28px; height: 28px; border-radius: var(--radius-full); background: var(--primary); color: var(--primary-ink); display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; }
+  .wrap { max-width: 860px; margin: 0 auto; padding: var(--space-xl) var(--space-lg); }
+  .meta { display: flex; gap: 8px; color: var(--muted); font-size: 13px; margin-bottom: var(--space-sm); }
+  h1 { font-family: var(--font-display); font-weight: 500; font-size: 32px; margin: 0; }
+  .turn { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: var(--space-md) var(--space-lg); margin-top: var(--space-md); }
+  .turn .who { font-size: 12px; font-weight: 600; letter-spacing: .03em; text-transform: uppercase; color: var(--faint); }
+  .turn.candidate { border-left: 4px solid var(--primary); }
+  .turn.interviewer { border-left: 4px solid var(--border-strong); }
+  .turn p { font-size: 14px; margin: var(--space-sm) 0 0; line-height: 1.55; }
+  .turn code { font-family: var(--font-mono); font-size: 13px; background: var(--surface-low); padding: 1px 6px; border-radius: var(--radius-sm); }
+  .turn .ts { font-family: var(--font-mono); font-size: 12px; color: var(--faint); margin-left: var(--space-sm); }
+  .row { display: flex; gap: var(--space-sm); margin-top: var(--space-lg); }
+  .btn { font: inherit; cursor: pointer; border-radius: var(--radius-md); padding: 10px 18px; font-weight: 500; border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); }
+  .btn.primary { background: var(--primary); border-color: var(--primary); color: var(--primary-ink); }
+</style>
+</head>
+<body>
+<div class="nav"><div class="inner">
+  <span class="brand">Interview Coach</span>
+  <a href="#">Dashboard</a><a href="#">History</a>
+  <span class="who"><span class="avatar">M</span>Maya</span>
+</div></div>
+<div class="wrap">
+  <div class="meta"><span>Interview transcript</span><span>·</span><span>DSA · Arrays · Move Zeroes · 12 min</span></div>
+  <h1>How the session read</h1>
+  <div class="turn interviewer"><span class="who">Interviewer</span><span class="ts">00:00</span><p>Let's start with Move Zeroes. Given an integer array, move all zeroes to the end while keeping the relative order of the non-zero elements. How would you approach it?</p></div>
+  <div class="turn candidate"><span class="who">You</span><span class="ts">00:41</span><p>I'd keep a write pointer at the front. Scan once: every non-zero goes to <code>nums[write++]</code>, then fill the tail with zeroes. That keeps order and stays in place.</p></div>
+  <div class="turn interviewer"><span class="who">Interviewer</span><span class="ts">01:15</span><p>Good structure. What is the time and space complexity, and what edge cases would you probe?</p></div>
+  <div class="turn candidate"><span class="who">You</span><span class="ts">01:52</span><p>Time is <code>O(n)</code>, one pass plus the fill. Space is <code>O(1)</code>. Edge cases: empty input, all zeroes, no zeroes at all.</p></div>
+  <div class="turn interviewer"><span class="who">Interviewer</span><span class="ts">02:20</span><p>Go ahead and code it up, narrating as you go.</p></div>
+  <div class="row"><button class="btn">Back to results</button><button class="btn primary">Practice weak areas</button></div>
+</div>
+</body>
+</html>
