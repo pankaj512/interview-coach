@@ -89,6 +89,7 @@ const entries: readonly HistoryEntry[] = [
     id: "int_1",
     candidateId: "candidate",
     status: "completed",
+    evaluationStatus: "completed",
     at: new Date().toISOString(),
     interviewType: "Coding",
     difficulty: "Hard",
@@ -192,7 +193,7 @@ describe("screen render smoke", () => {
         onProfile={noop}
       />,
     );
-    expect(html).toContain("Recommended next");
+    expect(html).toContain("Learning loop");
     expect(html).toContain("Start practice");
     expect(html).toContain("Curriculum progress");
     expect(html).toContain("Senior Backend Engineer");
@@ -298,7 +299,7 @@ describe("screen render smoke", () => {
   });
   it("OnboardingScreen renders the required profile form", () => {
     const html = renderToString(<OnboardingScreen backend={backend} onComplete={noop} />);
-    expect(html).toContain("Set up your profile");
+    expect(html).toContain("Customize your interview curriculum");
     expect(html).toContain("Save and continue");
   });
   it("ProfileForm renders for a new user with the taxonomy", () => {

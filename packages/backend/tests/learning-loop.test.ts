@@ -48,7 +48,7 @@ class ScoreEvaluationModel implements EvaluationModel {
     return {
       proposal: {
         dimensions: {
-          understanding: { score: this.score },
+          problem_understanding: { score: this.score },
           approach: { score: this.score },
           coding: { score: this.score },
           independence: { score: this.score },

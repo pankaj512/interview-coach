@@ -29,7 +29,7 @@ per-interview ownership, audit remediation P1-P8.
 
 ## Next - stabilize current (per user interview)
 
-- [ ] 14. **Green main** - fix 2 `pnpm typecheck` errors (`learning-loop.test.ts` dimension key, `render-smoke.test.tsx` missing `evaluationStatus`) and the 3 resulting test failures so CI is green
+- [x] 14. **Green main** - fix 2 `pnpm typecheck` errors (`learning-loop.test.ts` dimension key, `render-smoke.test.tsx` missing `evaluationStatus`) and the 3 resulting test failures so CI is green
 - [ ] 15. **Web client UI prototype** - rethink the spec from fresh with throwaway static mockups (`/prototype`); replacement for `docs/interview-coach-ui-specification.md`; approve before any client rewrite
 - [ ] 16. **Isolated multi-language sandbox** - properly isolated code execution for C++/JS/Python behind the existing sandbox routes; retires the local JS/Python runner on security grounds; the Test button (item 17) depends on it
 - [ ] 17. **Fresh web client UI rebuild** - rewrite screens/components from scratch on the approved prototype; keep `api/backend-client`, voice-client/tool-forwarder, and backend APIs; small API additions only with a proven gap; problem pane is title-only until item 18
