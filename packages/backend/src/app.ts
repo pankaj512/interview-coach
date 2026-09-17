@@ -123,7 +123,7 @@ import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
 import { assembleSessionContext, type SessionContext } from "./session-context.js";
 import { EvaluationService } from "./evaluation.js";
 import { createEvaluationModelFromEnv } from "./evaluation-model.js";
-import { LocalCodeRunner } from "./code-runner.js";
+import { DockerCodeRunner } from "./docker-runner.js";
 
 export interface BuildAppDeps {
   readonly repos: RepositorySet;
@@ -271,7 +271,7 @@ const listInterviewsQuerySchema = z.object({
 // S7a sandbox (HLD 6.1/6.3): candidate code submission + test execution.
 // Caps mirror the domain (50k code chars, 50 cases, 100ms..30s timeout).
 const submitCodeSchema = z.object({
-  language: z.enum(["javascript", "python"]),
+  language: z.enum(["javascript", "python", "cpp"]),
   code: z.string().min(1).max(50_000),
   problemId: z.string().min(1).max(200).optional(),
 });
@@ -427,11 +427,17 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       ? {}
       : { runSynchronously: deps.evaluationRunSynchronously }),
   });
-  // S7a sandbox: local-dev subprocess runner (HLD Phase 6 MVP). Tests inject
-  // a fake via deps.codeRunner; container isolation lands in S8.
+  // Feature 16 sandbox: Docker-isolated runner (HLD Phase 6). Tests inject
+  // a fake via deps.codeRunner; without a daemon, runs persist as errors.
   const codeRunner =
     deps.codeRunner ??
-    new LocalCodeRunner({ maxActualChars: config.sandbox.maxActualChars });
+    new DockerCodeRunner({
+      images: config.sandbox.runnerImages,
+      memory: config.sandbox.runnerMemory,
+      cpus: config.sandbox.runnerCpus,
+      pidsLimit: config.sandbox.runnerPidsLimit,
+      maxActualChars: config.sandbox.maxActualChars,
+    });
   const submissions = new SubmissionService({
     interviews,
     submissions: deps.repos.submissions,

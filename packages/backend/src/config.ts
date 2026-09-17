@@ -39,10 +39,16 @@ export interface SandboxConfig {
   readonly defaultTimeoutMs: number;
   /** Cap on serialized per-case actuals kept in run results. */
   readonly maxActualChars: number;
-  /** Max concurrent LocalCodeRunner executions (S8a quota; 429 past it). */
+  /** Max concurrent Docker runner executions (S8a quota; 429 past it). */
   readonly maxConcurrentRuns: number;
   /** Max stored submissions per interview (S8a quota; 429 past it). */
   readonly maxSubmissionsPerInterview: number;
+  /** Container images per language for the Docker runner. */
+  readonly runnerImages: { javascript: string; python: string; cpp: string };
+  /** Per-run container caps for the Docker runner. */
+  readonly runnerMemory: string;
+  readonly runnerCpus: string;
+  readonly runnerPidsLimit: number;
 }
 
 // Learning-loop Phase 4 (ADR-002): server-side Azure AI Foundry text model for
@@ -142,12 +148,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       recommendationPerMin: num(env, "RATE_LIMIT_RECOMMENDATION_PER_MIN", 30),
     },
     sandbox: {
-      // S7a local runner (HLD Phase 6): wall-clock kill + output caps.
-      // Local-dev bounds; container isolation is the S8b deploy follow-up.
+      // Feature 16 Docker runner (HLD Phase 6): per-run containers with
+      // --network=none + memory/CPU/pids caps. Images must be pre-pulled
+      // or pullable; without a daemon, runs persist as `error` runs.
       defaultTimeoutMs: num(env, "CODE_RUN_TIMEOUT_MS", 5000),
       maxActualChars: num(env, "CODE_RUN_MAX_OUTPUT_CHARS", 20000),
       maxConcurrentRuns: num(env, "CODE_RUN_MAX_CONCURRENT", 4),
       maxSubmissionsPerInterview: num(env, "CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW", 100),
+      runnerImages: {
+        javascript: str(env, "SANDBOX_IMAGE_JS", "node:24-slim"),
+        python: str(env, "SANDBOX_IMAGE_PY", "gcc:14-bookworm"),
+        cpp: str(env, "SANDBOX_IMAGE_CPP", "gcc:14-bookworm"),
+      },
+      runnerMemory: str(env, "SANDBOX_MEMORY", "512m"),
+      runnerCpus: str(env, "SANDBOX_CPUS", "1.0"),
+      runnerPidsLimit: num(env, "SANDBOX_PIDS_LIMIT", 128),
     },
     llm: {
       // Phase 4 recommendation model. Unset endpoint/key = deterministic

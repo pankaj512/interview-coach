@@ -14,13 +14,14 @@ import { err, ok } from "./result.js";
 // Pure layer: submission/test-case validation, executor port, deterministic
 // run assembly (hidden-test masking, status derivation), execution summaries
 // for evaluation integration (HLD 6.4). Actual process execution lives in the
-// backend local runner; this file never spawns processes.
+// backend Docker runner; this file never spawns processes.
 
-export type CodeLanguage = "javascript" | "python";
+export type CodeLanguage = "javascript" | "python" | "cpp";
 
 export const CODE_LANGUAGES: readonly CodeLanguage[] = [
   "javascript",
   "python",
+  "cpp",
 ];
 
 export function isCodeLanguage(raw: string): raw is CodeLanguage {
@@ -56,7 +57,7 @@ export function createSubmission(
     return err(
       domainError(
         "VALIDATION_ERROR",
-        "language must be one of javascript, python",
+        "language must be one of javascript, python, cpp",
         { language: input.language },
       ),
     );
@@ -198,7 +199,7 @@ export interface CodeRun {
   readonly createdAt: Date;
 }
 
-// Executor port (implemented by the backend local runner). Outcomes are
+// Executor port (implemented by the backend Docker runner). Outcomes are
 // transport-level: completed (per-case verdicts), timeout (killed), error
 // (runner/harness failure before verdicts).
 export interface ExecutorTestOutcome {

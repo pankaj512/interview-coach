@@ -1,11 +1,39 @@
-// S7a sandbox routes + local runner (HLD Phase 6): submit code, execute
-// against visible/hidden cases, verify verdicts, timeouts, and failures.
-// Uses the real LocalCodeRunner via buildTestBackend (node + python3
-// subprocesses) — no DB needed.
+// Feature 16 sandbox routes + Docker runner (HLD Phase 6): submit code,
+// execute against visible/hidden cases, verify verdicts, timeouts, and
+// failures. Uses the real DockerCodeRunner via buildTestBackend —
+// a Docker daemon with the sandbox images is required (skips otherwise).
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, beforeAll, describe, expect, it } from "vitest";
+import { execFileSync } from "node:child_process";
+import {
+  asInterviewId,
+  createSubmission,
+} from "@interview-coach/domain";
+import { DockerCodeRunner } from "../src/docker-runner.js";
 import { buildTestBackend, createStartedInterview } from "./helpers.js";
 import type { TestBackend } from "./helpers.js";
+
+// Live Docker sections need a daemon + sandbox images; everything else
+// runs anywhere. Probe synchronously so skipIf decides at collection time.
+const HAS_DOCKER: boolean = (() => {
+  try {
+    execFileSync("docker", ["info"], { timeout: 15_000, stdio: "ignore" });
+    return true;
+  } catch {
+    console.warn("Docker daemon unavailable — skipping live sandbox tests");
+    return false;
+  }
+})();
+const liveDescribe = HAS_DOCKER ? describe : describe.skip;
+
+beforeAll(() => {
+  if (!HAS_DOCKER) return;
+  // Pre-pull outside test timeouts: the runner would pull lazily, but a
+  // cold pull must not eat a per-test timeout.
+  for (const image of ["node:24-slim", "gcc:14-bookworm"]) {
+    execFileSync("docker", ["pull", image], { timeout: 300_000, stdio: "ignore" });
+  }
+}, 300_000);
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -51,8 +79,8 @@ async function run(
 }
 
 const CASES = [
-  { name: "adds", args: [2, 3], expected: 5 },
-  { name: "zero", args: [0, 0], expected: 0 },
+  { name: "adds", args: [2, 3], expected: 5, hidden: false },
+  { name: "zero", args: [0, 0], expected: 0, hidden: false },
 ];
 
 describe("sandbox submissions", () => {
@@ -103,7 +131,7 @@ describe("sandbox submissions", () => {
   });
 });
 
-describe("sandbox runs (local runner)", () => {
+liveDescribe("sandbox runs (docker runner)", () => {
   it("passes correct javascript and python", async () => {
     const b = useBackend();
     const { id } = await createStartedInterview(b);
@@ -211,7 +239,7 @@ describe("sandbox runs (local runner)", () => {
   }, 30_000);
 });
 
-describe("sandbox tools via tool-exec", () => {
+liveDescribe("sandbox tools via tool-exec", () => {
   async function toolExec(
     b: TestBackend,
     id: string,
@@ -291,7 +319,7 @@ describe("voice-session sandbox context", () => {
   });
 });
 
-describe("P6 sandbox hardening", () => {
+liveDescribe("P6 sandbox hardening (docker runner)", () => {
   it("F6-1: candidate code cannot read the backend environment", async () => {
     const prev = process.env["DATABASE_URL"];
     process.env["DATABASE_URL"] = "postgres://should-not-leak";
@@ -320,20 +348,21 @@ describe("P6 sandbox hardening", () => {
     expect(json).toMatchObject({ ok: true, run: { status: "failed", passedCount: 0 } });
   }, 30_000);
 
-  it("F6-1: the local runner is disabled in production unless explicitly allowed", async () => {
+  it("F6-1: production executes via Docker (no local-runner refusal)", async () => {
     const prev = process.env["NODE_ENV"];
     const prevAnon = process.env["ALLOW_ANONYMOUS"];
     process.env["NODE_ENV"] = "production";
     // The auth fail-safe (F7-4) would also refuse to boot open; opt in so this
-    // test exercises the runner gate specifically.
+    // test exercises the runner path specifically.
     process.env["ALLOW_ANONYMOUS"] = "true";
     try {
       const b = useBackend();
       const { id } = await createStartedInterview(b);
       const subId = await submit(b, id, JS_SOLVE);
       const { json } = await run(b, id, subId, { testCases: CASES });
-      expect(json).toMatchObject({ ok: true, run: { status: "error" } });
-      expect(JSON.stringify(json)).toContain("local-dev only");
+      // Retired behavior: the local runner refused here with "local-dev
+      // only". The Docker runner is a real boundary, so prod executes.
+      expect(json).toMatchObject({ ok: true, run: { status: "passed" } });
     } finally {
       if (prev === undefined) delete process.env["NODE_ENV"];
       else process.env["NODE_ENV"] = prev;
@@ -341,7 +370,9 @@ describe("P6 sandbox hardening", () => {
       else process.env["ALLOW_ANONYMOUS"] = prevAnon;
     }
   }, 30_000);
+});
 
+describe("P6 sandbox hardening", () => {
   it("F6-3: the per-interview submission cap is enforced on the route path", async () => {
     const prev = process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"];
     process.env["CODE_RUN_MAX_SUBMISSIONS_PER_INTERVIEW"] = "1";
@@ -375,5 +406,44 @@ describe("P6 sandbox hardening", () => {
     });
     expect(res.statusCode).toBe(404);
     expect(res.json()).toMatchObject({ ok: false, error: { code: "NOT_FOUND" } });
+  }, 30_000);
+});
+
+const CPP_SOLVE = "Value solve(Value a, Value b) { return Value(a.n + b.n); }";
+
+liveDescribe("sandbox runs (cpp)", () => {
+  it("passes correct C++ and reports compile errors as error runs", async () => {
+    const b = useBackend();
+    const { id } = await createStartedInterview(b);
+    const subId = await submit(b, id, CPP_SOLVE, "cpp");
+    const { status, json } = await run(b, id, subId, { testCases: CASES });
+    expect(status).toBe(201);
+    expect(json).toMatchObject({
+      ok: true,
+      run: { status: "passed", passedCount: 2, totalCount: 2 },
+    });
+
+    const badId = await submit(b, id, "Value solve(Value a { return a; }", "cpp");
+    const bad = await run(b, id, badId, { testCases: CASES });
+    expect(bad.status).toBe(201);
+    // Compile failures are `error` runs (same shape as harness load
+    // errors); the message text is covered by docker-runner unit tests.
+    expect(bad.json).toMatchObject({ ok: true, run: { status: "error" } });
+  }, 60_000);
+});
+
+describe("docker runner without a daemon", () => {
+  it("fails closed as an error outcome (routes stay 201-never-5xx)", async () => {
+    const parsed = createSubmission({
+      interviewId: asInterviewId("iv_1"),
+      language: "javascript",
+      code: JS_SOLVE,
+    });
+    if (!parsed.ok) throw new Error("fixture submission must validate");
+    const runner = new DockerCodeRunner({ dockerBin: "docker-definitely-missing-binary" });
+    const outcome = await runner.execute(parsed.value, CASES, { timeoutMs: 5000 });
+    expect(outcome.status).toBe("error");
+    expect(outcome.results).toEqual([]);
+    expect(outcome.error).toContain("Docker daemon unreachable");
   }, 30_000);
 });

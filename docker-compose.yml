@@ -45,6 +45,10 @@ services:
       AZURE_VOICE_VOICE: ${AZURE_VOICE_VOICE:-en-US-Andrew:DragonHDLatestNeural}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
+    volumes:
+      # Feature 16: the Docker sandbox runner drives per-run containers
+      # through the host daemon. Without this mount, runs persist as errors.
+      - /var/run/docker.sock:/var/run/docker.sock
 
   # Static web client (nginx). The browser calls the backend directly at
   # VITE_BACKEND_URL (frozen §2); edit it when the backend is not on

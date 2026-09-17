@@ -586,7 +586,7 @@ export class ToolService {
       return err(
         domainError(
           "VALIDATION_ERROR",
-          "language must be one of javascript, python",
+          "language must be one of javascript, python, cpp",
         ),
       );
     }

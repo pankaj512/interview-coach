@@ -12,8 +12,8 @@ import { must, mustErr } from "./helpers.js";
 const IV = asInterviewId("iv_sandbox");
 
 describe("createSubmission", () => {
-  it("accepts javascript and python", () => {
-    for (const language of ["javascript", "python"]) {
+  it("accepts javascript, python, and cpp", () => {
+    for (const language of ["javascript", "python", "cpp"]) {
       const sub = must(
         createSubmission({ interviewId: IV, language, code: "solve = 1" }),
       );

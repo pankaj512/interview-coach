@@ -13,6 +13,16 @@ FROM node:24-slim
 
 RUN npm install -g pnpm@12.3.4 && \
     useradd --create-home --shell /bin/bash app
+
+# Feature 16: Docker CLI so the sandbox runner can drive per-run
+# containers. Static binary only (no daemon in this image); the daemon
+# comes from the host via the compose socket mount.
+ARG DOCKER_VERSION=29.1.3
+RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && \
+    curl -fsSL "https://download.docker.com/linux/static/stable/x86_64/docker-${DOCKER_VERSION}.tgz" -o /tmp/docker.tgz && \
+    tar -xzf /tmp/docker.tgz -C /tmp && mv /tmp/docker/docker /usr/local/bin/docker && \
+    rm -rf /tmp/docker.tgz /tmp/docker && \
+    apt-get purge -y curl && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
 # Workspace scaffolding first for a cached dependency layer.
