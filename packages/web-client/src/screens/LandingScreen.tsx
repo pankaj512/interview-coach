@@ -1,14 +1,91 @@
-import { useMemo } from "react";
+// Landing (feature 17a): public sales pitch on the approved prototype.
+// Entry points (sign in / create account / dev guest) keep their existing
+// callbacks; the screen makes no backend calls.
+
 import {
-  MarketingFeatureCard,
-  MarketingFeatureGrid,
+  MarketingFinal,
   MarketingFooter,
   MarketingHero,
-  MarketingMetrics,
-  MarketingPricing,
+  MarketingPillars,
+  MarketingQuote,
+  MarketingScorecard,
+  MarketingSection,
+  MarketingSteps,
   MarketingTopbar,
   type MarketingNavLink,
 } from "../components/Marketing.js";
+import { GhostButton, PrimaryButton } from "../ds/buttons.js";
+
+const NAV_LINKS: readonly MarketingNavLink[] = [
+  { href: "#how", label: "How it works" },
+  { href: "#scoring", label: "Scoring" },
+  { href: "#why", label: "Why it works" },
+];
+
+const SCORE_ROWS = [
+  { name: "problem_understanding", value: "4 / 5" },
+  { name: "approach", value: "4 / 5" },
+  { name: "coding", value: "4 / 5" },
+  { name: "independence", value: "2 / 5" },
+] as const;
+
+const PILLARS = [
+  {
+    glyph: (
+      <span className="g-bars" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+    ),
+    title: "Voice-only. Like the real room.",
+    text: "No text composer to hide behind. You think out loud under time pressure, exactly as the job demands.",
+  },
+  {
+    glyph: <>7/5</>,
+    title: "7 dimensions, scored with evidence.",
+    text: "Each dimension gets 0-5 plus the moment that earned it. Never a black-box number.",
+  },
+  {
+    glyph: "\u21BB",    title: "Adaptive loop. Every session picks the next one.",
+    text: "Master a topic and move on. Struggle and it holds you there until the weakness clears.",
+  },
+] as const;
+
+const WHY_CARDS = [
+  {
+    title: "A real interviewer, not a chatbot",
+    text: "Timed voice sessions with natural follow-ups, interruptions handled gracefully, and pressure that feels familiar on the day that counts.",
+  },
+  {
+    title: "Scores you can act on",
+    text: "Overall /100 plus 7 validated dimensions with evidence tied to actual moments \u2014 not vibes. You always know the single next thing to fix.",
+  },
+  {
+    title: "A loop that adapts to you",
+    text: "Master a topic and the curriculum moves on. Struggle and it holds you there with targeted practice until the weakness is gone.",
+  },
+] as const;
+
+const STEPS = [
+  {
+    title: "Get your recommendation",
+    text: "Your dashboard tells you exactly what to practice next \u2014 topic, problem, and why.",
+  },
+  {
+    title: "Clear lobby checks",
+    text: "Mic and voice session verified automatically. The interview opens itself when everything is green.",
+  },
+  {
+    title: "Interview out loud",
+    text: "One problem, voice only. Talk through your approach, code live, handle the follow-ups. End is the only button.",
+  },
+  {
+    title: "Get the debrief",
+    text: "Structured scores, strengths, focus areas, and a practice card for your weakest dimension \u2014 feeding your next session.",
+  },
+] as const;
 
 export function LandingScreen({
   onSignIn,
@@ -21,175 +98,98 @@ export function LandingScreen({
   readonly onDevGuest: () => void;
   readonly showDevGuest: boolean;
 }) {
-  const navActions = useMemo(
-    () => (
-      <div className="landing-nav-actions">
-        <button className="ghost" onClick={onSignIn}>
-          Sign in
-        </button>
-        <button className="primary" onClick={onCreateAccount}>
-          Start practice
-        </button>
-      </div>
-    ),
-    [onSignIn, onCreateAccount],
-  );
-
-  const navLinks: MarketingNavLink[] = useMemo(
-    () => [
-      { href: "#features", label: "Features" },
-      { href: "#methodology", label: "Methodology" },
-      { href: "#pricing", label: "Pricing" },
-      { href: "#docs", label: "Docs" },
-    ],
-    [],
-  );
-
   return (
     <div className="landing-shell">
-      <MarketingTopbar navLinks={navLinks} actions={navActions} />
+      <MarketingTopbar
+        navLinks={NAV_LINKS}
+        actions={
+          <>
+            <GhostButton onClick={onSignIn}>Sign in</GhostButton>
+            <PrimaryButton onClick={onCreateAccount}>Create account</PrimaryButton>
+          </>
+        }
+      />
 
       <main className="landing-main">
         <MarketingHero
-          pill={
-            <div className="hero-pill">
-              <span className="dot" />
-              <span className="pill-label">v1.1 Release</span>
-              <span>Real-time latency under 120ms with multimodal voice/text</span>
-            </div>
-          }
+          eyebrow="Voice-led DSA interview practice"
           title={
             <>
-              Master high-stakes technical interviews with <span className="accent">real-time AI guidance</span>.
+              Stop rehearsing answers. <em>Start surviving interviews.</em>
             </>
           }
-          subtitle={
-            <>Simulate rigorous system design and coding loops with low-latency voice, live code sandboxing, and instant rubric-based evaluation calibrated to senior engineering tiers.</>
-          }
+          subtitle={"Reading solutions feels like progress until a real interviewer says \u201Cwalk me through your thinking\u201D and your mind goes blank. Interview Coach fixes that: timed voice interviews on a real curriculum, an interviewer that pushes back, and scoring that tells you exactly what to fix next."}
           actions={
             <>
-              <button className="primary" onClick={onSignIn}>
-                Start practice
-              </button>
-              <button className="ghost" onClick={onCreateAccount}>
-                View features
-              </button>
+              <PrimaryButton onClick={onCreateAccount}>Start practicing free</PrimaryButton>
+              <a className="btn-ghost as-link" href="#scoring">
+                See how scoring works
+              </a>
               {showDevGuest && (
-                <button className="ghost" onClick={onDevGuest}>
-                  Continue without signing in (dev)
-                </button>
+                <GhostButton onClick={onDevGuest}>Continue without signing in (dev)</GhostButton>
               )}
             </>
           }
-          meta={
-            <div className="hero-meta">
-              <span className="check">No credit card required</span>
-              <span className="bullet">•</span>
-              <span>3 free full mock sessions</span>
-            </div>
-          }
-          preview={
-            <div className="hero-preview">
-              <div className="preview-header">
-                <span className="traffic" />
-                <span className="title">session_active // arch_loop_round_02.session</span>
-                <div className="preview-status">
-                  <span className="status-green">WEBRTC 112ms RTT</span>
-                  <span className="muted">ThreadSanitizer: ACTIVE</span>
-                </div>
-              </div>
-              <div className="preview-body">
-                <div className="preview-pane">
-                  <div className="label">Voice stream</div>
-                  <div className="bubble interviewer">Interviewer: Design a distributed rate limiter for multi-tenant API traffic.</div>
-                  <div className="bubble candidate">You: I’ll start with requirements: per-tenant quotas, burst handling, and global fairness.</div>
-                </div>
-                <div className="preview-pane code">
-                  <div className="label">Scratchpad</div>
-                  <pre>
-{`// validate bucket
-function allowRequest(tenant, key) {
-  const bucket = hash(tenant, key);
-  const now = clock();
-  refill(bucket, now);
-  return bucket.tokens > 0;
-}`}
-                  </pre>
-                </div>
-              </div>
-            </div>
+          fine={"Free to start \u00B7 No credit card \u00B7 Your first scored interview in under 10 minutes."}
+          scorecard={
+            <MarketingScorecard
+              badge="Sample results"
+              score="72"
+              of="100"
+              meta={"Move Zeroes \u00B7 Arrays \u00B7 Easy \u00B7 12 min"}
+              rows={SCORE_ROWS}
+            />
           }
         />
 
-        <MarketingFeatureGrid>
-          <MarketingFeatureCard title="Realistic interviewer personas">
-            System design, backend, and coding tracks calibrated to Staff/Principal rubrics.
-          </MarketingFeatureCard>
-          <MarketingFeatureCard title="Voice + text multimodal">
-            Low-latency WebRTC voice with transcript and text fallback.
-          </MarketingFeatureCard>
-          <MarketingFeatureCard title="Progressive coaching hints">
-            Request hints without giving away the solution; stays rubric-aligned.
-          </MarketingFeatureCard>
-          <MarketingFeatureCard title="Evaluation & insights">
-            Structured scoring across clarity, depth, trade-offs, and code quality.
-          </MarketingFeatureCard>
-          <MarketingFeatureCard title="Weakness detection">
-            Actionable focus areas and targeted practice loops.
-          </MarketingFeatureCard>
-          <MarketingFeatureCard title="Code sandbox">
-            14-language sandbox for runs during the interview.
-          </MarketingFeatureCard>
-        </MarketingFeatureGrid>
+        <MarketingPillars items={PILLARS} />
 
-        <MarketingMetrics>
-          <div className="metrics">
-            <div>
-              <p className="metric">94%</p>
-              <p className="metric-label">Offer rate after 5 mocks</p>
-            </div>
-            <div>
-              <p className="metric">140k+</p>
-              <p className="metric-label">Mock loops completed</p>
-            </div>
-            <div>
-              <p className="metric">4.9 / 5</p>
-              <p className="metric-label">Candidate rating</p>
-            </div>
+        <MarketingSection
+          id="why"
+          eyebrow="Why it works"
+          title="Interviews test performance, not knowledge"
+          lede="Knowing the algorithm is table stakes. Offers go to candidates who think out loud, handle follow-ups, and stay composed. That is a performance skill, and performance skills only improve under performance conditions."
+        >
+          <div className="grid3">
+            {WHY_CARDS.map((card) => (
+              <div key={card.title} className="card">
+                <h3>{card.title}</h3>
+                <p>{card.text}</p>
+              </div>
+            ))}
           </div>
-          <div className="value-props">
-            <h3>Why it works</h3>
-            <ul>
-              <li>Structured rubric, not generic chat.</li>
-              <li>Deterministic fallback when LLM is unavailable.</li>
-              <li>Server-owned transcripts, evaluations, and mastery state.</li>
-            </ul>
-          </div>
-        </MarketingMetrics>
+        </MarketingSection>
 
-        <MarketingPricing>
-          <div className="pricing-card">
-            <h4>Starter</h4>
-            <p className="price">$0</p>
-            <p>3 full mock sessions, all interview types, voice + text.</p>
-          </div>
-          <div className="pricing-card popular">
-            <h4>Pro Practice</h4>
-            <p className="price">$39/mo</p>
-            <p>Unlimited mocks, evaluations, and targeted practice loops.</p>
-          </div>
-          <div className="pricing-card">
-            <h4>Team</h4>
-            <p className="price">Custom</p>
-            <p>Seat-based pricing, shared rubrics, and aggregated insights.</p>
-          </div>
-        </MarketingPricing>
+        <MarketingSection
+          id="how"
+          eyebrow="How a session runs"
+          title="From dashboard to debrief in 30 minutes"
+          lede="Four steps, one loop: every session ends with a practice card that feeds the next recommendation."
+        >
+          <MarketingSteps steps={STEPS} />
+          <MarketingQuote caption={"Dummy testimonial placeholder \u2014 replace with a real user quote before launch."}>
+            {"\u201CI stopped blanking on \u2018any questions about edge cases?\u2019 after the third session.\u201D"}
+          </MarketingQuote>
+        </MarketingSection>
+
+        <MarketingFinal
+          title="Your next interview is already scheduled. By you."
+          subtitle="Create an account, tell us your role and level, and get your first recommendation in minutes."
+          actions={
+            <>
+              <PrimaryButton onClick={onCreateAccount}>Create account</PrimaryButton>
+              <GhostButton onClick={onSignIn}>Sign in</GhostButton>
+            </>
+          }
+        />
       </main>
 
-      <MarketingFooter
-        links={navLinks}
-        actions={navActions}
-      />
+      <MarketingFooter>
+        <span className="footer-brand">Interview Coach</span>
+        <span>DSA-only MVP</span>
+        <span>Voice-only interviews</span>
+        <span>Structured scoring</span>
+      </MarketingFooter>
     </div>
   );
 }

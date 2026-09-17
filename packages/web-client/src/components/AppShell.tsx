@@ -1,8 +1,7 @@
-// App shell (ux-spec §2/§3): top bar + left sidebar navigation.
-//
-// The interview room uses its own minimal chrome; every other screen renders
-// inside this shell so navigation stays consistent. The top-right account
-// control is guest ("Sign in") or the signed-in name + dropdown.
+// App shell (feature 17a): top-bar navigation on the approved prototype
+// look. The interview room uses its own minimal chrome; every other screen
+// renders inside this shell. Props contract unchanged: active section,
+// navigation/account callbacks, content child.
 
 import type { ReactNode } from "react";
 import { AccountMenu } from "./AccountMenu.js";
@@ -34,37 +33,32 @@ export function AppShell({
   return (
     <div className="shell">
       <header className="shell-topbar">
-        <span className="brand">Interview Coach</span>
-        <span className="spacer" />
-        <AccountMenu
-          onSignIn={onSignIn}
-          onProfile={onProfile}
-          onSettings={() => onNavigate("settings")}
-          onSignOut={onSignOut}
-        />
-      </header>
-      <div className="shell-body">
-        <nav className="shell-sidebar" aria-label="Primary">
-          <ul>
+        <div className="shell-topbar-inner">
+          <span className="brand">Interview Coach</span>
+          <nav className="shell-nav" aria-label="Primary">
             {NAV.map((item) => (
-              <li key={item.key}>
-                <button
-                  type="button"
-                  className={item.key === active ? "nav-item nav-active" : "nav-item"}
-                  aria-current={item.key === active ? "page" : undefined}
-                  onClick={() => onNavigate(item.key)}
-                >
-                  {item.label}
-                </button>
-              </li>
+              <button
+                key={item.key}
+                type="button"
+                className={item.key === active ? "shell-nav-link shell-nav-active" : "shell-nav-link"}
+                aria-current={item.key === active ? "page" : undefined}
+                onClick={() => onNavigate(item.key)}
+              >
+                {item.label}
+              </button>
             ))}
-          </ul>
-          <div className="shell-foot">
-            <span className="hint">Practice like it&apos;s the real thing.</span>
-          </div>
-        </nav>
-        <main className="shell-content">{children}</main>
-      </div>
+          </nav>
+          <span className="who">
+            <AccountMenu
+              onSignIn={onSignIn}
+              onProfile={onProfile}
+              onSettings={() => onNavigate("settings")}
+              onSignOut={onSignOut}
+            />
+          </span>
+        </div>
+      </header>
+      <main className="shell-content">{children}</main>
     </div>
   );
 }

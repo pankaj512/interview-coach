@@ -1,24 +1,70 @@
-/* S6 — Design tokens as CSS custom properties (ux-spec §3, normative).
+/* InterviewCoach app theme — ported from prototypes/theme.css (feature 17a).
  *
- * Source: Penpot page `02 — Hi-Fi Dark`, theme `mode/dark` (44 tokens:
- * 19 color.dark + 7 space + 4 radius + 2 borderWidth + 9 fontSizes +
- * 3 fontWeights). Mapping rule: `--<token-name with . → ->`.
- * `generateStyle` spot-checks (H-Setup bg #0e1116, title 20px/700,
- * btn-primary label 600) match the values below.
- *
- * v1.1 (Stitch → code, no Penpot): aligned to
- * `design/interview_coach_v1.1/calm_technical_engineer/DESIGN.md` +
- * the Stitch `code.html` exports under `design/interview_coach_v1.1/`.
- * Primary command blue #1f4b99 (CTA/focus/current phase); surfaces
- * paper-white cards on off-white canvas; telemetry in JetBrains Mono.
- * Breakpoints follow Stitch: tablet ~768px, desktop ~1024px (the live
- * two-column workbench collapses below 1024px, single column below 768px).
+ * Warm-editorial minimal: warm ivory canvas, forest-green primary actions,
+ * terracotta danger, Newsreader display / Inter body / JetBrains Mono.
+ * New and rebuilt code uses these names. The "transition aliases" block
+ * below keeps the exact Stitch-era values for not-yet-rebuilt screens
+ * (17b-17d); 17d deletes it with the last Stitch rules.
  */
 
 :root {
   color-scheme: light;
 
-  /* Light theme colors (Space Grotesk/Public Sans palette from Stitch HTML) */
+  /* surfaces */
+  --bg: #fcf9f5;            /* warm ivory page canvas */
+  --surface: #ffffff;       /* cards */
+  --surface-low: #f6f3ef;   /* muted containers, chips */
+  --surface-muted: #f0edea; /* elevated / inset areas */
+  --surface-high: #ebe8e4;  /* tracks, wells */
+  --border: #e6e2da;        /* ghost borders */
+  --border-strong: #c0c9c3;
+
+  /* text */
+  --text: #1c1c1a;          /* deep charcoal */
+  --muted: #404945;         /* secondary */
+  --faint: #707974;         /* hints, metadata */
+
+  /* accent */
+  --primary: #1b4d3e;       /* forest green: primary actions, focus */
+  --primary-deep: #003629;  /* pressed / emphasis */
+  --primary-ink: #ffffff;   /* text on primary */
+  --primary-soft: #baeed9;  /* success wash */
+  --danger: #97472e;        /* terracotta: End interview, destructive only */
+  --danger-ink: #ffffff;
+  --danger-soft: #ffdad6;
+  --error: #ba1a1a;
+
+  /* meaning states (always paired with icon + label, never color alone) */
+  --pass: #1b4d3e;
+  --review: #97472e;
+  --track: #e5e2de;
+
+  /* on-dark surfaces (text/controls over the primary-deep gradient) */
+  --on-dark: #f3f0ec;
+  --on-dark-bright: #ffffff;
+  --on-dark-dim: #cfe3d8;
+  --on-dark-wash: rgba(255,255,255,.14);
+  --on-dark-line: rgba(255,255,255,.22);
+  --on-dark-line-strong: rgba(255,255,255,.45);
+
+  /* type */
+  --font-display: "Newsreader", Georgia, serif;
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  /* scale */
+  --radius-sm: 3px;
+  --radius-md: 6px;
+  --radius-lg: 12px;
+  --radius-full: 9999px;
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 48px;
+  --shadow: 0 4px 20px rgba(27, 77, 62, 0.06);
+
+  /* transition aliases (Stitch-era values, verbatim; removed in 17d) */
   --bg-base: #f8fafc;
   --bg-sunken: #f1f5f9;
   --surface-base: #ffffff;
@@ -29,6 +75,11 @@
   --ink-base: #0f172a;
   --ink-muted: #475569;
   --ink-faint: #94a3b8;
+  --ink: #0f172a;
+  --cta-base: #1f4b99;
+  --cta-hover: #173a77;
+  --cta-active: #132f60;
+  --cta-ink: #ffffff;
   --voice-solid: #10b981;
   --voice-wash: #ecfdf3;
   --success: #16a34a;
@@ -38,22 +89,11 @@
   --danger-wash: #fee2e2;
   --info-solid: #2563eb;
   --info-wash: #eff6ff;
-
-  /* Primary CTA uses brand blue (DESIGN.md command blue #1f4b99;
-     Stitch HTML uses #2563eb for the same role — CTA wins). */
-  --cta-base: #1f4b99;
-  --cta-hover: #173a77;
-  --cta-active: #132f60;
-  --cta-ink: #ffffff;
-
-  /* v1.1 Stitch surface tiers (DESIGN.md elevation: borders over shadows) */
   --canvas: #f8fafc;
   --panel: #ffffff;
   --tray: #f1f5f9;
   --overlay-scrim: rgba(15, 23, 42, 0.4);
   --keyline-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
-
-  /* 3.2 Space / radius / border */
   --s-4: 4px;
   --s-8: 8px;
   --s-12: 12px;
@@ -67,8 +107,6 @@
   --r-pill: 999px;
   --bw-1: 1px;
   --bw-2: 2px;
-
-  /* 3.3 Type */
   --fs-micro: 11px;
   --fs-caption: 12px;
   --fs-small: 13px;

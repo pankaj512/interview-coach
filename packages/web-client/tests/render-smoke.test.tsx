@@ -172,6 +172,8 @@ describe("screen render smoke", () => {
   it("App renders the sign-in landing for a signed-out visitor", () => {
     const html = renderToString(<App />);
     expect(html).toContain("Interview Coach");
+    expect(html).toContain("Start practicing free");
+    expect(html).toContain("Sample results");
     expect(html).toContain("Sign in");
   });
   it("AppShell renders navigation + guest account control", () => {
@@ -292,15 +294,23 @@ describe("screen render smoke", () => {
     expect(html).toContain("Account");
   });
   it("SignInScreen renders", () => {
-    expect(renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />)).toContain("Create one");
+    const html = renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />);
+    expect(html).toContain("Create one");
+    expect(html).toContain("Sign in");
+    // Empty credentials keep the submit disabled (validation state).
+    expect(html).toContain("disabled");
   });
   it("CreateAccountScreen renders", () => {
-    expect(renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} />)).toContain("Create account");
+    const html = renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} />);
+    expect(html).toContain("Create account");
+    // Empty fields keep the submit disabled (validation state).
+    expect(html).toContain("disabled");
   });
   it("OnboardingScreen renders the required profile form", () => {
     const html = renderToString(<OnboardingScreen backend={backend} onComplete={noop} />);
-    expect(html).toContain("Customize your interview curriculum");
+    expect(html).toContain("interview preferences");
     expect(html).toContain("Save and continue");
+    expect(html).toContain("Step 2 of 4");
   });
   it("ProfileForm renders for a new user with the taxonomy", () => {
     const html = renderToString(
@@ -308,6 +318,13 @@ describe("screen render smoke", () => {
     );
     expect(html).toContain("Data Structures &amp; Algorithms");
     expect(html).toContain("Backend Engineer");
+  });
+  it("ProfileForm surfaces a validation error with an alert role", () => {
+    const html = renderToString(
+      <ProfileForm submitLabel="Save and continue" busy={false} error="Role is required." onSubmit={noop} />,
+    );
+    expect(html).toContain("Role is required.");
+    expect(html).toContain('role="alert"');
   });
   it("ProfileScreen renders the saved profile", () => {
     const html = renderToString(

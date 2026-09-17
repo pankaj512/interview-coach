@@ -1,7 +1,5 @@
-// S6 design-system buttons (ux-spec §4: btn-primary/btn-danger/btn-ghost).
-//
-// Primary CTA is near-white (var(--cta-base)), NOT voice green —
-// voice.solid is reserved for voice activity (Phase D principle 2).
+// Design-system buttons (feature 17a): forest-green primary, ghost
+// secondary, terracotta danger (End interview only).
 
 import type { MouseEvent, ReactNode } from "react";
 
@@ -37,17 +35,17 @@ function BaseButton({
   );
 }
 
-/** btn-primary (Default/Hover/Disabled) — near-white CTA. */
+/** btn-primary — main calls to action. */
 export function PrimaryButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-primary" />;
 }
 
-/** btn-danger — guarded End interview only (always opens the confirm dialog). */
+/** btn-danger — guarded destructive actions only. */
 export function DangerButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-danger" />;
 }
 
-/** btn-ghost — Back navigation. */
+/** btn-ghost — secondary actions and navigation. */
 export function GhostButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-ghost" />;
 }
