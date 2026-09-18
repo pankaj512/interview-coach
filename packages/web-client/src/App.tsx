@@ -361,18 +361,35 @@ export function App() {
   // ---- First-run gate (Phase 2) ----
   // No anonymous loop: signed-out users only get the landing/sign-in, and a
   // signed-in user with no profile is sent to required onboarding.
-  if (session === null && !guestMode && flow !== "signin" && flow !== "signup") {
+  if (session === null && !guestMode) {
     return (
       <LandingScreen
         onSignIn={() => goAuth("signin")}
         onCreateAccount={() => goAuth("signup")}
         onDevGuest={() => setGuestMode(true)}
         showDevGuest={import.meta.env.DEV === true || import.meta.env.VITE_DEV_GUEST === "true"}
+        authModal={
+          flow === "signin" ? (
+            <SignInScreen
+              backend={backend}
+              onSuccess={handleAuthSuccess}
+              onGoCreate={() => goAuth("signup")}
+            />
+          ) : flow === "signup" ? (
+            <CreateAccountScreen
+              backend={backend}
+              onSuccess={handleAuthSuccess}
+              onGoSignIn={() => goAuth("signin")}
+            />
+          ) : null
+        }
+        authModalLabel={flow === "signup" ? "Create account" : "Sign in"}
+        onCloseAuth={() => setFlow(null)}
       />
     );
   }
 
-  if ((profileState === "loading" || profileState === "idle") && !guestMode && flow !== "signin" && flow !== "signup") {
+  if ((profileState === "loading" || profileState === "idle") && !guestMode) {
     return (
       <main className="app">
         <div className="auth-wrap">
@@ -408,7 +425,7 @@ export function App() {
     );
   }
 
-  if (profile === null && flow !== "signin" && flow !== "signup") {
+  if (profile === null) {
     return (
       <main className="app">
         <OnboardingScreen backend={backend} onComplete={handleProfileSaved} />
@@ -417,9 +434,7 @@ export function App() {
   }
 
   // ---- Nav views (sidebar shell) ----
-  // Auth flows render standalone below, so a null profile never reaches the
-  // shell; the guard keeps that unreachable state on the flow-driven block.
-  if (nav !== null && profile !== null) {
+  if (nav !== null) {
     return (
       <AppShell
         active={nav}
@@ -491,10 +506,24 @@ export function App() {
   return (
     <main className="app">
       {flow === "signin" && (
-        <SignInScreen backend={backend} onSuccess={handleAuthSuccess} onGoCreate={() => goAuth("signup")} />
+        <div className="auth-wrap">
+          <SignInScreen
+            backend={backend}
+            onSuccess={handleAuthSuccess}
+            onGoCreate={() => goAuth("signup")}
+            onBack={() => navigate("dashboard")}
+          />
+        </div>
       )}
       {flow === "signup" && (
-        <CreateAccountScreen backend={backend} onSuccess={handleAuthSuccess} onGoSignIn={() => goAuth("signin")} />
+        <div className="auth-wrap">
+          <CreateAccountScreen
+            backend={backend}
+            onSuccess={handleAuthSuccess}
+            onGoSignIn={() => goAuth("signin")}
+            onBack={() => navigate("dashboard")}
+          />
+        </div>
       )}
       {flow === "lobby" && interview !== null && sessionPlan !== null && (
         <LobbyScreen

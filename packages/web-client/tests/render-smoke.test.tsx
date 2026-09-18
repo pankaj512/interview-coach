@@ -22,6 +22,7 @@ import { DashboardScreen } from "../src/screens/DashboardScreen.js";
 import { EvaluatingScreen } from "../src/screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "../src/screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "../src/screens/HistoryScreen.js";
+import { LandingScreen } from "../src/screens/LandingScreen.js";
 import { LiveScreen } from "../src/screens/LiveScreen.js";
 import { LobbyScreen } from "../src/screens/LobbyScreen.js";
 import { OnboardingScreen } from "../src/screens/OnboardingScreen.js";
@@ -304,14 +305,44 @@ describe("screen render smoke", () => {
     const html = renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />);
     expect(html).toContain("Create one");
     expect(html).toContain("Sign in");
+    expect(html).not.toContain("Back");
     // Empty credentials keep the submit disabled (validation state).
     expect(html).toContain("disabled");
+  });
+  it("SignInScreen renders Back only with onBack", () => {
+    const html = renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} onBack={noop} />);
+    expect(html).toContain("Back");
   });
   it("CreateAccountScreen renders", () => {
     const html = renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} />);
     expect(html).toContain("Create account");
+    expect(html).not.toContain("Back");
     // Empty fields keep the submit disabled (validation state).
     expect(html).toContain("disabled");
+  });
+  it("CreateAccountScreen renders Back only with onBack", () => {
+    const html = renderToString(<CreateAccountScreen backend={backend} onSuccess={noop} onGoSignIn={noop} onBack={noop} />);
+    expect(html).toContain("Back");
+  });
+  it("LandingScreen renders the auth modal only when open", () => {
+    const base = {
+      onSignIn: noop,
+      onCreateAccount: noop,
+      onDevGuest: noop,
+      showDevGuest: false,
+      authModalLabel: "Sign in",
+      onCloseAuth: noop,
+    };
+    const closed = renderToString(<LandingScreen {...base} authModal={null} />);
+    expect(closed).not.toContain("auth-dialog");
+    const open = renderToString(
+      <LandingScreen
+        {...base}
+        authModal={<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />}
+      />,
+    );
+    expect(open).toContain("auth-dialog");
+    expect(open).toContain("Welcome back");
   });
   it("OnboardingScreen renders the required profile form", () => {
     const html = renderToString(<OnboardingScreen backend={backend} onComplete={noop} />);

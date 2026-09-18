@@ -2,7 +2,15 @@
 // Entry points (sign in / create account / dev guest) keep their existing
 // callbacks; the screen makes no backend calls.
 
+import type { ReactNode } from "react";
 import {
+  AUTH_HERO_EYEBROW,
+  AUTH_HERO_SUB,
+  AUTH_HERO_TITLE,
+  AUTH_PILLARS,
+  AUTH_SCORE_META,
+  AUTH_SCORE_ROWS,
+  MarketingAuthModal,
   MarketingFinal,
   MarketingFooter,
   MarketingHero,
@@ -21,37 +29,6 @@ const NAV_LINKS: readonly MarketingNavLink[] = [
   { href: "#scoring", label: "Scoring" },
   { href: "#why", label: "Why it works" },
 ];
-
-const SCORE_ROWS = [
-  { name: "problem_understanding", value: "4 / 5" },
-  { name: "approach", value: "4 / 5" },
-  { name: "coding", value: "4 / 5" },
-  { name: "independence", value: "2 / 5" },
-] as const;
-
-const PILLARS = [
-  {
-    glyph: (
-      <span className="g-bars" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-        <i />
-      </span>
-    ),
-    title: "Voice-only. Like the real room.",
-    text: "No text composer to hide behind. You think out loud under time pressure, exactly as the job demands.",
-  },
-  {
-    glyph: <>7/5</>,
-    title: "7 dimensions, scored with evidence.",
-    text: "Each dimension gets 0-5 plus the moment that earned it. Never a black-box number.",
-  },
-  {
-    glyph: "\u21BB",    title: "Adaptive loop. Every session picks the next one.",
-    text: "Master a topic and move on. Struggle and it holds you there until the weakness clears.",
-  },
-] as const;
 
 const WHY_CARDS = [
   {
@@ -92,16 +69,23 @@ export function LandingScreen({
   onCreateAccount,
   onDevGuest,
   showDevGuest,
+  authModal,
+  authModalLabel,
+  onCloseAuth,
 }: {
   readonly onSignIn: () => void;
   readonly onCreateAccount: () => void;
   readonly onDevGuest: () => void;
   readonly showDevGuest: boolean;
+  readonly authModal: ReactNode;
+  readonly authModalLabel: string;
+  readonly onCloseAuth: () => void;
 }) {
   return (
     <div className="landing-shell">
       <MarketingTopbar
         navLinks={NAV_LINKS}
+        onBrandClick={() => window.scrollTo(0, 0)}
         actions={
           <>
             <GhostButton onClick={onSignIn}>Sign in</GhostButton>
@@ -112,13 +96,9 @@ export function LandingScreen({
 
       <main className="landing-main">
         <MarketingHero
-          eyebrow="Voice-led DSA interview practice"
-          title={
-            <>
-              Stop rehearsing answers. <em>Start surviving interviews.</em>
-            </>
-          }
-          subtitle={"Reading solutions feels like progress until a real interviewer says \u201Cwalk me through your thinking\u201D and your mind goes blank. Interview Coach fixes that: timed voice interviews on a real curriculum, an interviewer that pushes back, and scoring that tells you exactly what to fix next."}
+          eyebrow={AUTH_HERO_EYEBROW}
+          title={AUTH_HERO_TITLE}
+          subtitle={AUTH_HERO_SUB}
           actions={
             <>
               <PrimaryButton onClick={onCreateAccount}>Start practicing free</PrimaryButton>
@@ -136,13 +116,13 @@ export function LandingScreen({
               badge="Sample results"
               score="72"
               of="100"
-              meta={"Move Zeroes \u00B7 Arrays \u00B7 Easy \u00B7 12 min"}
-              rows={SCORE_ROWS}
+              meta={AUTH_SCORE_META}
+              rows={AUTH_SCORE_ROWS}
             />
           }
         />
 
-        <MarketingPillars items={PILLARS} />
+        <MarketingPillars items={AUTH_PILLARS} />
 
         <MarketingSection
           id="why"
@@ -190,6 +170,12 @@ export function LandingScreen({
         <span>Voice-only interviews</span>
         <span>Structured scoring</span>
       </MarketingFooter>
+
+      {authModal !== null && (
+        <MarketingAuthModal label={authModalLabel} onClose={onCloseAuth}>
+          {authModal}
+        </MarketingAuthModal>
+      )}
     </div>
   );
 }

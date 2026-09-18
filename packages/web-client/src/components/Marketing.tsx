@@ -1,8 +1,9 @@
 // Marketing primitives (feature 17a): public landing sections on the
-// approved prototype look. Copy lives in LandingScreen; these components
-// own structure only.
+// approved prototype look. Shared pitch copy lives here so the landing page
+// and the auth side panel render the same words; screen-specific copy stays
+// in the screens.
 
-import type { ReactNode } from "react";
+import { useEffect, useRef, type ReactNode } from "react";
 
 export interface MarketingNavLink {
   readonly href: string;
@@ -12,14 +13,18 @@ export interface MarketingNavLink {
 export function MarketingTopbar({
   navLinks,
   actions,
+  onBrandClick,
 }: {
   readonly navLinks: readonly MarketingNavLink[];
   readonly actions: ReactNode;
+  readonly onBrandClick: () => void;
 }) {
   return (
     <header className="landing-topbar">
       <div className="landing-topbar-inner">
-        <span className="brand">Interview Coach</span>
+        <button type="button" className="brand" onClick={onBrandClick}>
+          Interview Coach
+        </button>
         <nav className="landing-nav" aria-label="Product">
           {navLinks.map((link) => (
             <a key={link.href} href={link.href}>
@@ -118,6 +123,82 @@ export function MarketingPillars({
         ))}
       </div>
     </section>
+  );
+}
+
+export const AUTH_HERO_EYEBROW = "Voice-led DSA interview practice";
+
+export const AUTH_HERO_TITLE = (
+  <>
+    Stop rehearsing answers. <em>Start surviving interviews.</em>
+  </>
+);
+
+export const AUTH_HERO_SUB =
+  "Reading solutions feels like progress until a real interviewer says \u201Cwalk me through your thinking\u201D and your mind goes blank. Interview Coach fixes that: timed voice interviews on a real curriculum, an interviewer that pushes back, and scoring that tells you exactly what to fix next.";
+
+export const AUTH_PILLARS = [
+  {
+    glyph: (
+      <span className="g-bars" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+        <i />
+      </span>
+    ),
+    title: "Voice-only. Like the real room.",
+    text: "No text composer to hide behind. You think out loud under time pressure, exactly as the job demands.",
+  },
+  {
+    glyph: <>7/5</>,
+    title: "7 dimensions, scored with evidence.",
+    text: "Each dimension gets 0-5 plus the moment that earned it. Never a black-box number.",
+  },
+  {
+    glyph: "\u21BB",
+    title: "Adaptive loop. Every session picks the next one.",
+    text: "Master a topic and move on. Struggle and it holds you there until the weakness clears.",
+  },
+] as const;
+
+export const AUTH_SCORE_ROWS = [
+  { name: "problem_understanding", value: "4 / 5" },
+  { name: "approach", value: "4 / 5" },
+  { name: "coding", value: "4 / 5" },
+  { name: "independence", value: "2 / 5" },
+] as const;
+
+export const AUTH_SCORE_META = "Move Zeroes \u00B7 Arrays \u00B7 Easy \u00B7 12 min";
+
+export function MarketingAuthModal({
+  label,
+  onClose,
+  children,
+}: {
+  readonly label: string;
+  readonly onClose: () => void;
+  readonly children: ReactNode;
+}) {
+  const ref = useRef<HTMLDialogElement | null>(null);
+  useEffect(() => {
+    if (ref.current !== null && !ref.current.open) ref.current.showModal();
+  }, []);
+  return (
+    <dialog
+      ref={ref}
+      className="auth-dialog"
+      aria-label={label}
+      onClose={onClose}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <button type="button" className="modal-close" onClick={onClose} autoFocus aria-label="Close">
+        ×
+      </button>
+      {children}
+    </dialog>
   );
 }
 

@@ -420,7 +420,7 @@ h4 {
   margin: 0 auto;
 }
 
-.landing-final .landing-shell .cta {
+.landing-final .cta {
   justify-content: center;
 }
 
@@ -823,6 +823,13 @@ table.mastery td {
   margin-right: var(--space-md);
   white-space: nowrap;
   color: var(--text);
+}
+
+button.brand {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
 }
 
 .shell-nav {
@@ -2855,6 +2862,37 @@ textarea.code {
 
 .auth-guest {
   align-self: center;
+}
+
+.auth-dialog {
+  border: none;
+  padding: 0;
+  background: transparent;
+  width: min(460px, calc(100vw - 48px));
+}
+
+.auth-dialog::backdrop {
+  background: rgb(0 0 0 / 0.55);
+}
+
+.auth-dialog .auth-card {
+  margin: 0;
+  width: 100%;
+}
+
+.modal-close {
+  position: absolute;
+  top: var(--space-sm);
+  right: var(--space-sm);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .profile-card {

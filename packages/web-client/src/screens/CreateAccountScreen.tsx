@@ -11,10 +11,12 @@ export function CreateAccountScreen({
   backend,
   onSuccess,
   onGoSignIn,
+  onBack,
 }: {
   readonly backend: BackendClient;
   readonly onSuccess: () => void;
   readonly onGoSignIn: () => void;
+  readonly onBack?: () => void;
 }) {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
@@ -40,8 +42,12 @@ export function CreateAccountScreen({
   const invalid = displayName.trim() === "" || email.trim() === "" || password.length < 8;
 
   return (
-    <div className="auth-wrap">
-      <form className="card auth-card" onSubmit={submit}>
+    <form className="card auth-card" onSubmit={submit}>
+      {onBack !== undefined && (
+        <button type="button" className="link-button" onClick={onBack}>
+          Back
+        </button>
+      )}
         <span className="brand">Interview Coach</span>
         <h1 className="auth-title">Create account</h1>
         <p className="auth-sub">Save your interviews and track progress over time.</p>
@@ -65,6 +71,5 @@ export function CreateAccountScreen({
           </button>
         </p>
       </form>
-    </div>
   );
 }

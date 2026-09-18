@@ -34,7 +34,9 @@ export function AppShell({
     <div className="shell">
       <header className="shell-topbar">
         <div className="shell-topbar-inner">
-          <span className="brand">Interview Coach</span>
+          <button type="button" className="brand" onClick={() => onNavigate("dashboard")}>
+            Interview Coach
+          </button>
           <nav className="shell-nav" aria-label="Primary">
             {NAV.map((item) => (
               <button

@@ -7,3 +7,4 @@ logs/
 blueprint/references
 opencode.jsonc
 opencode.json
+.playwright-mcp

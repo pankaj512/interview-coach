@@ -12,10 +12,12 @@ export function SignInScreen({
   backend,
   onSuccess,
   onGoCreate,
+  onBack,
 }: {
   readonly backend: BackendClient;
   readonly onSuccess: () => void;
   readonly onGoCreate: () => void;
+  readonly onBack?: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -38,8 +40,12 @@ export function SignInScreen({
   }
 
   return (
-    <div className="auth-wrap">
-      <form className="card auth-card" onSubmit={submit}>
+    <form className="card auth-card" onSubmit={submit}>
+      {onBack !== undefined && (
+        <button type="button" className="link-button" onClick={onBack}>
+          Back
+        </button>
+      )}
         <span className="brand">Interview Coach</span>
         <h1 className="auth-title">Sign in</h1>
         <p className="auth-sub">Welcome back. Sign in to keep your interviews.</p>
@@ -60,6 +66,5 @@ export function SignInScreen({
           </button>
         </p>
       </form>
-    </div>
   );
 }
