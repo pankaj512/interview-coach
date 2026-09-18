@@ -249,23 +249,27 @@ describe("screen render smoke", () => {
   it("TranscriptReviewScreen renders", () => {
     expect(renderToString(<TranscriptReviewScreen interview={interview} events={[]} onBack={noop} />)).toContain("Interview transcript");
   });
-  it("HistoryScreen renders", () => {
-    expect(
-      renderToString(
-        <HistoryScreen
-          entries={entries}
-          busyId={null}
-          deletingId={null}
-          loading={false}
-          hasMore={false}
-          onSelect={noopEntry}
-          onDelete={noopEntry}
-          onLoadMore={noop}
-          onNew={noop}
-          onBack={noop}
-        />,
-      ),
-    ).toContain("Interview History");
+  it("HistoryScreen renders without a score placeholder for unevaluated entries", () => {
+    const first = entries[0];
+    if (first === undefined) throw new Error("history fixture missing");
+    const { overallScore: _omitScore, ...unscored } = first;
+    const html = renderToString(
+      <HistoryScreen
+        entries={[first, { ...unscored, id: "int_2" }]}
+        busyId={null}
+        deletingId={null}
+        loading={false}
+        hasMore={false}
+        onSelect={noopEntry}
+        onDelete={noopEntry}
+        onLoadMore={noop}
+        onNew={noop}
+      />,
+    );
+    expect(html).toContain("Interview History");
+    expect(html.match(/8\.1 \/ 10/g)).toHaveLength(1);
+    expect(html).not.toContain("—");
+    expect(html).toContain("2 sessions");
   });
   it("ProgressScreen renders", () => {
     expect(
@@ -276,7 +280,6 @@ describe("screen render smoke", () => {
           starting={false}
           onWeakAreas={noop}
           onStartRecommendation={noop}
-          onNew={noop}
         />,
       ),
     ).toContain("Overall performance");

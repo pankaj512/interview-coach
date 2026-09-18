@@ -9,13 +9,13 @@ import type {
   SerializedUserProfile,
 } from "../api/types.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
+import { RecommendationHero } from "../components/RecommendationHero.js";
 import {
   buildCurriculumProgress,
   buildRecommendationView,
   buildStrengthsWeaknesses,
   masteryLabel,
   preparingForLabel,
-  recommendationSourceLabel,
 } from "../dashboard.js";
 import type { DashboardData } from "../state/use-dashboard.js";
 
@@ -93,28 +93,13 @@ export function DashboardScreen({
           </div>
         </div>
       ) : (
-        <div className="rec">
-          <span className="tag">{view.typeLabel}</span>
-          <span className="tag">{recommendationSourceLabel(view.source)}</span>
-          <h2>
-            {view.topicName}
-            {view.problemTitle !== null && <> · {view.problemTitle}</>}{" "}
-            {view.problemDifficulty !== null && <span className="lvl">{view.problemDifficulty}</span>}
-          </h2>
-          {view.moduleName !== null && <p>{view.moduleName}</p>}
-          <p>{view.reason}</p>
-          <div className="cta">
-            <PrimaryButton
-              onClick={() => onStart(recommendation, data.problem, data.curriculum)}
-              disabled={starting || data.busy}
-            >
-              {starting ? "Starting…" : "Start practice"}
-            </PrimaryButton>
-            <GhostButton onClick={() => void data.regenerate()} disabled={starting || data.busy}>
-              New suggestion
-            </GhostButton>
-          </div>
-        </div>
+        <RecommendationHero
+          view={view}
+          primaryLabel="Start practice"
+          busy={starting || data.busy}
+          onPrimary={() => onStart(recommendation, data.problem, data.curriculum)}
+          onSecondary={() => void data.regenerate()}
+        />
       )}
 
       <div className="card">
@@ -154,7 +139,18 @@ export function DashboardScreen({
         )}
       </div>
 
-      <div className="cols">
+      {strengths.length === 0 && weaknesses.length === 0 ? (
+        <div className="card">
+          <h2>Complete your first interview</h2>
+          <p className="hint">
+            Your scores will surface your strengths, weaknesses will become
+            focus areas, and every session will land in your history. Start
+            with the recommendation above.
+          </p>
+        </div>
+      ) : (
+        <>
+          <div className="cols">
         <div className="card">
           <h2>Strengths</h2>
           {strengths.length === 0 ? (
@@ -230,6 +226,8 @@ export function DashboardScreen({
         <h2>Recent interviews</h2>
         <p className="hint">No interviews to show yet. Your recent sessions will appear here.</p>
       </div>
+        </>
+      )}
     </div>
   );
 }

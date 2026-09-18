@@ -25,7 +25,6 @@ export function HistoryScreen({
   onDelete,
   onLoadMore,
   onNew,
-  onBack,
 }: {
   readonly entries: readonly HistoryEntry[];
   readonly busyId: string | null;
@@ -36,7 +35,6 @@ export function HistoryScreen({
   readonly onDelete: (entry: HistoryEntry) => void;
   readonly onLoadMore: () => void;
   readonly onNew: () => void;
-  readonly onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [difficulty, setDifficulty] = useState("");
@@ -74,7 +72,7 @@ export function HistoryScreen({
 
   return (
     <>
-      <SectionHead title="Interview History" meta={`${filtered.length} sessions`} />
+      <SectionHead title="Interview History" meta={filtered.length === 1 ? "1 session" : `${filtered.length} sessions`} />
       <ChipList label="Quick filters">
         <Pill label="All" selected={quick === "all"} onClick={() => setQuick("all")} />
         <Pill label="Evaluated" selected={quick === "evaluated"} onClick={() => setQuick("evaluated")} />
@@ -132,7 +130,7 @@ export function HistoryScreen({
                       <span className="hint">{entry.status.replace(/_/g, " ")}</span>
                     </span>
                     <span className="history-score">
-                      {entry.overallScore === undefined ? "—" : `${entry.overallScore.toFixed(1)} / 10`}
+                      {entry.overallScore !== undefined && `${entry.overallScore.toFixed(1)} / 10`}
                     </span>
                     <span className="history-meta">
                       <span className="badge">{evaluationLabel(entry.evaluationStatus)}</span>
@@ -176,7 +174,6 @@ export function HistoryScreen({
       )}
 
       <div className="row actions">
-        <GhostButton onClick={onBack}>Back</GhostButton>
         <PrimaryButton onClick={onNew}>Start new interview</PrimaryButton>
       </div>
     </>

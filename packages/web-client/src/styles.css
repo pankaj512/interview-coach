@@ -2431,7 +2431,7 @@ textarea.code {
 .history-row {
   width: 100%;
   display: grid;
-  grid-template-columns: 1fr 140px 200px 100px;
+  grid-template-columns: 1fr 140px 200px auto;
   align-items: center;
   gap: var(--s-12);
   background: var(--surface-base);
@@ -2464,10 +2464,17 @@ textarea.code {
   gap: var(--s-8);
 }
 
+.history-meta .hint {
+  white-space: nowrap;
+}
+
 .history-action {
   color: var(--info-solid);
   font-size: var(--fs-small);
   text-align: right;
+  display: flex;
+  gap: var(--s-8);
+  justify-content: flex-end;
 }
 
 .badge {

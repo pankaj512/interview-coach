@@ -3,6 +3,7 @@
 import { buildCurriculumProgress, buildRecommendationView, buildStrengthsWeaknesses, masteryLabel } from "../dashboard.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
 import { Card, ProgressTrack, ScoreRow, SectionHead } from "../ds/primitives.js";
+import { RecommendationHero } from "../components/RecommendationHero.js";
 import type { HistoryEntry } from "../history.js";
 import { buildProgress } from "../progress.js";
 import type { DashboardData } from "../state/use-dashboard.js";
@@ -34,14 +35,12 @@ export function ProgressScreen({
   starting,
   onWeakAreas,
   onStartRecommendation,
-  onNew,
 }: {
   readonly entries: readonly HistoryEntry[];
   readonly data: DashboardData;
   readonly starting: boolean;
   readonly onWeakAreas: () => void;
   readonly onStartRecommendation: () => void;
-  readonly onNew: () => void;
 }) {
   const skillsReady = data.state === "ready";
   const progress = buildProgress(entries, skillsReady ? data.skills : [], skillsReady ? data.curriculum : null);
@@ -175,39 +174,17 @@ export function ProgressScreen({
         </Card>
       )}
 
-      <Card>
-        <h3 className="section-title">Current recommendation</h3>
-        {recommendationView === null ? (
-          <p className="hint">Loading your next suggested practice…</p>
-        ) : (
-          <>
-            <p className="eyebrow">{recommendationView.typeLabel}</p>
-            <p className="focus-title">{recommendationView.topicName}</p>
-            {recommendationView.moduleName !== null && <p className="hint">{recommendationView.moduleName}</p>}
-            {recommendationView.problemTitle !== null && (
-              <p>
-                {recommendationView.problemTitle}
-                {recommendationView.problemDifficulty !== null && (
-                  <span className="badge recommendation-difficulty">{recommendationView.problemDifficulty}</span>
-                )}
-              </p>
-            )}
-            <p className="hint">{recommendationView.reason}</p>
-            <div className="row actions">
-              <PrimaryButton onClick={onStartRecommendation} disabled={starting || data.busy}>
-                {starting ? "Starting…" : "Start recommended"}
-              </PrimaryButton>
-              <GhostButton onClick={() => void data.regenerate()} disabled={data.busy || starting}>
-                New suggestion
-              </GhostButton>
-            </div>
-          </>
-        )}
-      </Card>
-
-      <div className="row actions">
-        <GhostButton onClick={onNew}>Start new interview</GhostButton>
-      </div>
+      {recommendationView === null ? (
+        <p className="hint">Loading your next suggested practice…</p>
+      ) : (
+        <RecommendationHero
+          view={recommendationView}
+          primaryLabel="Start recommended"
+          busy={starting || data.busy}
+          onPrimary={onStartRecommendation}
+          onSecondary={() => void data.regenerate()}
+        />
+      )}
     </>
   );
 }

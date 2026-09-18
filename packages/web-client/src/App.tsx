@@ -539,7 +539,6 @@ export function App() {
             onDelete={deleteEntry}
             onLoadMore={loadMoreHistory}
             onNew={startNew}
-            onBack={() => navigate("dashboard")}
           />
         )}
         {nav === "progress" && (
@@ -559,7 +558,6 @@ export function App() {
               }
               startRecommendedFromDashboard();
             }}
-            onNew={startNew}
           />
         )}
         {nav === "settings" && (
