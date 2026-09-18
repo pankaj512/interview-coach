@@ -189,7 +189,7 @@ export function App() {
     return () => {
       cancelled = true;
     };
-  }, [session?.token, backend, profileNonce]);
+  }, [session?.token, backend, profileNonce, guestMode]);
 
   const handleProfileSaved = useCallback((next: SerializedUserProfile) => {
     setProfile(next);
@@ -361,18 +361,18 @@ export function App() {
   // ---- First-run gate (Phase 2) ----
   // No anonymous loop: signed-out users only get the landing/sign-in, and a
   // signed-in user with no profile is sent to required onboarding.
-  if (session === null && !guestMode) {
+  if (session === null && !guestMode && flow !== "signin" && flow !== "signup") {
     return (
       <LandingScreen
-        onSignIn={() => setFlow("signin")}
-        onCreateAccount={() => setFlow("signup")}
+        onSignIn={() => goAuth("signin")}
+        onCreateAccount={() => goAuth("signup")}
         onDevGuest={() => setGuestMode(true)}
         showDevGuest={import.meta.env.DEV === true || import.meta.env.VITE_DEV_GUEST === "true"}
       />
     );
   }
 
-  if ((profileState === "loading" || profileState === "idle") && !guestMode) {
+  if ((profileState === "loading" || profileState === "idle") && !guestMode && flow !== "signin" && flow !== "signup") {
     return (
       <main className="app">
         <div className="auth-wrap">
@@ -408,7 +408,7 @@ export function App() {
     );
   }
 
-  if (profile === null) {
+  if (profile === null && flow !== "signin" && flow !== "signup") {
     return (
       <main className="app">
         <OnboardingScreen backend={backend} onComplete={handleProfileSaved} />
@@ -417,7 +417,9 @@ export function App() {
   }
 
   // ---- Nav views (sidebar shell) ----
-  if (nav !== null) {
+  // Auth flows render standalone below, so a null profile never reaches the
+  // shell; the guard keeps that unreachable state on the flow-driven block.
+  if (nav !== null && profile !== null) {
     return (
       <AppShell
         active={nav}
@@ -488,6 +490,12 @@ export function App() {
   // ---- Interview ritual (standalone) ----
   return (
     <main className="app">
+      {flow === "signin" && (
+        <SignInScreen backend={backend} onSuccess={handleAuthSuccess} onGoCreate={() => goAuth("signup")} />
+      )}
+      {flow === "signup" && (
+        <CreateAccountScreen backend={backend} onSuccess={handleAuthSuccess} onGoSignIn={() => goAuth("signin")} />
+      )}
       {flow === "lobby" && interview !== null && sessionPlan !== null && (
         <LobbyScreen
           backend={backend}
