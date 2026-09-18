@@ -20,6 +20,8 @@ export function ProfileForm({
   error,
   onSubmit,
   onCancel,
+  className = "card auth-card onboarding-card",
+  hideSubmitUntilDirty = false,
 }: {
   readonly initial?: SerializedUserProfile | null;
   readonly submitLabel: string;
@@ -27,6 +29,8 @@ export function ProfileForm({
   readonly error: string | null;
   readonly onSubmit: (input: ProfileInput) => void;
   readonly onCancel?: () => void;
+  readonly className?: string;
+  readonly hideSubmitUntilDirty?: boolean;
 }) {
   const [interviewTypes, setInterviewTypes] = useState<readonly string[]>(
     initial?.interviewTypes ?? ["dsa"],
@@ -45,6 +49,14 @@ export function ProfileForm({
 
   const invalid = interviewTypes.length === 0 || role === "" || level === "";
 
+  const baseTypes = initial?.interviewTypes ?? ["dsa"];
+  const dirty =
+    interviewTypes.length !== baseTypes.length ||
+    interviewTypes.some((entry) => !baseTypes.includes(entry)) ||
+    role !== (initial?.role ?? "") ||
+    level !== (initial?.level ?? "") ||
+    goals.trim() !== (initial?.goals ?? "");
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (invalid) return;
@@ -58,7 +70,7 @@ export function ProfileForm({
   }
 
   return (
-    <form className="card auth-card onboarding-card" onSubmit={submit}>
+    <form className={className} onSubmit={submit}>
       <div className="field">
         <span className="field-label">What are you preparing for?</span>
         <div className="pill-row">
@@ -116,9 +128,11 @@ export function ProfileForm({
       )}
       <div className="row actions">
         {onCancel !== undefined && <GhostButton onClick={onCancel}>Cancel</GhostButton>}
-        <PrimaryButton type="submit" disabled={busy || invalid}>
-          {busy ? "Saving…" : submitLabel}
-        </PrimaryButton>
+        {(!hideSubmitUntilDirty || dirty) && (
+          <PrimaryButton type="submit" disabled={busy || invalid}>
+            {busy ? "Saving…" : submitLabel}
+          </PrimaryButton>
+        )}
       </div>
     </form>
   );

@@ -364,19 +364,18 @@ describe("screen render smoke", () => {
     expect(html).toContain("Role is required.");
     expect(html).toContain('role="alert"');
   });
-  it("ProfileScreen renders the saved profile", () => {
+  it("ProfileScreen renders the inline editor with Save hidden until edited", () => {
     const html = renderToString(
       <ProfileScreen
         backend={backend}
         identity={{ displayName: "Ada", email: "ada@example.com" }}
         profile={profile}
         onSaved={noop}
-        onBack={noop}
-        onSettings={noop}
-        onSignOut={noop}
       />,
     );
-    expect(html).toContain("Edit profile");
+    expect(html).toContain("What are you preparing for?");
     expect(html).toContain("Backend Engineer");
+    expect(html).not.toContain("auth-card");
+    expect(html).not.toContain("Save changes");
   });
 });

@@ -2719,6 +2719,12 @@ textarea.code {
   font-size: var(--fs-title);
 }
 
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--s-16);
+}
+
 .menu-backdrop {
   position: fixed;
   inset: 0;
@@ -2931,8 +2937,16 @@ textarea.code {
 
 .profile-facts div {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  flex-direction: row;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--s-16);
+  padding: var(--s-8) 0;
+  border-bottom: var(--bw-1) solid var(--line-base);
+}
+
+.profile-facts div:last-child {
+  border-bottom: 0;
 }
 
 .profile-facts dt {
@@ -2943,7 +2957,9 @@ textarea.code {
 }
 
 .profile-facts dd {
+  margin: 0;
   color: var(--ink-base);
+  text-align: right;
 }
 
 /* ---------- v1.1 Stitch primitives (Stitch → code, no Penpot) ----------

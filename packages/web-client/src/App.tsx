@@ -576,6 +576,29 @@ export function App() {
     );
   }
 
+  // ---- Profile (full page in the app shell, like Settings) ----
+  if (flow === "profile" && session !== null) {
+    return (
+      <AppShell
+        active={null}
+        onNavigate={navigate}
+        onSignIn={() => goAuth("signin")}
+        onProfile={() => goAuth("profile")}
+        onSignOut={handleSignOut}
+      >
+        <ProfileScreen
+          backend={backend}
+          identity={{ displayName: session.displayName, email: session.email }}
+          profile={profile}
+          onSaved={(next) => {
+            setProfile(next);
+            setProfileState("ready");
+          }}
+        />
+      </AppShell>
+    );
+  }
+
   // ---- Interview ritual (standalone) ----
   return (
     <main className="app">
@@ -687,17 +710,6 @@ export function App() {
             onBack={() => navigate("progress")}
           />
         </div>
-      )}
-      {flow === "profile" && session !== null && (
-        <ProfileScreen
-          backend={backend}
-          identity={{ displayName: session.displayName, email: session.email }}
-          profile={profile}
-          onSaved={handleProfileSaved}
-          onBack={() => navigate("dashboard")}
-          onSettings={() => navigate("settings")}
-          onSignOut={handleSignOut}
-        />
       )}
     </main>
   );
