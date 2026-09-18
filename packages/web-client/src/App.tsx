@@ -435,7 +435,11 @@ export function App() {
       <LandingScreen
         onSignIn={() => goAuth("signin")}
         onCreateAccount={() => goAuth("signup")}
-        onDevGuest={() => setGuestMode(true)}
+        onDevGuest={() => {
+          setGuestMode(true);
+          setFlow(null);
+          setNav("dashboard");
+        }}
         showDevGuest={import.meta.env.DEV === true || import.meta.env.VITE_DEV_GUEST === "true"}
         authModal={
           flow === "signin" ? (
