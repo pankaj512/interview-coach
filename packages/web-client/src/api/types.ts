@@ -242,7 +242,7 @@ export interface RecordResponseInput {
 // S7a sandbox (HLD Phase 6): code submissions + test runs. Structural
 // mirrors of the backend serializers; hidden cases arrive masked
 // (pass/fail only — the backend never stores hidden actuals).
-export type CodeLanguage = "javascript" | "python";
+export type CodeLanguage = "javascript" | "python" | "cpp";
 
 export interface SubmitCodeInput {
   readonly language: CodeLanguage;

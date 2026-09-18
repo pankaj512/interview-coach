@@ -1,17 +1,17 @@
-// H-Evaluating (ux-spec §21): analyzing screen shown after End & Evaluate.
-//
-// v1.1 Stitch (`analyzing-interview/code.html`): centered card with title +
-// checklist steps (Complete / Analyzing / Pending badges) and spinner; a
-// back-to-dashboard option is offered (optional prop — App may omit it).
+// H-Evaluating (feature 17b): analyzing screen shown after End & Evaluate
+// on the approved prototype look. Honest processing stages mirror the real
+// async pipeline (capture → score → skills → recommendation); no fake
+// precision. An optional error message covers evaluation failure without
+// losing the interview (the backend fallback path).
 
 import { GhostButton } from "../ds/buttons.js";
 import { Badge, Card } from "../ds/primitives.js";
 
-const STEPS: readonly { label: string; state: "done" | "active" | "todo" }[] = [
-  { label: "Technical reasoning", state: "done" },
-  { label: "Communication", state: "done" },
-  { label: "Problem solving", state: "done" },
-  { label: "Generating feedback", state: "active" },
+const STEPS: readonly { label: string; detail: string; state: "done" | "active" | "todo" }[] = [
+  { label: "Transcript captured", detail: "saved", state: "done" },
+  { label: "Scoring 7 dimensions", detail: "analyzing…", state: "active" },
+  { label: "Updating skills", detail: "waiting", state: "todo" },
+  { label: "Regenerating recommendation", detail: "waiting", state: "todo" },
 ];
 
 function stepBadge(state: "done" | "active" | "todo"): { tone: "pass" | "active" | "neutral"; label: string } {
@@ -20,48 +20,52 @@ function stepBadge(state: "done" | "active" | "todo"): { tone: "pass" | "active"
   return { tone: "neutral", label: "Pending" };
 }
 
-export function EvaluatingScreen({ onBack }: { readonly onBack?: () => void }) {
+export function EvaluatingScreen({
+  onBack,
+  error = null,
+}: {
+  readonly onBack?: () => void;
+  /** Evaluation failure text. The interview itself is always preserved. */
+  readonly error?: string | null;
+}) {
   return (
-    <div className="briefing-wrap">
-      <Card className="evaluating-card" role="status" aria-label="Analyzing interview">
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-          <div className="wave wave-live" aria-hidden="true" style={{ minWidth: 120 }}>
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-            <span className="wave-bar" />
-          </div>
-          <h1 className="briefing-title">Analyzing Interview</h1>
-          <p className="lede">Reviewing your responses…</p>
-        </div>
-        <ol className="plain-list evaluating-steps">
+    <div className="eval-wrap">
+      <p className="eyebrow">Evaluation in progress</p>
+      <h1>Analyzing your interview</h1>
+      <p className="sub">
+        Structured scoring runs async after End. Results appear automatically; nothing here needs a
+        click.
+      </p>
+      {error === null && (
+        <div className="spinner" role="progressbar" aria-label="Evaluation in progress" />
+      )}
+      <Card className="eval-card">
+        <ul className="stages">
           {STEPS.map((step) => {
             const badge = stepBadge(step.state);
             return (
-              <li
-                key={step.label}
-                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}
-              >
-                <span>
-                  {step.state === "done" ? "✓ " : step.state === "active" ? "◌ " : "○ "}
-                  {step.label}
+              <li key={step.label}>
+                <span className={`mark ${step.state === "done" ? "ok" : step.state === "active" ? "busy" : "todo"}`}>
+                  {step.state === "done" ? "✓" : ""}
                 </span>
-                <Badge tone={badge.tone}>{badge.label}</Badge>
+                {step.label}
+                <span className="detail">{step.detail}</span>
               </li>
             );
           })}
-        </ol>
-        <div className="meter analyzing-meter" role="progressbar" aria-label="Analyzing">
-          <div className="meter-fill" style={{ width: "70%" }} />
-        </div>
-        <p className="hint">Please wait… no fake precision — the evaluation is generated, not a percentage.</p>
-        {onBack !== undefined && (
-          <div className="row actions">
-            <GhostButton onClick={onBack}>Back to dashboard</GhostButton>
-          </div>
-        )}
+        </ul>
       </Card>
+      {error !== null && (
+        <p className="eval-alert" role="alert">
+          {error} Your interview is saved; retry scoring or continue to history.
+        </p>
+      )}
+      {onBack !== undefined && (
+        <div className="row actions">
+          <GhostButton onClick={onBack}>Back to dashboard</GhostButton>
+        </div>
+      )}
+      <p className="fine">A failed evaluation never loses the interview; the fallback path keeps history intact.</p>
     </div>
   );
 }

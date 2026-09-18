@@ -1,11 +1,10 @@
-// H-Live left panel (ux-spec §9/§11): the canonical problem.
-//
-// Read-only view of backend-owned problem state: title, difficulty,
-// description, constraints, and the sample test case. The client never
-// invents problem content; empty sections say so explicitly.
+// H-Live left panel (feature 17b): the canonical problem on the approved
+// prototype look. Read-only view of backend-owned problem state: title,
+// difficulty, description, constraints, and the sample test case. The
+// client never invents problem content; empty sections say so explicitly.
+// Title-only until item 18 (no statement enrichment here).
 
 import type { Problem, SerializedStateSnapshot } from "../api/types.js";
-import { DiffPill } from "../ds/status.js";
 
 export function ProblemPanel({
   snapshot,
@@ -19,9 +18,9 @@ export function ProblemPanel({
   const problem = snapshot?.currentProblem ?? fallbackProblem;
   if (problem === null) {
     return (
-      <section className="card problem-panel">
-        <h3>Problem</h3>
-        <p className="hint">
+      <section className="card" aria-label="Problem">
+        <h2>Problem</h2>
+        <p className="note">
           {snapshot === null ? "Loading interview state…" : "No problem attached yet."}
         </p>
       </section>
@@ -29,46 +28,45 @@ export function ProblemPanel({
   }
   const example = problem.examples?.[0];
   return (
-    <section className="card problem-panel" aria-label="Problem">
-      <div className="problem-head">
-        <h3>{problem.title}</h3>
-        <DiffPill level={problem.difficulty} />
-      </div>
+    <section className="card" aria-label="Problem">
+      <span className="chip">{problem.difficulty}</span>
+      <h2>{problem.title}</h2>
+      <p className="note">MVP shows the title; full statement arrives via problem-URL lookup (item 18).</p>
       {problem.description !== undefined && problem.description !== "" ? (
-        <p className="problem-desc">{problem.description}</p>
+        <p>{problem.description}</p>
       ) : (
-        <p className="hint">No description available for this problem yet.</p>
+        <p className="note">No description available for this problem yet.</p>
       )}
       {problem.constraints !== undefined && problem.constraints.length > 0 && (
         <>
-          <h4 className="problem-subhead">Constraints</h4>
-          <ul className="plain-list">
+          <h3 className="subhead">Constraints</h3>
+          <ul className="tight">
             {problem.constraints.map((constraint, i) => (
-              <li key={i}>• {constraint}</li>
+              <li key={i}>{constraint}</li>
             ))}
           </ul>
         </>
       )}
-      <h4 className="problem-subhead">Sample test case</h4>
+      <h3 className="subhead">Sample test case</h3>
       {example !== undefined ? (
-        <div className="sample-case">
-          <div>
-            <span className="sample-label">Input:</span>
-            <code>{example.input}</code>
-          </div>
-          <div>
-            <span className="sample-label">Output:</span>
-            <code>{example.output}</code>
-          </div>
-          {example.explanation !== undefined && example.explanation !== "" && (
-            <div>
-              <span className="sample-label">Explanation:</span>
-              <span className="hint">{example.explanation}</span>
-            </div>
-          )}
-        </div>
+        <table className="cases">
+          <thead>
+            <tr>
+              <th>Case</th>
+              <th>Input</th>
+              <th>Expected</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>sample</td>
+              <td>{example.input}</td>
+              <td>{example.output}</td>
+            </tr>
+          </tbody>
+        </table>
       ) : (
-        <p className="hint">No sample test case available for this problem yet.</p>
+        <p className="note">No sample test case available for this problem yet.</p>
       )}
     </section>
   );

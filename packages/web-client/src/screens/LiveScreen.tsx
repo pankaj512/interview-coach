@@ -1,8 +1,9 @@
-// H-Live (ux-spec §9): the voice-only interview room.
-//
-// Left: the problem (title, description, sample test case). Right: the code
-// editor with a single "Test code" action. Conversation is voice-only — no
-// transcript panel and no text composer.
+// H-Live (feature 17b): the voice-only interview room on the approved
+// prototype look. Left: the problem (title + sample test case, title-only
+// until item 18). Right: the code editor with a single "Test sample cases"
+// action.
+// Conversation is voice-only — no transcript panel and no text composer.
+// All session logic, hooks, and tool wiring preserved.
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
@@ -10,7 +11,7 @@ import type { Problem, SerializedInterview, SerializedStateSnapshot } from "../a
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Badge, Card, ChipList, Dialog, VoiceRail, Wave } from "../ds/primitives.js";
+import { Card, Dialog, VoiceRail, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
@@ -62,6 +63,7 @@ export function LiveScreen({
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
   const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
   const problem = live.snapshot?.currentProblem ?? fallbackProblem ?? null;
+  const interviewKind = interview.configuration.interviewType === "dsa" ? "DSA" : interview.configuration.interviewType;
 
   async function handleJoin() {
     setJoinError(null);
@@ -87,28 +89,18 @@ export function LiveScreen({
 
   return (
     <div className="room">
-      <header className="room-topbar">
-        <div className="room-title">
-          <ChipList label="Session">
-            <Badge tone="active">
-              {interview.configuration.interviewType === "dsa" ? "Coding" : interview.configuration.interviewType}
-            </Badge>
-            <Badge tone="neutral">{interview.configuration.difficulty ?? "Medium"}</Badge>
-            <Badge tone="neutral">{mode}</Badge>
-            <Badge tone="neutral">{interaction}</Badge>
-          </ChipList>
-        </div>
-        {live.snapshot?.interview.status === "completing" && (
-          <span className="chip-status chip-connecting" role="status">
-            <span className="chip-icon" aria-hidden="true">
-              ◌
-            </span>
-            <span className="chip-label">Wrapping up</span>
-          </span>
-        )}
+      <header className="live-topbar">
+        <span className="brand">Interview Coach</span>
+        <h1>
+          {interviewKind} Interview · {interview.configuration.difficulty ?? "Medium"}
+        </h1>
         <Timer secondsLeft={secondsLeft} elapsedSec={live.elapsedSec} />
         {statusChip}
-        <span className="spacer" />
+        {live.snapshot?.interview.status === "completing" && (
+          <span className="live-badge" role="status">
+            Wrapping up
+          </span>
+        )}
         <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy || !inRoom}>
           End interview
         </DangerButton>
@@ -158,8 +150,8 @@ export function LiveScreen({
             </div>
           )}
 
-          <div className="room-grid">
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, minWidth: 0 }}>
+          <div className="live-grid">
+            <div className="live-column">
               <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} />
               {transcriptTurns.length > 0 && (
                 <Card>
@@ -188,32 +180,34 @@ export function LiveScreen({
             />
           </div>
 
-          <VoiceRail
-            state={
-              <VoiceState
-                assistantSpeaking={live.assistantSpeaking}
-                candidateSpeaking={live.candidateSpeaking}
-                connection={live.connection}
-                micBlocked={micBlocked}
-                muted={live.muted}
-                paused={live.paused}
-              />
-            }
-            waveform={<Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />}
-            controls={
-              <>
-                <GhostButton onClick={live.toggleMute} disabled={live.paused}>
-                  {live.muted ? "Unmute" : "Mute"}
-                </GhostButton>
-                <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
-                  {live.paused ? "Resume" : "Pause"}
-                </GhostButton>
-                <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
-                  End interview
-                </DangerButton>
-              </>
-            }
-          />
+          <div className="rail">
+            <VoiceRail
+              state={
+                <VoiceState
+                  assistantSpeaking={live.assistantSpeaking}
+                  candidateSpeaking={live.candidateSpeaking}
+                  connection={live.connection}
+                  micBlocked={micBlocked}
+                  muted={live.muted}
+                  paused={live.paused}
+                />
+              }
+              waveform={<Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />}
+              controls={
+                <>
+                  <GhostButton onClick={live.toggleMute} disabled={live.paused}>
+                    {live.muted ? "Unmute" : "Mute"}
+                  </GhostButton>
+                  <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
+                    {live.paused ? "Resume" : "Pause"}
+                  </GhostButton>
+                  <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
+                    End interview
+                  </DangerButton>
+                </>
+              }
+            />
+          </div>
         </>
       )}
 

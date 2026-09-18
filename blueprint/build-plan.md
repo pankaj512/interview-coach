@@ -34,7 +34,7 @@ per-interview ownership, audit remediation P1-P8.
 - [x] 16. **Isolated multi-language sandbox** - properly isolated code execution for C++/JS/Python behind the existing sandbox routes; retires the local JS/Python runner on security grounds; the Test button (item 17) depends on it
 - [ ] 17. **Fresh web client UI rebuild** - rewrite screens/components from scratch on the approved prototype; keep `api/backend-client`, voice-client/tool-forwarder, and backend APIs; small API additions only with a proven gap; problem pane is title-only until item 18
   - [x] 17a. **Theme, shell, public screens** - port `prototypes/theme.css` into the app, rebuild AppShell/nav plus Landing, Sign-in, Create-account, Onboarding
-  - [ ] 17b. **Practice loop screens** - rebuild Dashboard, Lobby, Live, Evaluating on the new theme
+  - [x] 17b. **Practice loop screens** - rebuild Dashboard, Lobby, Live, Evaluating on the new theme
   - [ ] 17c. **Feedback screens** - rebuild Results, Transcript review, Feedback detail, Weak areas
   - [ ] 17d. **Account and history screens** - rebuild History, Progress, Settings, Profile; delete consumed `prototypes/`
 - [ ] 18. **Problem content enrichment** - statement text, sample cases, and per-language boilerplate per problem, sourced via external lookup for the problem URL; enhances the problem pane post-MVP

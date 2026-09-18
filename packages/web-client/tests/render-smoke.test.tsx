@@ -195,7 +195,7 @@ describe("screen render smoke", () => {
         onProfile={noop}
       />,
     );
-    expect(html).toContain("Learning loop");
+    expect(html).toContain("Preparing for");
     expect(html).toContain("Start practice");
     expect(html).toContain("Curriculum progress");
     expect(html).toContain("Senior Backend Engineer");
@@ -206,8 +206,8 @@ describe("screen render smoke", () => {
     );
     expect(html).toContain("Arrays");
     expect(html).toContain("Move Zeroes");
-    expect(html).toContain("Mic &amp; audio readiness");
-    expect(html).toContain("Evaluation criteria");
+    expect(html).toContain("Preparing your interview");
+    expect(html).toContain("Setup checks");
     expect(html).toContain("Begin interview");
   });
   it("LiveScreen renders the join state", () => {
@@ -219,7 +219,14 @@ describe("screen render smoke", () => {
     expect(html).not.toContain("Loading interview state");
   });
   it("EvaluatingScreen renders", () => {
-    expect(renderToString(<EvaluatingScreen />)).toContain("Analyzing Interview");
+    const html = renderToString(<EvaluatingScreen />);
+    expect(html).toContain("Analyzing your interview");
+    expect(html).toContain("Scoring 7 dimensions");
+  });
+  it("EvaluatingScreen surfaces evaluation failure without losing the interview", () => {
+    const html = renderToString(<EvaluatingScreen error="Scoring failed." />);
+    expect(html).toContain("Scoring failed.");
+    expect(html).toContain("Your interview is saved");
   });
   it("ResultsScreen renders scores", () => {
     const html = renderToString(

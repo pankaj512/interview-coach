@@ -1,15 +1,15 @@
-// H-Lobby (roadmap Phase 6): the final pre-interview step.
+// H-Lobby (feature 17b): the final pre-interview step on the approved
+// prototype look.
 //
 // The system chooses the practice — the Lobby shows the server recommendation
 // (type/topic/problem/difficulty/objective) and prepares the session. There is
-// no topic/difficulty/problem selection here (the manual Setup screen is
-// retired): "Begin interview" is gated on the microphone check AND the server's
-// voice readiness, so a session that would 503 on mint can never start.
+// no topic/difficulty/problem selection here: "Begin interview" is gated on
+// the microphone check AND the server's voice readiness, so a session that
+// would 503 on mint can never start.
 
 import { useCallback, useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Badge, Card, ChipList, CtaCard, SectionHead, VoiceRail, Wave } from "../ds/primitives.js";
 import { buildRecommendationView, recommendationSourceLabel } from "../dashboard.js";
 import type { SessionPlan } from "../flow.js";
 import {
@@ -20,13 +20,6 @@ import {
   type MicState,
   type SessionReadiness,
 } from "../lobby.js";
-
-const CRITERIA: readonly string[] = [
-  "Problem solving",
-  "Technical depth",
-  "Communication",
-  "Trade-off analysis",
-];
 
 function micHint(mic: MicState): string {
   switch (mic) {
@@ -52,6 +45,18 @@ function sessionHint(session: SessionReadiness): string {
     case "error":
       return "Couldn't reach the server to verify the session. Check your connection and retry.";
   }
+}
+
+function micMark(mic: MicState): "ok" | "busy" | "todo" {
+  if (mic === "ready") return "ok";
+  if (mic === "checking") return "busy";
+  return "todo";
+}
+
+function sessionMark(session: SessionReadiness): "ok" | "busy" | "todo" {
+  if (session === "ready") return "ok";
+  if (session === "checking") return "busy";
+  return "todo";
 }
 
 export function LobbyScreen({
@@ -135,125 +140,83 @@ export function LobbyScreen({
   const ready = canBegin(mic, session);
   const micRetryable = mic === "denied" || mic === "unsupported";
   const sessionRetryable = session === "unconfigured" || session === "error";
+  const problemTitle = view?.problemTitle ?? plan.problem?.title ?? null;
 
   return (
-    <div className="briefing-wrap">
-      <div className="screen" style={{ maxWidth: 1180 }}>
-        <div>
-          <ChipList label="Environment status">
-            <Badge tone={ready ? "pass" : "neutral"}>
-              {ready ? "[READY] Environment verified" : "[CHECK] Verifying environment"}
-            </Badge>
-            <Badge tone="neutral">{plan.difficulty}</Badge>
-            <Badge tone="neutral">{plan.durationMinutes} min</Badge>
-            <Badge tone="active">{plan.mode}</Badge>
-          </ChipList>
-          <h1 className="briefing-title" style={{ textAlign: "left", marginTop: 8 }}>
-            Interview simulation lobby — {config.interviewType === "dsa" ? "Coding" : config.interviewType}
-          </h1>
-          <p className="hint">All environment checks passed. Ready to initiate the voice session.</p>
-        </div>
-
-        <div className="two-col" style={{ gridTemplateColumns: "2fr 1fr", alignItems: "start" }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            <Card>
-              <SectionHead
-                title="Mic & audio readiness"
-                meta="Input device active"
-              />
-              <VoiceRail
-                state={
-                  <Badge tone={mic === "ready" ? "pass" : mic === "checking" ? "active" : "review"}>
-                    {mic === "ready" ? "[MIC] Ready" : `[MIC] ${micReadyLabel(mic)}`}
-                  </Badge>
-                }
-                waveform={<Wave active={mic === "ready"} live={mic === "checking"} />}
-                controls={
-                  <>
-                    {micRetryable && (
-                      <GhostButton onClick={() => void requestMic()}>Enable microphone</GhostButton>
-                    )}
-                    {sessionRetryable && (
-                      <GhostButton onClick={() => void checkSession()}>Retry session</GhostButton>
-                    )}
-                  </>
-                }
-                caption={
-                  <>
-                    {micHint(mic)} {sessionHint(session)}
-                  </>
-                }
-              />
-              <ul className="readiness-list" aria-live="polite" style={{ marginTop: 12 }}>
-                <li className="readiness-item">
-                  <Badge tone={mic === "ready" ? "pass" : "review"}>{micReadyLabel(mic)}</Badge>
-                </li>
-                <li className="readiness-item">
-                  <Badge tone={session === "ready" ? "pass" : "review"}>{sessionReadyLabel(session)}</Badge>
-                </li>
-              </ul>
-            </Card>
-
-            <Card>
-              <SectionHead title="Evaluation criteria" />
-              <ul className="criteria-list">
-                {CRITERIA.map((c) => (
-                  <li key={c}>{c}</li>
-                ))}
-              </ul>
-              <p className="hint">
-                The interviewer may interrupt with follow-up questions. Speak naturally — barge-in is
-                supported.
-              </p>
-            </Card>
+    <div className="lobby-wrap">
+      <p className="eyebrow">
+        Lobby · {config.interviewType === "dsa" ? "DSA" : config.interviewType} · {plan.difficulty} ·{" "}
+        {plan.durationMinutes} min
+      </p>
+      <h1>Preparing your interview</h1>
+      <p className="sub">
+        Each check gates the interview: Begin unlocks once everything passes. No voice session is
+        minted before that moment.
+      </p>
+      <div className="lobby-grid">
+        {view === null ? (
+          <div className="card">
+            <h2>Session details</h2>
+            <p className="hint">This session is not bound to a recommendation.</p>
+            <p className="hint">
+              {plan.difficulty} · {plan.durationMinutes} minutes · {plan.mode} · {plan.interaction}
+            </p>
           </div>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {view === null ? (
-              <Card>
-                <SectionHead title="Briefing summary" />
-                <p className="hint">This session is not bound to a recommendation.</p>
-                <p className="hint">
-                  {plan.difficulty} · {plan.durationMinutes} minutes · {plan.mode} · {plan.interaction}
-                </p>
-              </Card>
-            ) : (
-              <CtaCard
-                eyebrow={`${view.typeLabel} · ${recommendationSourceLabel(plan.recommendation?.source ?? "fallback")}`}
-                title={view.topicName}
-                sub={
-                  view.moduleName ??
-                  `${plan.difficulty} · ${plan.durationMinutes} minutes · ${plan.mode} · ${plan.interaction}`
-                }
-              >
-                {view.problemTitle !== null && (
-                  <p className="recommendation-problem">
-                    {view.problemTitle}
-                    {view.problemDifficulty !== null && (
-                      <Badge tone="neutral">{view.problemDifficulty}</Badge>
-                    )}
-                  </p>
-                )}
-                <p className="recommendation-reason">{view.reason}</p>
-              </CtaCard>
-            )}
-
-            <Card>
-              <SectionHead title="Begin" />
-              <div className="row actions">
-                <PrimaryButton onClick={onBegin} disabled={!ready}>
-                  Begin interview
-                </PrimaryButton>
-                <GhostButton onClick={onChangeGoal}>Change goal</GhostButton>
-                <GhostButton onClick={onBack}>Back</GhostButton>
-              </div>
-              {!ready && (
-                <p className="hint">Begin unlocks when the microphone and voice session are both ready.</p>
-              )}
-            </Card>
+        ) : (
+          <div className="rec">
+            <span className="tag">{view.typeLabel}</span>
+            <span className="tag">{recommendationSourceLabel(plan.recommendation?.source ?? "fallback")}</span>
+            <h2>
+              {view.topicName}
+              {view.problemTitle !== null && <> · {view.problemTitle}</>}{" "}
+              {view.problemDifficulty !== null && <span className="lvl">{view.problemDifficulty}</span>}
+            </h2>
+            {view.moduleName !== null && <p>{view.moduleName}</p>}
+            <p className="reason">{view.reason}</p>
+          </div>
+        )}
+        <div className="card">
+          <h2>Setup checks</h2>
+          <ul className="checks">
+            <li>
+              <span className="mark ok">✓</span> Problem loaded
+              <span className="detail">{problemTitle ?? "waiting"}</span>
+            </li>
+            <li>
+              <span className={`mark ${micMark(mic)}`}>{mic === "ready" ? "✓" : ""}</span>{" "}
+              {micReadyLabel(mic)}
+              <span className="detail">{mic === "checking" ? "requesting" : mic}</span>
+            </li>
+            <li>
+              <span className={`mark ${sessionMark(session)}`}>{session === "ready" ? "✓" : ""}</span>{" "}
+              {sessionReadyLabel(session)}
+              <span className="detail">{session === "checking" ? "verifying" : session}</span>
+            </li>
+          </ul>
+          {(mic !== "ready" || session !== "ready") && (
+            <p className="hint">
+              {micHint(mic)} {sessionHint(session)}
+            </p>
+          )}
+          <div className="row actions">
+            {micRetryable && <GhostButton onClick={() => void requestMic()}>Enable microphone</GhostButton>}
+            {sessionRetryable && <GhostButton onClick={() => void checkSession()}>Retry session</GhostButton>}
           </div>
         </div>
       </div>
+      {ready && (
+        <div className="banner" role="status">
+          All checks green — begin when ready.
+        </div>
+      )}
+      <div className="row actions">
+        <PrimaryButton onClick={onBegin} disabled={!ready}>
+          Begin interview
+        </PrimaryButton>
+        <GhostButton onClick={onChangeGoal}>Change goal</GhostButton>
+        <GhostButton onClick={onBack}>Back</GhostButton>
+      </div>
+      {!ready && <p className="hint">Begin unlocks when the microphone and voice session are both ready.</p>}
     </div>
   );
 }

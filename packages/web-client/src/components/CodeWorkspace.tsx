@@ -49,7 +49,11 @@ export function CodeWorkspace({
 
   const sample = sampleCaseFor(problem);
   const placeholder =
-    language === "python" ? "def solve(nums, target):\n    return []" : "function solve(nums, target) {\n  return [];\n}";
+    language === "python"
+      ? "def solve(nums, target):\n    return []"
+      : language === "cpp"
+        ? "Value solve(Value a, Value b) {\n  return a;\n}"
+        : "function solve(nums, target) {\n  return [];\n}";
 
   async function testCode() {
     if (sample === null) return;
@@ -78,8 +82,9 @@ export function CodeWorkspace({
   }
 
   return (
-    <section className="card code-workspace" aria-label="Code editor">
-      <div className="code-head">
+    <section className="card" aria-label="Code editor">
+      <div className="editorbar">
+        <strong>Editor</strong>
         <select
           value={language}
           onChange={(e) => setLanguage(e.target.value as CodeLanguage)}
@@ -87,7 +92,9 @@ export function CodeWorkspace({
         >
           <option value="python">Python</option>
           <option value="javascript">JavaScript</option>
+          <option value="cpp">C++</option>
         </select>
+        <span className="note">boilerplate provided per problem</span>
       </div>
       <textarea
         className="code"
@@ -97,9 +104,9 @@ export function CodeWorkspace({
         spellCheck={false}
         aria-label="Candidate code"
       />
-      <div className="code-actions">
+      <div className="actions">
         <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
-          {busy ? "Testing…" : "Test code"}
+          {busy ? "Testing…" : "Test sample cases"}
         </PrimaryButton>
         <span className="hint">
           {sample === null ? "No sample test case available for this problem." : "Runs your code against the sample test case."}
@@ -122,6 +129,7 @@ export function CodeWorkspace({
           </ul>
         </div>
       )}
+      <p className="note">No Submit button: the interviewer reads the code and judges correctness in conversation. Runs execute in the isolated sandbox.</p>
     </section>
   );
 }
