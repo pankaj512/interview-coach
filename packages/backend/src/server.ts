@@ -2,10 +2,19 @@
 // Run: DATABASE_URL=... pnpm --filter @interview-coach/backend dev
 // Problems must be seeded first: pnpm --filter @interview-coach/db db:seed
 
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { createDatabase, createDrizzleRepositories } from "@interview-coach/db";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
+
+// Local-dev convenience: read the repo-root .env when present so directly-run
+// `dev`/`start` picks up DATABASE_URL without manual sourcing. Exported
+// variables keep precedence (native loader never overrides), and a missing
+// file boots exactly as before (compose and production inject env directly).
+const rootEnvFile = fileURLToPath(new URL("../../../.env", import.meta.url));
+if (existsSync(rootEnvFile)) process.loadEnvFile(rootEnvFile);
 
 const config = loadConfig();
 const database = createDatabase();
