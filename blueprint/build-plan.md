@@ -39,6 +39,7 @@ per-interview ownership, audit remediation P1-P8.
   - [ ] 17d. **Account and history screens** - rebuild History, Progress, Settings, Profile; delete consumed `prototypes/`
 - [ ] 18. **Problem content enrichment** - statement text, sample cases, and per-language boilerplate per problem, sourced via external lookup for the problem URL; enhances the problem pane post-MVP
 - [ ] 19. **Loop verification** - end-to-end dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB, no new product functionality
+- [x] 20. **Client URL routing** - History-API routing for the web client (no new router dependency): every nav view and auth/ritual state gets a real URL, browser back/forward works, refresh and deep links land somewhere sane; in-page `#how/#scoring/#why` anchors keep working
 
 ## Deferred to v2 - not next, listed so nothing is lost
 

@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 14adfffa5bd2d677e1a585fe3d93157426a64835cefd076731b538916fd7a85d -->
+<!-- blueprint:source-hash 41e2f98304415d64005fd9b855e2893a5639f8f9aefa5fb0eb1cb74167846dab -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -48,7 +48,7 @@ Shipped (1-13):
 12. **Adaptive loop** - evaluation triggers supersede + regenerate; loop metrics.
 13. **History + progress** - server-backed views; localStorage authority retired.
 
-Next (14-19):
+Next (14-20):
 
 14. **Green main** - fix 2 typecheck errors + 3 test failures.
 15. **UI prototype** - throwaway mockups rethinking the client; approve before rewrite.
@@ -56,6 +56,7 @@ Next (14-19):
 17. **Fresh UI rebuild** - screens/components from scratch on the approved prototype; wiring kept.
 18. **Problem enrichment** - statement, samples, boilerplate per problem (title-only until then).
 19. **Loop verification** - end-to-end pass against a live DB.
+20. **Client URL routing** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings; landing `#how/#scoring/#why` anchors keep working.
 
 Deferred to v2: security/observability hardening, testing consolidation,
 final integration, prod identity + voice, multi-track expansion.
@@ -145,9 +146,11 @@ None established. No ads, memberships, or payments in code or docs.
 
 ## UI/UX
 
-Client is under rethink (look, flow, and code); the updated
-`docs/interview-coach-ui-specification.md` plus an approved prototype define
-the target. Expected ritual flow, pending prototype confirmation:
+Client rethink approved and rebuild underway: the approved prototype plus
+`docs/interview-coach-ui-specification.md` (locked target) define the look.
+Shipped: theme shell + public screens (17a), practice-loop screens (17b),
+two auth-entry/nav fixes. Pending: 17c/17d screens, item 20 client URL
+routing. Confirmed ritual flow:
 
 - `/` landing -> sign-in -> onboarding -> dashboard (recommendation CTA) ->
   lobby (automated checks) -> live DSA (problem + editor) -> evaluating ->
@@ -171,5 +174,4 @@ the target. Expected ritual flow, pending prototype confirmation:
 ## Open questions
 
 - > TODO (confirm): broader tracks beyond DSA and their timing.
-- > TODO (confirm): ritual flow survives the prototype, or record its replacement.
 - > TODO (confirm): monetization, if any.

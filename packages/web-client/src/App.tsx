@@ -36,6 +36,14 @@ import { SignInScreen } from "./screens/SignInScreen.js";
 import { TranscriptReviewScreen } from "./screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "./screens/WeakAreasScreen.js";
 import { clearAuthSession, useAuthSession } from "./state/auth-store.js";
+import {
+  currentPath,
+  initialSnapshot,
+  pathForSnapshot,
+  pushPath,
+  replacePath,
+  resolvePath,
+} from "./state/use-client-router.js";
 import { useDashboard, type DashboardData } from "./state/use-dashboard.js";
 import { formatApiError, useBackendClient, type LiveEvent } from "./state/use-interview.js";
 
@@ -92,8 +100,12 @@ export function App() {
   const session = useAuthSession();
   const [guestMode, setGuestMode] = useState(false);
   const dashboardData = useDashboard(backend, session !== null && !guestMode);
-  const [nav, setNav] = useState<NavView | null>("dashboard");
-  const [flow, setFlow] = useState<Flow | null>(null);
+  const [nav, setNav] = useState<NavView | null>(
+    () => initialSnapshot(currentPath(), session !== null).nav,
+  );
+  const [flow, setFlow] = useState<Flow | null>(
+    () => initialSnapshot(currentPath(), session !== null).flow,
+  );
   const [profile, setProfile] = useState<SerializedUserProfile | null>(null);
   const [profileState, setProfileState] = useState<ProfileState>(() =>
     session !== null ? "loading" : "idle",
@@ -214,11 +226,20 @@ export function App() {
   function navigate(key: NavKey) {
     setNav(key);
     setFlow(null);
+    pushPath(pathForSnapshot(key, null, session !== null || guestMode));
   }
 
   function goAuth(target: "signin" | "signup" | "profile") {
     setNav(null);
     setFlow(target);
+    if (session === null && !guestMode && (target === "signin" || target === "signup")) {
+      pushPath(`/${target}`);
+    }
+  }
+
+  function closeAuthModal() {
+    setFlow(null);
+    pushPath("/");
   }
 
   async function handleSignOut() {
@@ -280,6 +301,7 @@ export function App() {
         setStale(false);
         setNav(null);
         setFlow("lobby");
+        pushPath("/lobby");
       } catch (e) {
         setDashboardError(formatApiError(e));
       } finally {
@@ -303,7 +325,11 @@ export function App() {
       // refresh the server-backed history instead of recording a local entry.
       remember();
       setFlow("evaluating");
-      evaluatingTimer.current = window.setTimeout(() => setFlow("results"), 1800);
+      replacePath("/evaluating");
+      evaluatingTimer.current = window.setTimeout(() => {
+        setFlow("results");
+        replacePath("/results");
+      }, 1800);
     },
     [remember],
   );
@@ -324,6 +350,7 @@ export function App() {
       setStale(false);
       setNav(null);
       setFlow("results");
+      pushPath("/results");
     } catch (e) {
       setHistoryError(`Could not load ${entry.id}: ${formatApiError(e)}`);
     } finally {
@@ -358,6 +385,48 @@ export function App() {
     navigate("dashboard");
   }
 
+  // ---- Client URL routing (feature 20) ----
+  // The URL mirrors nav/flow: user navigations pushed above, automatic
+  // transitions replaced, and the normalize effect repairs the URL when a
+  // gate overrides what renders (sign-out, auth success, onboarding).
+  // These effects sit above every early return so hook order never shifts.
+  const signedIn = session !== null || guestMode;
+  useEffect(() => {
+    const desired = pathForSnapshot(nav, flow, signedIn);
+    if (desired !== null && currentPath() !== desired) {
+      replacePath(desired);
+    }
+  }, [nav, flow, signedIn]);
+
+  // Back/forward maps the URL back onto nav/flow through the same fallback
+  // table (leaving /signin|/signup closes the modal). Hash-only entries
+  // resolve to the current state and are ignored, so in-page anchors keep
+  // scrolling natively.
+  useEffect(() => {
+    const onPopState = () => {
+      const resolved = resolvePath(window.location.pathname, {
+        signedIn: session !== null || guestMode,
+        canLobby: interview !== null && sessionPlan !== null,
+        canResults: finalSnapshot !== null,
+        canTranscript: finalSnapshot !== null && interview !== null,
+      });
+      const next =
+        "redirect" in resolved
+          ? initialSnapshot(resolved.redirect, session !== null || guestMode)
+          : resolved;
+      if (next.nav !== nav || next.flow !== flow) {
+        if ("redirect" in resolved) {
+          replacePath(resolved.redirect);
+        }
+        setNav(next.nav);
+        setFlow(next.flow);
+        window.scrollTo(0, 0);
+      }
+    };
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [nav, flow, session, guestMode, interview, sessionPlan, finalSnapshot]);
+
   // ---- First-run gate (Phase 2) ----
   // No anonymous loop: signed-out users only get the landing/sign-in, and a
   // signed-in user with no profile is sent to required onboarding.
@@ -384,7 +453,7 @@ export function App() {
           ) : null
         }
         authModalLabel={flow === "signup" ? "Create account" : "Sign in"}
-        onCloseAuth={() => setFlow(null)}
+        onCloseAuth={closeAuthModal}
       />
     );
   }
@@ -477,6 +546,7 @@ export function App() {
             onWeakAreas={() => {
               setNav(null);
               setFlow("weakareas");
+              pushPath("/weakareas");
             }}
             onStartRecommendation={() => {
               if (session === null) {
@@ -529,7 +599,10 @@ export function App() {
         <LobbyScreen
           backend={backend}
           plan={sessionPlan}
-          onBegin={() => setFlow("live")}
+          onBegin={() => {
+            setFlow("live");
+            pushPath("/live");
+          }}
           onChangeGoal={() => goAuth("profile")}
           onBack={() => navigate("dashboard")}
         />
@@ -555,21 +628,43 @@ export function App() {
             stale={stale}
             onHistory={() => navigate("history")}
             onNew={startNew}
-            onTranscript={() => setFlow("transcript")}
-            onWeakAreas={() => setFlow("weakareas")}
-            onFeedback={() => setFlow("feedback")}
+            onTranscript={() => {
+              setFlow("transcript");
+              pushPath("/transcript");
+            }}
+            onWeakAreas={() => {
+              setFlow("weakareas");
+              pushPath("/weakareas");
+            }}
+            onFeedback={() => {
+              setFlow("feedback");
+              pushPath("/feedback");
+            }}
           />
           {historyError !== null && <p className="error">{historyError}</p>}
         </div>
       )}
       {flow === "feedback" && (
         <div className="shell-content standalone">
-          <FeedbackDetailScreen evaluation={finalSnapshot?.evaluation ?? null} onBack={() => setFlow("results")} />
+          <FeedbackDetailScreen
+            evaluation={finalSnapshot?.evaluation ?? null}
+            onBack={() => {
+              setFlow("results");
+              pushPath("/results");
+            }}
+          />
         </div>
       )}
       {flow === "transcript" && interview !== null && (
         <div className="shell-content standalone">
-          <TranscriptReviewScreen interview={interview} events={events} onBack={() => setFlow("results")} />
+          <TranscriptReviewScreen
+            interview={interview}
+            events={events}
+            onBack={() => {
+              setFlow("results");
+              pushPath("/results");
+            }}
+          />
         </div>
       )}
       {flow === "weakareas" && (

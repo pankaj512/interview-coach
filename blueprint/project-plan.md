@@ -38,9 +38,9 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 - Adaptive loop (evaluation -> skill update -> regenerated recommendation)
 - Server-backed History, Progress, Weak-Areas views
 
-Next (unchecked in `build-plan.md` 14-19): green main, UI prototype,
+Next (unchecked in `build-plan.md` 14-20): green main, UI prototype,
 isolated multi-language sandbox, fresh UI rebuild, problem content
-enrichment, loop verification.
+enrichment, loop verification, client URL routing.
 
 ## 4. Data - What are we storing?
 
@@ -84,23 +84,21 @@ Intentional, keep as-is (per user interview):
 
 ## 7. UI/UX - How should this look and feel?
 
-> Web client is being rethought from fresh (per user review). Nothing below
-> is settled until the new prototype is approved.
+> Web client rethink approved and rebuild underway (prototype item 15
+> approved; `docs/interview-coach-ui-specification.md` is the locked target).
 
-- Current client (16 screens, ~3.7k lines) mixes three generations: the
-  spec rebuild, Stitch v1.1 restyles, and the guest landing. Look, flow,
-  and code are all under review.
-- Rework direction: throw away screens/components and rebuild on the kept
+- Previous client (16 screens, ~3.7k lines) mixed three generations: the
+  spec rebuild, Stitch v1.1 restyles, and the guest landing. Rebuild
+  direction: throw away screens/components and rebuild on the kept
   wiring (`api/backend-client`, voice-client/tool-forwarder, backend APIs).
-  `docs/interview-coach-ui-specification.md` was surgically updated to the
-  DSA-only voice-only direction and stands as the current spec; new mockups
-  (`/prototype`, build-plan item 15) refine it before the rebuild.
-- Ritual flow is expected to stay (Landing -> Sign-in -> Onboarding ->
-  Dashboard -> Lobby -> Live -> Evaluating -> Results ->
-  Transcript/Feedback -> History/Progress/Weak-Areas/Settings) unless the
-  prototype justifies a change.
-  > TODO (confirm): confirm the ritual flow survives the prototype, or record
-  > its replacement here.
+- Shipped: theme shell + public screens (17a), practice-loop screens
+  Dashboard/Lobby/Live/Evaluating (17b), two auth-entry/nav fixes (dead
+  entry flows, auth nav polish). Pending: 17c/17d screens, item 20 client
+  URL routing.
+- Ritual flow confirmed by the approved prototype and the shipped rebuild:
+  Landing -> Sign-in -> Onboarding -> Dashboard -> Lobby -> Live ->
+  Evaluating -> Results -> Transcript/Feedback ->
+  History/Progress/Weak-Areas/Settings.
 - Backend stays the design constraint: backend owns truth, browser never
   authoritative; small API additions only with a proven gap.
 
