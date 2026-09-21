@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 41e2f98304415d64005fd9b855e2893a5639f8f9aefa5fb0eb1cb74167846dab -->
+<!-- blueprint:source-hash e9d5dd506ad461fa384b66f20138884025822051dfc3beda54453d4797999c10 -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -28,11 +28,11 @@ is chosen by the system from persisted skill state, not by browsing.
 - Trust boundaries from reachability: session-scoped APIs, server-side LLM
   credentials, `call_id`-idempotent tool calls, quotas/rate limits as
   defense-in-depth. No enterprise, multi-tenant, hostile-user, or
-  compliance requirements inferred. Container isolation deferred to v2.
+  compliance requirements inferred.
 
 ## Features
 
-Shipped (1-13):
+Shipped (1-16, 17a/b, 20):
 
 1. **Architecture principles** - ADR-002 alignment; LLM advisory, backend owns truth.
 2. **Profile + onboarding** - `UserProfile`, taxonomy, required first-run gate.
@@ -47,16 +47,18 @@ Shipped (1-13):
 11. **Skill update** - deterministic monotonic mastery, idempotent per evaluation.
 12. **Adaptive loop** - evaluation triggers supersede + regenerate; loop metrics.
 13. **History + progress** - server-backed views; localStorage authority retired.
+14. **Green main** - typecheck + test failures fixed; CI green.
+15. **UI prototype** - throwaway mockups rethinking the client; locked target for the rebuild.
+16. **Isolated sandbox** - Docker-isolated C++/JS/Python execution behind the existing sandbox routes; local runner retired.
+- **17a/b (UI rebuild, part)** - theme shell + public screens, then Dashboard/Lobby/Live/Evaluating on the new theme.
+- **20. Client URL routing** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
 
-Next (14-20):
+Next (17c/d, 18-19):
 
-14. **Green main** - fix 2 typecheck errors + 3 test failures.
-15. **UI prototype** - throwaway mockups rethinking the client; approve before rewrite.
-16. **Isolated sandbox** - C++/JS/Python execution, properly isolated; retires the local runner.
-17. **Fresh UI rebuild** - screens/components from scratch on the approved prototype; wiring kept.
-18. **Problem enrichment** - statement, samples, boilerplate per problem (title-only until then).
-19. **Loop verification** - end-to-end pass against a live DB.
-20. **Client URL routing** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings; landing `#how/#scoring/#why` anchors keep working.
+- **17c. Feedback screens** - rebuild Results, Transcript review, Feedback detail, Weak areas.
+- **17d. Account and history screens** - rebuild History, Progress, Settings, Profile; delete consumed `prototypes/`.
+- **18. Problem enrichment** - statement, samples, boilerplate per problem (title-only until then).
+- **19. Loop verification** - end-to-end pass against a live DB; no new functionality.
 
 Deferred to v2: security/observability hardening, testing consolidation,
 final integration, prod identity + voice, multi-track expansion.
@@ -113,8 +115,8 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 
 ### CodeSubmission / CodeRun
 
-- Submissions (`javascript|python` today; C++/JS/Python after item 16; code <=50k)
-  -> runs (test cases 1-50, hidden actuals masked, timeout/error as results)
+- Submissions (`c++|javascript|python`; code <=50k) -> runs (test cases
+  1-50, hidden actuals masked, timeout/error as results)
 
 ### Recommendation
 
@@ -149,8 +151,8 @@ None established. No ads, memberships, or payments in code or docs.
 Client rethink approved and rebuild underway: the approved prototype plus
 `docs/interview-coach-ui-specification.md` (locked target) define the look.
 Shipped: theme shell + public screens (17a), practice-loop screens (17b),
-two auth-entry/nav fixes. Pending: 17c/17d screens, item 20 client URL
-routing. Confirmed ritual flow:
+client URL routing (20), two auth-entry/nav fixes. Pending: 17c/17d screens.
+Confirmed ritual flow:
 
 - `/` landing -> sign-in -> onboarding -> dashboard (recommendation CTA) ->
   lobby (automated checks) -> live DSA (problem + editor) -> evaluating ->
@@ -163,6 +165,7 @@ routing. Confirmed ritual flow:
 - `docker-compose.yml`: `db` (postgres:16), `backend` (node:24-slim,
   boot-migrates, `HOST:PORT`), `web` (nginx:alpine `:8080`, SPA fallback,
   `VITE_BACKEND_URL` build-arg). Seed via one-off `db:seed`.
+- Sandbox execution needs a Docker socket mount plus the configured runner images.
 - Commands: `pnpm install|typecheck|test|build|lint`; per-package
   `dev|start`, `db:generate|db:migrate|db:seed`.
 - Probes `GET /api/health|ready`; metrics `GET /api/metrics|/metrics/prometheus`.

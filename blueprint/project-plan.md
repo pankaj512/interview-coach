@@ -92,9 +92,9 @@ Intentional, keep as-is (per user interview):
   direction: throw away screens/components and rebuild on the kept
   wiring (`api/backend-client`, voice-client/tool-forwarder, backend APIs).
 - Shipped: theme shell + public screens (17a), practice-loop screens
-  Dashboard/Lobby/Live/Evaluating (17b), two auth-entry/nav fixes (dead
-  entry flows, auth nav polish). Pending: 17c/17d screens, item 20 client
-  URL routing.
+  Dashboard/Lobby/Live/Evaluating (17b), client URL routing (20), two
+  auth-entry/nav fixes (dead entry flows, auth nav polish).
+  Pending: 17c/17d screens.
 - Ritual flow confirmed by the approved prototype and the shipped rebuild:
   Landing -> Sign-in -> Onboarding -> Dashboard -> Lobby -> Live ->
   Evaluating -> Results -> Transcript/Feedback ->
@@ -121,5 +121,7 @@ Intentional, keep as-is (per user interview):
 - Proportional engineering applies: no enterprise, multi-tenant, hostile-user, or
   compliance requirements inferred. Trust boundaries derived from reachability:
   session-scoped APIs, server-side LLM credentials, validated tool calls with
-  `call_id` idempotency, quotas/rate limits as defense-in-depth (container
-  isolation deferred to v2).
+  `call_id` idempotency, quotas/rate limits as defense-in-depth. Candidate
+  code execution is container-isolated via the Docker sandbox (build-plan
+  item 16, shipped); remaining production security/observability hardening
+  (roadmap Phase 14) is deferred to v2.
