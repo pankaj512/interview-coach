@@ -178,7 +178,7 @@ describe("BackendClient", () => {
       endpoint: "https://voice",
       model: "gpt-realtime-mini",
       apiVersion: "2026-04-10",
-      voice: "en-US-Andrew:DragonHDLatestNeural",
+      voice: "alloy",
       ttlSeconds: 600,
       expiresAt: "2026-09-11T00:10:00.000Z",
       credential: { tokenType: "api-key", token: "dev-only" },

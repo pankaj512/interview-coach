@@ -42,7 +42,7 @@ services:
       AZURE_VOICE_API_KEY: ${AZURE_VOICE_API_KEY:-}
       AZURE_VOICE_MODEL: ${AZURE_VOICE_MODEL:-gpt-realtime-mini}
       AZURE_VOICE_API_VERSION: ${AZURE_VOICE_API_VERSION:-2026-04-10}
-      AZURE_VOICE_VOICE: ${AZURE_VOICE_VOICE:-en-US-Andrew:DragonHDLatestNeural}
+      AZURE_VOICE_VOICE: ${AZURE_VOICE_VOICE:-alloy}
     ports:
       - "${BACKEND_PORT:-3000}:3000"
     volumes:

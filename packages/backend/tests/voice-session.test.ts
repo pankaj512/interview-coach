@@ -37,7 +37,7 @@ describe("voice-session", () => {
     expect(session["credential"]).toEqual({ tokenType: "bearer", token: "eph_test_token" });
     expect(session["credentialMode"]).toBe("test");
     expect(session["model"]).toBe("gpt-realtime-mini");
-    expect(session["voice"]).toBe("en-US-Andrew:DragonHDLatestNeural");
+    expect(session["voice"]).toBe("alloy");
     expect(session["websocketUrl"] as string).toContain("/voice-live/realtime");
     expect(session["sessionConfig"]).toMatchObject({
       turnDetection: { type: "server_vad", threshold: 0.35 },
@@ -291,5 +291,16 @@ describe("voice-session", () => {
     const anonInstructions = (anon.json() as { session: { instructions: string } }).session.instructions;
     expect(anonInstructions).not.toContain("Learner:");
     expect(anonInstructions).toContain("Current problem: Move Zeroes (Easy)");
+  });
+
+  // Voice Live fix: the default voice must be endpoint-allowed (Azure rejects
+  // Azure speech names with invalid_session_update_message on session.voice).
+  it("defaults AZURE_VOICE_VOICE to an endpoint-allowed realtime voice", () => {
+    const env = { ...process.env };
+    delete env["AZURE_VOICE_VOICE"];
+    const voice = loadConfig(env).voice.voiceName;
+    expect(["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse", "marin", "cedar"]).toContain(
+      voice,
+    );
   });
 });

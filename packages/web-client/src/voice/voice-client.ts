@@ -39,6 +39,10 @@ export type VoiceConnectionState =
   | "closed"
   | "failed";
 
+// Numeric WebSocket.OPEN without touching the DOM global (keeps the fakes in
+// vitest free of browser globals).
+const WEB_SOCKET_OPEN = 1;
+
 export interface VoiceServerEvent {
   readonly type: string;
   readonly delta?: string;
@@ -696,9 +700,13 @@ export class VoiceInterviewClient {
   }
 
   private sendJson(payload: unknown): void {
-    if (this.ws === null) return;
+    const ws = this.ws;
+    // Skip sends on a closing/closed socket: the browser logs failed sends
+    // to the console even when the throw is caught below, which produced the
+    // CLOSING/CLOSED spam when the mic worklet streamed into a dead socket.
+    if (ws === null || ws.readyState !== WEB_SOCKET_OPEN) return;
     try {
-      this.ws.send(JSON.stringify(payload));
+      ws.send(JSON.stringify(payload));
     } catch {
       // Send failure surfaces via onclose/onerror; never throw into handlers.
     }

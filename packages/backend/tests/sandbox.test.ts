@@ -302,7 +302,7 @@ liveDescribe("sandbox tools via tool-exec", () => {
 });
 
 describe("voice-session sandbox context", () => {
-  it("advertises submit/run tools and code progress in instructions", async () => {
+  it("advertises code persistence and code progress in instructions", async () => {
     const b = useBackend();
     const { id } = await createStartedInterview(b);
     await submit(b, id, JS_SOLVE);
@@ -313,8 +313,8 @@ describe("voice-session sandbox context", () => {
     expect(res.statusCode).toBe(201);
     const session = (res.json() as { session: Record<string, unknown> }).session;
     const instructions = session["instructions"] as string;
-    expect(instructions).toContain("submit_solution");
-    expect(instructions).toContain("run_code");
+    expect(instructions).toContain("submit_interview_data");
+    expect(instructions).toContain("Code execution stays outside the realtime tools");
     expect(instructions).toContain("1 submission, not run yet");
   });
 });

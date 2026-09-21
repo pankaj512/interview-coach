@@ -200,8 +200,10 @@ describe("S5 structured voice instructions", () => {
     expect(res.statusCode).toBe(201);
     const instructions = (res.json() as { session: { instructions: string } }).session.instructions;
     expect(instructions).toContain("Two Sum");
-    expect(instructions).toContain("get_problem_hint");
-    expect(instructions).toContain("record_candidate_answer");
+    expect(instructions).toContain("submit_interview_data");
+    expect(instructions).toContain("get_current_interview");
+    expect(instructions).not.toContain("get_problem_hint");
+    expect(instructions).not.toContain("record_candidate_answer");
     expect(instructions).toContain("Never reveal");
   });
 });

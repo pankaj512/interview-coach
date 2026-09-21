@@ -98,7 +98,7 @@ function mint(): VoiceSessionPayload {
     endpoint: "https://voice.example",
     model: "gpt-realtime-mini",
     apiVersion: "2026-04-10",
-    voice: "en-US-Andrew:DragonHDLatestNeural",
+    voice: "alloy",
     ttlSeconds: 600,
     expiresAt: "2026-09-11T00:10:00.000Z",
     credential: { tokenType: "api-key", token: "dev-only-key" },
@@ -203,13 +203,25 @@ describe("VoiceInterviewClient", () => {
     expect(new URL(socket.url).searchParams.get("api-key")).toBe("dev-only-key");
     const update = JSON.parse(socket.sent[0] as string) as { type: string; session: Record<string, unknown> };
     expect(update.type).toBe("session.update");
-    expect(update.session["voice"]).toBe("en-US-Andrew:DragonHDLatestNeural");
+    expect(update.session["voice"]).toBe("alloy");
     expect(update.session["turn_detection"]).toMatchObject({ type: "server_vad", threshold: 0.35 });
     expect((update.session["tools"] as unknown[]).length).toBe(4);
     expect(socket.sentTypes()).toContain("response.create");
     expect(h.client.state).toBe("connected");
     expect(h.states).toContain("connected");
     expect(h.mic.started).toBe(true);
+  });
+
+  it("drops mic audio once the socket leaves OPEN (no CLOSING/CLOSED send spam)", async () => {
+    const h = harness();
+    const pending = h.client.connect("int_1", mint());
+    h.socket().open();
+    await pending;
+    const socket = h.socket();
+    const sentBefore = socket.sent.length;
+    socket.readyState = 3;
+    h.client.sendMicAudio("AAAA");
+    expect(socket.sent.length).toBe(sentBefore);
   });
 
   it("routes audio deltas to playback and tracks speaker state", async () => {

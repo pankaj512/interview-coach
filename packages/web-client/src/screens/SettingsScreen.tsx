@@ -147,7 +147,7 @@ export function SettingsScreen({
         </div>
         <div className="setting-row">
           <span>Voice</span>
-          <span className="hint">Andrew (DragonHD)</span>
+          <span className="hint">Alloy</span>
         </div>
         <div className="setting-row">
           <span>Test microphone</span>

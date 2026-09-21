@@ -128,7 +128,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       ),
       model: str(env, "AZURE_VOICE_MODEL", "gpt-realtime-mini"),
       apiVersion: str(env, "AZURE_VOICE_API_VERSION", "2026-04-10"),
-      voiceName: str(env, "AZURE_VOICE_VOICE", "en-US-Andrew:DragonHDLatestNeural"),
+      // Realtime voices are a closed set (alloy, ash, ballad, coral,
+      // echo, sage, shimmer, verse, marin, cedar): Azure rejects Azure
+      // speech names such as en-US-Andrew with
+      // invalid_session_update_message on session.voice.
+      voiceName: str(env, "AZURE_VOICE_VOICE", "alloy"),
       ephemeralTtlSeconds: num(env, "VOICE_EPHEMERAL_TTL_SECONDS", 600),
       maxActiveSessions: num(env, "VOICE_MAX_ACTIVE_SESSIONS", 200),
     },

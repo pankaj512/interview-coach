@@ -15,7 +15,7 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
     endpoint: "https://voice.example",
     model: "gpt-realtime-mini",
     apiVersion: "2026-04-10",
-    voice: "en-US-Andrew:DragonHDLatestNeural",
+    voice: "alloy",
     ttlSeconds: 600,
     expiresAt: "2026-09-11T00:10:00.000Z",
     credential: { tokenType: "api-key", token: "dev-only-key" },
@@ -66,7 +66,7 @@ describe("session wire format", () => {
     expect(update.type).toBe("session.update");
     expect(update.session["modalities"]).toEqual(["text", "audio"]);
     expect(update.session["instructions"]).toBe("interview instructions");
-    expect(update.session["voice"]).toBe("en-US-Andrew:DragonHDLatestNeural");
+    expect(update.session["voice"]).toBe("alloy");
     expect(update.session["input_audio_format"]).toBe("pcm16");
     expect(update.session["output_audio_format"]).toBe("pcm16");
     expect(update.session["turn_detection"]).toMatchObject({
