@@ -112,12 +112,13 @@ export function buildProgress(
   };
 }
 
-/** Band label for an overall score out of 10 (ux-spec §22 "Strong"). */
+/** Band label for an overall score out of 100 (ux-spec §22). Thresholds mirror
+ * the backend recommendation bands (hire >= 85, lean_hire >= 70). */
 export function overallBand(score: number | null): string {
   if (score === null) return "Not yet scored";
-  if (score >= 8) return "Strong";
-  if (score >= 7) return "Solid";
-  if (score >= 5.5) return "Developing";
+  if (score >= 85) return "Strong";
+  if (score >= 70) return "Solid";
+  if (score >= 50) return "Developing";
   return "Needs work";
 }
 

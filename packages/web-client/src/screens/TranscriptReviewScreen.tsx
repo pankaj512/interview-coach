@@ -1,43 +1,91 @@
 // H-Transcript-Review (ux-spec §25): full timestamped transcript + export.
+// Turns come from the live session first; History entries carry no live
+// events, so an empty event list falls back to the server transcript.
 
-import type { SerializedInterview } from "../api/types.js";
-import { GhostButton } from "../ds/buttons.js";
-import { Badge, Card, ChipList, SectionHead, TimelineRow } from "../ds/primitives.js";
+import { useEffect, useState } from "react";
+import type { BackendClient } from "../api/backend-client.js";
+import type { SerializedInterview, SerializedInterviewMessage } from "../api/types.js";
+import { GhostButton, PrimaryButton } from "../ds/buttons.js";
+import { Card } from "../ds/primitives.js";
 import type { LiveEvent } from "../state/use-interview.js";
 
-interface Turn {
+export interface TranscriptTurn {
   readonly at: string;
   readonly role: "Interviewer" | "You";
   readonly text: string;
 }
 
-function turnsFrom(events: readonly LiveEvent[]): readonly Turn[] {
-  const turns: Turn[] = [];
+export function transcriptTurns(
+  events: readonly LiveEvent[],
+  messages: readonly SerializedInterviewMessage[],
+): readonly TranscriptTurn[] {
+  const live: TranscriptTurn[] = [];
   for (const event of events) {
-    if (event.kind === "assistant") turns.push({ at: event.at, role: "Interviewer", text: event.detail });
-    else if (event.kind === "candidate") turns.push({ at: event.at, role: "You", text: event.detail });
+    if (event.kind === "assistant") live.push({ at: event.at, role: "Interviewer", text: event.detail });
+    else if (event.kind === "candidate") live.push({ at: event.at, role: "You", text: event.detail });
   }
-  return turns;
+  if (live.length > 0) return live;
+  const server: TranscriptTurn[] = [];
+  for (const message of messages) {
+    if (message.role === "system") continue;
+    server.push({
+      at: message.createdAt,
+      role: message.role === "interviewer" ? "Interviewer" : "You",
+      text: message.content,
+    });
+  }
+  return server;
 }
 
-function formatTime(iso: string): string {
-  const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+function formatOffset(iso: string, baseMs: number | null): string {
+  const ms = Date.parse(iso);
+  if (Number.isNaN(ms) || baseMs === null) {
+    const date = new Date(iso);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  }
+  const totalSec = Math.max(0, Math.floor((ms - baseMs) / 1000));
+  const mm = String(Math.floor(totalSec / 60)).padStart(2, "0");
+  const ss = String(totalSec % 60).padStart(2, "0");
+  return `${mm}:${ss}`;
 }
 
 export function TranscriptReviewScreen({
+  backend,
   interview,
   events,
+  onWeakAreas,
   onBack,
 }: {
+  readonly backend: BackendClient;
   readonly interview: SerializedInterview;
   readonly events: readonly LiveEvent[];
+  readonly onWeakAreas: () => void;
   readonly onBack: () => void;
 }) {
-  const turns = turnsFrom(events);
+  const liveCount = events.length;
+  const [serverMessages, setServerMessages] = useState<readonly SerializedInterviewMessage[] | null>(null);
+  useEffect(() => {
+    if (liveCount > 0) return;
+    let cancelled = false;
+    void backend
+      .getTranscript(interview.id)
+      .then((messages) => {
+        if (!cancelled) setServerMessages(messages);
+      })
+      .catch(() => {
+        if (!cancelled) setServerMessages([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backend, interview.id, liveCount]);
+
+  const turns = transcriptTurns(events, serverMessages ?? []);
+  const loading = liveCount === 0 && serverMessages === null;
+  const baseMs = Date.parse(interview.startedAt ?? interview.createdAt);
 
   function exportTranscript() {
-    const body = turns.map((t) => `[${formatTime(t.at)}] ${t.role}\n${t.text}\n`).join("\n");
+    const body = turns.map((t) => `[${formatOffset(t.at, baseMs)}] ${t.role}\n${t.text}\n`).join("\n");
     const header = `Interview Coach transcript\nInterview: ${interview.id}\nCandidate: ${interview.candidateId}\n\n`;
     const blob = new Blob([header + body], { type: "text/plain" });
     const url = URL.createObjectURL(blob);
@@ -50,63 +98,33 @@ export function TranscriptReviewScreen({
 
   return (
     <>
-      <ChipList label="Transcript">
-        <Badge tone="neutral">Full session</Badge>
-        <Badge tone="neutral">{turns.length} turns</Badge>
-      </ChipList>
-      <h1 className="page-title">Interview transcript</h1>
-      <p className="lede">Timestamped turns · important moments marked · export available</p>
+      <p className="page-meta">Interview transcript</p>
+      <h1 className="page-title">How the session read</h1>
 
-      <div className="transcript-grid">
-        <Card className="transcript-card">
-          <SectionHead title="Timeline" meta={`${turns.length} turns`} />
-          {turns.length === 0 ? (
-            <p className="hint">No transcript turns captured for this session.</p>
-          ) : (
-            <ol className="transcript-list">
-              {turns.map((turn, i) => (
-                <TimelineRow
-                  key={i}
-                  time={formatTime(turn.at)}
-                  role={turn.role}
-                  tags={
-                    i === turns.length - 1 ? (
-                      <ChipList>
-                        <Badge tone="active">Latest</Badge>
-                      </ChipList>
-                    ) : undefined
-                  }
-                >
-                  {turn.text}
-                </TimelineRow>
-              ))}
-            </ol>
-          )}
+      {loading ? (
+        <Card>
+          <p className="hint">Loading transcript…</p>
         </Card>
-        <div className="transcript-side">
-          <Card>
-            <SectionHead title="Marked moments" />
-            <p className="hint">Important moments are marked by the coach as the evaluation is produced.</p>
-            <p className="hint">No moments marked yet.</p>
-          </Card>
-          <Card>
-            <SectionHead title="Labels" />
-            <ChipList label="Moment labels">
-              <Badge tone="pass">Strong answer</Badge>
-              <Badge tone="review">Weak answer</Badge>
-              <Badge tone="neutral">Missed opportunity</Badge>
-              <Badge tone="neutral">Good follow-up</Badge>
-              <Badge tone="active">Important trade-off</Badge>
-            </ChipList>
-            <div className="row actions">
-              <GhostButton onClick={exportTranscript}>Export transcript</GhostButton>
+      ) : turns.length === 0 ? (
+        <Card>
+          <p className="hint">No transcript turns captured for this session.</p>
+        </Card>
+      ) : (
+        <div className="turn-list">
+          {turns.map((turn, i) => (
+            <div key={i} className={turn.role === "You" ? "turn you" : "turn interviewer"}>
+              <span className="turn-who">{turn.role}</span>
+              <span className="turn-ts">{formatOffset(turn.at, baseMs)}</span>
+              <p>{turn.text}</p>
             </div>
-          </Card>
+          ))}
         </div>
-      </div>
+      )}
 
       <div className="row actions">
-        <GhostButton onClick={onBack}>Back to Results</GhostButton>
+        <GhostButton onClick={onBack}>Back to results</GhostButton>
+        <GhostButton onClick={exportTranscript}>Export transcript</GhostButton>
+        <PrimaryButton onClick={onWeakAreas}>Practice weak areas</PrimaryButton>
       </div>
     </>
   );

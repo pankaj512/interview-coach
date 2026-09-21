@@ -1,11 +1,17 @@
-// H-Weak-Areas (ux-spec §29): targeted practice from the weakest signals.
+// H-Weak-Areas (ux-spec §§28-29): recurring weak dimensions surface as one
+// practice card per dimension. Every Practice button starts focused practice
+// through the existing onPractice contract; the app owns the target, so cards
+// never name a problem they cannot guarantee.
 
 import type { SerializedCurriculum, SerializedUserSkillState } from "../api/types.js";
 import { masteryLabel, masteryRank, findTopic } from "../dashboard.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, ScoreRow } from "../ds/primitives.js";
+import { Card } from "../ds/primitives.js";
+import { dimensionLabel } from "../dimensions.js";
 import type { HistoryEntry } from "../history.js";
 import { buildProgress } from "../progress.js";
+
+const MAX_CARDS = 3;
 
 export function WeakAreasScreen({
   entries,
@@ -21,6 +27,10 @@ export function WeakAreasScreen({
   readonly onBack: () => void;
 }) {
   const progress = buildProgress(entries, skills, curriculum);
+  const cards = [...progress.dimensions]
+    .sort((a, b) => a.score - b.score)
+    .slice(0, MAX_CARDS);
+
   const sortedSkills = skills
     .slice()
     .sort(
@@ -29,13 +39,11 @@ export function WeakAreasScreen({
         (b.totalAttempts || 0) - (a.totalAttempts || 0),
     );
   const focusSkill = sortedSkills.find((skill) => skill.masteryLevel !== "mastered") ?? sortedSkills[0];
-  const weakestDimension = progress.dimensions[progress.dimensions.length - 1];
   const topWeakness = progress.weaknesses[0];
   const focusTopic = focusSkill === undefined ? null : findTopic(curriculum, focusSkill.topicId);
   const focus =
     focusTopic?.name ??
     topWeakness?.label ??
-    weakestDimension?.label.replace(/_/g, " ") ??
     "Problem solving";
   const reasons: string[] = [];
   if (focusSkill !== undefined) {
@@ -44,46 +52,53 @@ export function WeakAreasScreen({
     if ((focusSkill.weaknesses?.length ?? 0) > 0) reasons.push("flagged in past evaluations");
   }
   if (topWeakness !== undefined) reasons.push(`flagged ${topWeakness.count}× as a missed opportunity`);
-  if (weakestDimension !== undefined) reasons.push(`lowest-scoring dimension (${weakestDimension.score}/10)`);
 
-  return (
-    <>
-      <p className="eyebrow">Targeted practice</p>
-      <h1 className="page-title">{focus}</h1>
-      <p className="lede">
-        {reasons.length > 0 ? `Your recent weakness: ${reasons.join(", ")}.` : "Practice your weakest area."}
-      </p>
-
-      <div className="two-col">
-        <Card>
-          <h3 className="section-title">Recommended practice</h3>
-          <p className="focus-title">15-minute focused interview</p>
-          <p className="eyebrow">Focus</p>
-          <ul className="plain-list">
-            {(progress.weaknesses.length > 0 ? progress.weaknesses.slice(0, 4).map((w) => w.label) : [focus]).map((f) => (
-              <li key={f}>• {f}</li>
-            ))}
-          </ul>
+  if (cards.length === 0) {
+    return (
+      <>
+        <p className="eyebrow">Targeted practice</p>
+        <h1 className="page-title">{focus}</h1>
+        <p className="lede">
+          {reasons.length > 0 ? `Your recent weakness: ${reasons.join(", ")}.` : "Practice your weakest area."}
+        </p>
+        <Card className="practice-card">
+          <h2 className="practice-title">15-minute focused interview</h2>
           <div className="row actions">
             <PrimaryButton onClick={onPractice}>Start focused practice</PrimaryButton>
           </div>
         </Card>
-        <Card>
-          <h3 className="section-title">Why this was suggested</h3>
-          <p className="hint">
-            Derived from your recorded evaluations and weaknesses. This closes the learning loop:
-            interview → feedback → weak area → targeted practice → new interview.
-          </p>
-          {weakestDimension !== undefined && (
-            <div className="weak-bars">
-              {progress.dimensions.slice(-3).map((d) => (
-                <ScoreRow key={d.label} label={d.label.replace(/_/g, " ")} score={d.score} />
-              ))}
-            </div>
-          )}
-        </Card>
-      </div>
+        <div className="row actions">
+          <GhostButton onClick={onBack}>Back</GhostButton>
+        </div>
+      </>
+    );
+  }
 
+  return (
+    <>
+      <p className="eyebrow">Targeted practice</p>
+      <h1 className="page-title">Recommended practice</h1>
+      <p className="lede">
+        Weak areas recur across sessions. Each card targets one dimension.
+        {reasons.length > 0 && ` Your recent weakness: ${reasons.join(", ")}.`}
+      </p>
+      {cards.map((card) => (
+        <Card key={card.label} className="practice-card">
+          <div className="practice-top">
+            <span className="practice-pill">
+              <code>{card.label}</code> · {card.score}/5
+            </span>
+            <h2 className="practice-title">{dimensionLabel(card.label)}</h2>
+          </div>
+          <p className="practice-why">
+            Averaging {card.score} / 5 across {progress.scoredCount}{" "}
+            {progress.scoredCount === 1 ? "scored session" : "scored sessions"}.
+          </p>
+          <div className="row actions">
+            <PrimaryButton onClick={onPractice}>Practice</PrimaryButton>
+          </div>
+        </Card>
+      ))}
       <div className="row actions">
         <GhostButton onClick={onBack}>Back</GhostButton>
       </div>

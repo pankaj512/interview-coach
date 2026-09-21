@@ -116,6 +116,7 @@ export function App() {
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [stale, setStale] = useState(false);
+  const [feedbackDimension, setFeedbackDimension] = useState<string | null>(null);
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([]);
   const [historyLimit, setHistoryLimit] = useState(20);
   const [historyHasMore, setHistoryHasMore] = useState(false);
@@ -649,7 +650,6 @@ export function App() {
           <ResultsScreen
             backend={backend}
             snapshot={finalSnapshot}
-            events={events}
             stale={stale}
             onHistory={() => navigate("history")}
             onNew={startNew}
@@ -661,7 +661,8 @@ export function App() {
               setFlow("weakareas");
               pushPath("/weakareas");
             }}
-            onFeedback={() => {
+            onFeedback={(dimensionKey) => {
+              setFeedbackDimension(dimensionKey);
               setFlow("feedback");
               pushPath("/feedback");
             }}
@@ -673,7 +674,10 @@ export function App() {
         <div className="shell-content standalone">
           <FeedbackDetailScreen
             evaluation={finalSnapshot?.evaluation ?? null}
+            selected={feedbackDimension}
+            onSelect={setFeedbackDimension}
             onBack={() => {
+              setFeedbackDimension(null);
               setFlow("results");
               pushPath("/results");
             }}
@@ -683,8 +687,13 @@ export function App() {
       {flow === "transcript" && interview !== null && (
         <div className="shell-content standalone">
           <TranscriptReviewScreen
+            backend={backend}
             interview={interview}
             events={events}
+            onWeakAreas={() => {
+              setFlow("weakareas");
+              pushPath("/weakareas");
+            }}
             onBack={() => {
               setFlow("results");
               pushPath("/results");

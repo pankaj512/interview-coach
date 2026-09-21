@@ -2307,24 +2307,153 @@ textarea.code {
   font-size: var(--fs-body);
 }
 
-.dimension-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
+.dim-list {
+  display: flex;
+  flex-direction: column;
   gap: var(--s-12);
 }
 
-.dimension-card {
+.dim-row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s-8);
   padding: var(--s-12) var(--s-16);
   text-align: left;
   width: 100%;
+  cursor: pointer;
+}
+
+.dim-top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+}
+
+.dim-name {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+}
+
+.dim-val {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+}
+
+.dim-track {
+  height: 6px;
+  border-radius: var(--r-pill);
+  background: var(--track);
+}
+
+.dim-fill {
+  height: 100%;
+  border-radius: var(--r-pill);
+  background: var(--primary);
+}
+
+.dim-fill.low {
+  background: var(--review);
+}
+
+.dim-ev {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  margin: 0;
 }
 
 /* ---------- Transcript ---------- */
-.transcript-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+.turn-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   gap: var(--s-12);
-  align-items: start;
+}
+
+.turn {
+  background: var(--surface-base);
+  border: var(--bw-1) solid var(--line-base);
+  border-radius: var(--r-md);
+  padding: var(--s-12) var(--s-16);
+}
+
+.turn.you {
+  border-left: 4px solid var(--primary);
+}
+
+.turn.interviewer {
+  border-left: 4px solid var(--line-strong);
+}
+
+.turn-who {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.turn-ts {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  color: var(--ink-faint);
+  margin-left: var(--s-8);
+}
+
+.turn p {
+  font-size: var(--fs-body);
+  margin: var(--s-8) 0 0;
+  line-height: 1.55;
+}
+
+.turn code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+  background: var(--surface-low);
+  padding: 1px 6px;
+  border-radius: var(--r-sm);
+}
+
+/* ---------- Practice (weak areas) ---------- */
+.practice-card {
+  margin-bottom: var(--s-12);
+}
+
+.practice-top {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-8);
+  flex-wrap: wrap;
+}
+
+.practice-title {
+  font-size: var(--fs-title);
+  font-weight: var(--fw-medium);
+  margin: 0;
+}
+
+.practice-pill {
+  font-size: var(--fs-small);
+  font-weight: var(--fw-medium);
+  padding: 1px 8px;
+  border-radius: var(--r-pill);
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.practice-pill code {
+  font-family: var(--font-mono);
+  font-size: var(--fs-small);
+}
+
+.practice-why {
+  font-size: var(--fs-small);
+  color: var(--ink-muted);
+  margin: var(--s-8) 0 0;
 }
 
 .transcript-list {
@@ -2334,12 +2463,6 @@ textarea.code {
   display: flex;
   flex-direction: column;
   gap: var(--s-16);
-}
-
-.transcript-side {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-12);
 }
 
 .plain-list {
@@ -2382,17 +2505,6 @@ textarea.code {
 
 .trend-dot {
   fill: var(--info-solid);
-}
-
-.weak-bars {
-  margin-top: var(--s-12);
-}
-
-.focus-title {
-  font-size: var(--fs-title);
-  font-weight: var(--fw-bold);
-  color: var(--voice-solid);
-  margin: var(--s-8) 0;
 }
 
 /* ---------- History ---------- */
@@ -2631,8 +2743,7 @@ textarea.code {
 
 /* ---------- Responsive (ux-spec §34) ---------- */
 @media (max-width: 1100px) {
-  .progress-grid,
-  .transcript-grid {
+  .progress-grid {
     grid-template-columns: 1fr;
   }
   .setup-layout {
@@ -2655,8 +2766,7 @@ textarea.code {
   .stat-grid,
   .two-col,
   .radio-grid,
-  .radio-grid.two,
-  .dimension-grid {
+  .radio-grid.two {
     grid-template-columns: 1fr;
   }
   .hero-card {

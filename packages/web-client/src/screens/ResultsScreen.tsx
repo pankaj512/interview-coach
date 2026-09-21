@@ -1,33 +1,20 @@
-// H-Results (ux-spec §22–§24): debrief with score hero, category scores,
-// strengths / improvements, and the review / practice actions.
+// H-Results (ux-spec §22): debrief with score hero, dimension rows with
+// evidence, strengths / improvements, and the review / practice actions.
 //
 // Phase 10: the evaluation is produced asynchronously by the backend when the
 // interview ends. This screen polls `GET /api/interviews/:id/evaluation` while
 // the interview's evaluationStatus is pending and shows "Evaluation in
-// progress" until a validated result (or a failure) arrives. The manual
-// evaluation form is retired.
+// progress" until a validated result (or a failure) arrives. Scores render in
+// canonical units: overall x/100, dimensions x/5 (ux-spec §23).
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedEvaluation, SerializedStateSnapshot } from "../api/types.js";
 import { ExecutionPanel } from "../components/ExecutionPanel.js";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Badge, Card, ChipList, ScoreRow, SectionHead } from "../ds/primitives.js";
+import { Card } from "../ds/primitives.js";
 import { dimensionLabel } from "../dimensions.js";
-import { overallBand } from "../progress.js";
-import type { LiveEvent } from "../state/use-interview.js";
-
-function toTen(score: number): number {
-  return score > 10 ? Math.round((score / 10) * 10) / 10 : Math.round(score * 10) / 10;
-}
-
-function dimensionScore(value: { readonly score: number; readonly notes?: string }): number {
-  return value.score;
-}
-
-function dimensionNotes(value: { readonly score: number; readonly notes?: string }): string | undefined {
-  return value.notes === undefined || value.notes === "" ? undefined : value.notes;
-}
+import { formatRecommendation, overallBand } from "../progress.js";
 
 function hasDimensions(evaluation: SerializedEvaluation | null): boolean {
   return evaluation !== null && Object.keys(evaluation.dimensions).length > 0;
@@ -36,7 +23,6 @@ function hasDimensions(evaluation: SerializedEvaluation | null): boolean {
 export function ResultsScreen({
   backend,
   snapshot,
-  events,
   stale = false,
   onHistory,
   onNew,
@@ -46,13 +32,12 @@ export function ResultsScreen({
 }: {
   readonly backend: BackendClient;
   readonly snapshot: SerializedStateSnapshot | null;
-  readonly events: readonly LiveEvent[];
   readonly stale?: boolean;
   readonly onHistory: () => void;
   readonly onNew: () => void;
   readonly onTranscript: () => void;
   readonly onWeakAreas: () => void;
-  readonly onFeedback: () => void;
+  readonly onFeedback: (dimensionKey: string) => void;
 }) {
   const [evaluation, setEvaluation] = useState<SerializedEvaluation | null>(
     snapshot?.evaluation ?? null,
@@ -105,21 +90,26 @@ export function ResultsScreen({
   }
 
   const scored = hasDimensions(evaluation);
-  const overall = evaluation?.overallScore === undefined ? null : toTen(evaluation.overallScore);
+  const overall = evaluation?.overallScore ?? null;
   const dimensions = evaluation === null ? [] : Object.entries(evaluation.dimensions);
   const inProgress = !scored && evalStatus !== "failed";
+  const interviewType =
+    snapshot.interview.configuration.interviewType === "dsa"
+      ? "Coding"
+      : snapshot.interview.configuration.interviewType;
+  const problemTitle = snapshot.currentProblem?.title ?? null;
 
   return (
     <>
-      <ChipList label="Interview metadata">
-        <Badge tone="neutral">
-          Type: {snapshot.interview.configuration.interviewType === "dsa" ? "Coding" : snapshot.interview.configuration.interviewType}
-        </Badge>
-        <Badge tone="neutral">Difficulty: {snapshot.interview.configuration.difficulty ?? "Medium"}</Badge>
-        <Badge tone="neutral">Responses: {snapshot.responseCount}</Badge>
-        {evaluation !== null && <Badge tone="neutral">Hints: {evaluation.hintsUsed ?? 0}</Badge>}
-      </ChipList>
-      <h1 className="page-title">Results — {snapshot.interview.candidateId}</h1>
+      <p className="page-meta">
+        Interview Results · {interviewType}
+        {snapshot.interview.configuration.difficulty !== undefined &&
+          ` · ${snapshot.interview.configuration.difficulty}`}
+        {` · ${snapshot.responseCount} responses`}
+      </p>
+      <h1 className="page-title">
+        {problemTitle === null ? "Interview results" : `${problemTitle}, reviewed`}
+      </h1>
       {stale && (
         <Card className="state-card state-reconnecting" role="note">
           <p>Saved history entry — live state unavailable. Scores below may be stale.</p>
@@ -142,13 +132,13 @@ export function ResultsScreen({
       ) : (
         <Card className="hero-card">
           <div className="hero-score">
-            <span className="hero-number">{overall === null ? "—" : overall.toFixed(1)}</span>
-            <span className="hero-den">/ 10</span>
+            <span className="hero-number">{overall === null ? "—" : overall}</span>
+            <span className="hero-den">/ 100</span>
           </div>
           <div className="hero-meta">
             <span className="band-chip">● {overallBand(overall)}</span>
             <p className="hero-rec">
-              Recommendation: <strong>{(evaluation?.recommendation ?? "—").replace(/_/g, " ")}</strong>
+              Recommendation: <strong>{formatRecommendation(evaluation?.recommendation)}</strong>
             </p>
             <p className="hint">
               Hints used: {evaluation?.hintsUsed ?? 0} · Responses: {snapshot.responseCount}
@@ -158,13 +148,30 @@ export function ResultsScreen({
         </Card>
       )}
 
-      <SectionHead title="Dimension scores" />
+      <h2 className="section-title">Dimension scores</h2>
       {dimensions.length > 0 ? (
-        <div className="dimension-grid">
-          {dimensions.map(([key, raw]) => (
-            <button key={key} type="button" className="card dimension-card" onClick={onFeedback}>
-              <ScoreRow label={dimensionLabel(key)} score={toTen(dimensionScore(raw))} />
-              {dimensionNotes(raw) !== undefined && <p className="hint">{dimensionNotes(raw)}</p>}
+        <div className="dim-list">
+          {dimensions.map(([key, value]) => (
+            <button
+              key={key}
+              type="button"
+              className="card dim-row"
+              onClick={() => onFeedback(key)}
+              aria-label={`${dimensionLabel(key)}, ${value.score} out of 5, show feedback`}
+            >
+              <div className="dim-top">
+                <code className="dim-name">{key}</code>
+                <span className="dim-val">{value.score} / 5</span>
+              </div>
+              <div className="dim-track" aria-hidden="true">
+                <div
+                  className={value.score < 3 ? "dim-fill low" : "dim-fill"}
+                  style={{ width: `${Math.min(100, Math.max(0, (value.score / 5) * 100))}%` }}
+                />
+              </div>
+              {value.notes !== undefined && value.notes !== "" && (
+                <p className="dim-ev">{value.notes}</p>
+              )}
             </button>
           ))}
         </div>
@@ -206,11 +213,10 @@ export function ResultsScreen({
 
       <div className="row actions">
         <GhostButton onClick={onTranscript}>Review interview</GhostButton>
-        <GhostButton onClick={onWeakAreas}>Practice weak areas</GhostButton>
+        <PrimaryButton onClick={onWeakAreas}>Practice weak areas</PrimaryButton>
         <GhostButton onClick={onHistory}>Back to History</GhostButton>
-        <PrimaryButton onClick={onNew}>Start new interview</PrimaryButton>
+        <GhostButton onClick={onNew}>Start new interview</GhostButton>
       </div>
-      <p className="hint">{events.length} session events captured.</p>
     </>
   );
 }

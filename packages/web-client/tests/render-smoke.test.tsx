@@ -34,7 +34,7 @@ import { ProfileForm } from "../src/components/ProfileForm.js";
 import { ResultsScreen } from "../src/screens/ResultsScreen.js";
 import { SettingsScreen } from "../src/screens/SettingsScreen.js";
 import { SignInScreen } from "../src/screens/SignInScreen.js";
-import { TranscriptReviewScreen } from "../src/screens/TranscriptReviewScreen.js";
+import { TranscriptReviewScreen, transcriptTurns } from "../src/screens/TranscriptReviewScreen.js";
 import { WeakAreasScreen } from "../src/screens/WeakAreasScreen.js";
 import type { HistoryEntry } from "../src/history.js";
 
@@ -68,12 +68,15 @@ const evaluation: SerializedEvaluation = {
   interviewId: "int_1",
   status: "completed",
   source: "llm",
-  dimensions: { coding: { score: 8 }, communication: { score: 7.5 } },
+  dimensions: {
+    coding: { score: 4, notes: "Clean loop, in-place as required." },
+    communication: { score: 3, notes: "Narrated the happy path; went quiet on edge cases." },
+  },
   hintsUsed: 1,
   strengths: ["Clear API reasoning"],
   weaknesses: ["Complexity analysis"],
-  recommendation: "hire",
-  overallScore: 8.1,
+  recommendation: "lean_hire",
+  overallScore: 81,
   createdAt: new Date(0).toISOString(),
   updatedAt: new Date(0).toISOString(),
 };
@@ -231,23 +234,71 @@ describe("screen render smoke", () => {
   });
   it("ResultsScreen renders scores", () => {
     const html = renderToString(
-      <ResultsScreen backend={backend} snapshot={snapshot} events={[]} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
+      <ResultsScreen backend={backend} snapshot={snapshot} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
     );
+    expect(html).toContain("Interview Results");
+    expect(html).toContain("81");
+    expect(html).toContain("/ 100");
+    expect(html).toContain("Solid");
+    expect(html).toContain("lean hire");
     expect(html).toContain("Coding accuracy");
-    expect(html).toContain("Strong");
+    expect(html).toContain("/ 5");
+    expect(html).toContain("Clean loop, in-place as required.");
+    expect(html).toContain("aria-label=\"Coding accuracy, 4 out of 5, show feedback\"");
   });
   it("ResultsScreen handles a null snapshot", () => {
     expect(
       renderToString(
-        <ResultsScreen backend={backend} snapshot={null} events={[]} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
+        <ResultsScreen backend={backend} snapshot={null} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
       ),
     ).toContain("Results");
   });
-  it("FeedbackDetailScreen renders", () => {
-    expect(renderToString(<FeedbackDetailScreen evaluation={evaluation} onBack={noop} />)).toContain("Strengths");
+  it("FeedbackDetailScreen renders the selected dimension", () => {
+    const html = renderToString(
+      <FeedbackDetailScreen evaluation={evaluation} selected="communication" onSelect={noop} onBack={noop} />,
+    );
+    expect(html).toContain("Communication");
+    expect(html).toContain("/ 5");
+    expect(html).toContain("(overall 81 / 100)");
+    expect(html).toContain("Narrated the happy path");
+    expect(html).toContain("Example improvement");
   });
-  it("TranscriptReviewScreen renders", () => {
-    expect(renderToString(<TranscriptReviewScreen interview={interview} events={[]} onBack={noop} />)).toContain("Interview transcript");
+  it("FeedbackDetailScreen handles missing feedback", () => {
+    expect(
+      renderToString(<FeedbackDetailScreen evaluation={null} selected={null} onSelect={noop} onBack={noop} />),
+    ).toContain("No structured feedback yet");
+  });
+  it("TranscriptReviewScreen renders live turns", () => {
+    const html = renderToString(
+      <TranscriptReviewScreen
+        backend={backend}
+        interview={interview}
+        events={[
+          { at: new Date(0).toISOString(), kind: "assistant", detail: "How would you approach it?" },
+          { at: new Date(60_000).toISOString(), kind: "candidate", detail: "Two pointers." },
+        ]}
+        onWeakAreas={noop}
+        onBack={noop}
+      />,
+    );
+    expect(html).toContain("How the session read");
+    expect(html).toContain("How would you approach it?");
+    expect(html).toContain("Two pointers.");
+    expect(html).toContain("Export transcript");
+    expect(html).toContain("Practice weak areas");
+  });
+  it("transcriptTurns prefers live events and skips server system rows", () => {
+    const live = transcriptTurns(
+      [{ at: "t1", kind: "candidate", detail: "Live answer." }],
+      [{ id: "m1", interviewId: "int_1", role: "candidate", content: "Server answer.", createdAt: "t0" }],
+    );
+    expect(live.map((t) => t.text)).toEqual(["Live answer."]);
+    const server = transcriptTurns([], [
+      { id: "m1", interviewId: "int_1", role: "system", content: "Setup.", createdAt: "t0" },
+      { id: "m2", interviewId: "int_1", role: "interviewer", content: "Go on.", createdAt: "t1" },
+      { id: "m3", interviewId: "int_1", role: "candidate", content: "Done.", createdAt: "t2" },
+    ]);
+    expect(server.map((t) => `${t.role}:${t.text}`)).toEqual(["Interviewer:Go on.", "You:Done."]);
   });
   it("HistoryScreen renders without a score placeholder for unevaluated entries", () => {
     const first = entries[0];
@@ -284,18 +335,25 @@ describe("screen render smoke", () => {
       ),
     ).toContain("Overall performance");
   });
-  it("WeakAreasScreen renders", () => {
-    expect(
-      renderToString(
-        <WeakAreasScreen
-          entries={entries}
-          skills={dashboardData.skills}
-          curriculum={dashboardData.curriculum}
-          onPractice={noop}
-          onBack={noop}
-        />,
-      ),
-    ).toContain("Recommended practice");
+  it("WeakAreasScreen renders one card per weak dimension", () => {
+    const weakEntries: readonly HistoryEntry[] = entries.map((e) => ({
+      ...e,
+      dimensions: { complexity_analysis: 2, testing_debugging: 3, independence: 4 },
+    }));
+    const html = renderToString(
+      <WeakAreasScreen
+        entries={weakEntries}
+        skills={dashboardData.skills}
+        curriculum={dashboardData.curriculum}
+        onPractice={noop}
+        onBack={noop}
+      />,
+    );
+    expect(html).toContain("Recommended practice");
+    expect(html).toContain("complexity_analysis");
+    expect(html).toContain("/5");
+    expect(html).toContain("Complexity analysis");
+    expect(html.match(/>Practice</g)).toHaveLength(3);
   });
   it("SettingsScreen renders the account section", () => {
     const html = renderToString(
