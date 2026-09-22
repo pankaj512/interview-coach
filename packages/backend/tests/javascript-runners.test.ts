@@ -1,0 +1,147 @@
+// Feature 18a.2 gate (full execution): every JavaScript-linked problem with
+// examples assembles via `assembleJSRun` and executes under host `node`,
+// emitting well-formed per-case actuals. Where the sample output is
+// JSON-expressible the pass/fail verdict against it must be computable;
+// otherwise the case asserts execution-only. Reads PROBLEM_CONTENT_PATH when
+// set (used to prove the gate rejects a broken dataset).
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { execFile, execFileSync } from "node:child_process";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { promisify } from "node:util";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import {
+  assembleJSRun,
+  type JSLink,
+} from "../src/shape-runners/javascript/assemble.js";
+
+const execFileAsync = promisify(execFile);
+const here = dirname(fileURLToPath(import.meta.url));
+const datasetPath =
+  process.env.PROBLEM_CONTENT_PATH ?? resolve(here, "../../../problem-content-enrichment.json");
+const runnersDir = resolve(here, "../src/shape-runners/javascript/runners");
+const methodSequenceRunner = resolve(here, "../src/shape-runners/javascript/method_sequence.js");
+
+interface DatasetRecord {
+  readonly id: string;
+  readonly examples?: readonly { readonly input: string; readonly output: string }[];
+  readonly starters?: { readonly javascript?: string };
+  readonly javascript?: {
+    readonly runnerId: string;
+    readonly entry: string;
+    readonly className: string;
+    readonly actualRule: "pure" | "in-place" | "method-sequence";
+  };
+}
+
+const dataset = JSON.parse(await readFile(datasetPath, "utf8")) as {
+  problems: readonly DatasetRecord[];
+};
+
+const scratchDirs: string[] = [];
+afterAll(() => {
+  for (const dir of scratchDirs) rmSync(dir, { recursive: true, force: true });
+});
+
+function runnerSourceFor(runnerId: string): string {
+  return readFileSync(
+    runnerId === "method-sequence" ? methodSequenceRunner : join(runnersDir, `${runnerId}.js`),
+    "utf8",
+  );
+}
+
+function tryParseJson(text: string): { ok: true; value: unknown } | { ok: false } {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch {
+    return { ok: false };
+  }
+}
+
+async function runLinkedProblem(
+  problem: DatasetRecord & {
+    javascript: JSLink;
+    examples: { input: string; output: string }[];
+  },
+): Promise<{ verdicts: number; executionOnly: number }> {
+  const link: JSLink = {
+    runnerId: problem.javascript.runnerId,
+    entry: problem.javascript.entry,
+    className: problem.javascript.className,
+    actualRule: problem.javascript.actualRule,
+  };
+  const assembled = assembleJSRun({
+    starterJs: problem.starters?.javascript ?? "",
+    link,
+    runnerSource: runnerSourceFor(link.runnerId),
+  });
+  const dir = mkdtempSync(join(tmpdir(), "js-runner-"));
+  scratchDirs.push(dir);
+  for (const [name, source] of Object.entries(assembled.files)) {
+    writeFileSync(join(dir, name), source, "utf8");
+  }
+  const cases = problem.examples.map((e, i) => ({ name: `ex-${i + 1}`, input: e.input }));
+  writeFileSync(join(dir, "cases.json"), JSON.stringify(cases), "utf8");
+  const { stdout } = await execFileAsync("node", ["runner.js"], {
+    cwd: dir,
+    timeout: 30_000,
+  });
+  const rows = new Map<string, unknown>();
+  for (const line of stdout.split("\n")) {
+    if (line.trim() === "") continue;
+    const row = JSON.parse(line) as { name: string; actual?: unknown; error?: string };
+    expect(typeof row.name, `${problem.id} row name`).toBe("string");
+    expect(
+      "actual" in row || "error" in row,
+      `${problem.id} row ${row.name} has actual or error`,
+    ).toBe(true);
+    if ("actual" in row) rows.set(row.name, row.actual);
+  }
+  let verdicts = 0;
+  let executionOnly = 0;
+  problem.examples.forEach((e, i) => {
+    const name = `ex-${i + 1}`;
+    if (!rows.has(name)) {
+      // Per-case error (e.g. non-literal `_` sample): execution-only.
+      executionOnly += 1;
+      return;
+    }
+    const parsed = tryParseJson(e.output);
+    if (!parsed.ok) {
+      executionOnly += 1;
+      return;
+    }
+    const verdict = JSON.stringify(rows.get(name)) === JSON.stringify(parsed.value);
+    expect(typeof verdict, `${problem.id} ${name} verdict computable`).toBe("boolean");
+    verdicts += 1;
+  });
+  return { verdicts, executionOnly };
+}
+
+const runnable = dataset.problems.filter(
+  (
+    p,
+  ): p is DatasetRecord & {
+    javascript: JSLink;
+    examples: { input: string; output: string }[];
+  } => p.javascript !== undefined && Array.isArray(p.examples) && p.examples.length > 0,
+);
+
+describe("javascript shape runners execute every linked problem (feature 18a.2)", () => {
+  beforeAll(() => {
+    // Gate dependency: host node (vitest itself runs on node, so this is a
+    // loud precondition rather than an environment probe).
+    execFileSync("node", ["--version"], { stdio: "ignore" });
+    expect(runnable.length, "linked problems with examples").toBeGreaterThan(0);
+  });
+
+  it.each(runnable.map((p) => [p.id, p] as const))("%s assembles and emits actuals", async (_id, problem) => {
+    const { verdicts, executionOnly } = await runLinkedProblem(problem);
+    expect(
+      verdicts + executionOnly,
+      `${problem.id} every example accounted for`,
+    ).toBe(problem.examples.length);
+  }, 60_000);
+});

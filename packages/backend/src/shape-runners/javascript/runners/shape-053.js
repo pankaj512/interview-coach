@@ -1,0 +1,27 @@
+// shape-053 (number[],)->void - shared shape runner (feature 18a.2, generated).
+// In-place call: actual = mutated-args snapshot plus the return. The
+// submission exports `subject` (the entry free function) via the appended
+// export shim.
+const nodes = require("./nodes");
+const submission = require("./submission");
+const { parseArgs } = require("./samples");
+const fs = require("fs");
+
+function main() {
+  const cases = JSON.parse(fs.readFileSync("cases.json", "utf8"));
+  for (const kase of cases) {
+    const name = kase.name;
+    try {
+      const args = parseArgs(kase.input);
+      // no codec positions
+      const ret = submission.subject(...args);
+      const actual = { return: ret === undefined ? null : ret, args: [args[0]] };
+      console.log(JSON.stringify({ name, actual }, (k, v) => (v === undefined ? null : v)));
+    } catch (e) {
+      const label = e instanceof Error ? `${e.name}: ${e.message}` : `Thrown: ${String(e)}`;
+      console.log(JSON.stringify({ name, error: label }));
+    }
+  }
+}
+
+main();

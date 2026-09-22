@@ -30,6 +30,12 @@
         "entry": "moveZeroes",
         "className": "Solution",
         "actualRule": "in-place"
+      },
+      "javascript": {
+        "runnerId": "shape-053",
+        "entry": "moveZeroes",
+        "className": "",
+        "actualRule": "in-place"
       }
     },
     {
@@ -61,6 +67,12 @@
         "runnerId": "shape-051",
         "entry": "majorityElement",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "majorityElement",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -95,6 +107,12 @@
         "entry": "removeDuplicates",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "removeDuplicates",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -126,6 +144,12 @@
         "runnerId": "shape-051",
         "entry": "maxProfit",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxProfit",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -185,6 +209,12 @@
         "entry": "productExceptSelf",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "productExceptSelf",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -221,6 +251,12 @@
         "runnerId": "shape-051",
         "entry": "maxProfit",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxProfit",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -259,6 +295,12 @@
         "entry": "zeroFilledSubarray",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "zeroFilledSubarray",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -295,6 +337,12 @@
         "runnerId": "shape-050",
         "entry": "increasingTriplet",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-049",
+        "entry": "increasingTriplet",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -333,6 +381,12 @@
         "entry": "firstMissingPositive",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "firstMissingPositive",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -363,6 +417,12 @@
         "runnerId": "shape-109",
         "entry": "isSubsequence",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-088",
+        "entry": "isSubsequence",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -401,6 +461,12 @@
         "entry": "isPalindrome",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-081",
+        "entry": "isPalindrome",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -432,6 +498,12 @@
         "runnerId": "shape-093",
         "entry": "longestCommonPrefix",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-098",
+        "entry": "longestCommonPrefix",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -500,6 +572,12 @@
         "entry": "reverseWords",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "reverseWords",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -565,6 +643,12 @@
         "entry": "singleNumber",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "singleNumber",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -600,6 +684,12 @@
         "runnerId": "shape-027",
         "entry": "hammingWeight",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "hammingWeight",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -658,6 +748,12 @@
         "entry": "reverseBits",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "reverseBits",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -690,6 +786,12 @@
         "runnerId": "shape-034",
         "entry": "rangeBitwiseAnd",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-036",
+        "entry": "rangeBitwiseAnd",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -727,6 +829,12 @@
         "entry": "singleNumber",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "singleNumber",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -756,6 +864,12 @@
         "entry": "getSum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-036",
+        "entry": "getSum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -772,6 +886,12 @@
         "python": "class MyHashMap:\n\n    def __init__(self):\n        \n\n    def put(self, key: int, value: int) -> None:\n        \n\n    def get(self, key: int) -> int:\n        \n\n    def remove(self, key: int) -> None:\n        \n\n\n# Your MyHashMap object will be instantiated and called as such:\n# obj = MyHashMap()\n# obj.put(key,value)\n# param_2 = obj.get(key)\n# obj.remove(key)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MyHashMap",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "MyHashMap",
@@ -810,6 +930,12 @@
         "entry": "maxNumberOfBalloons",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "maxNumberOfBalloons",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -845,6 +971,12 @@
         "runnerId": "shape-051",
         "entry": "numIdenticalPairs",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "numIdenticalPairs",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -883,6 +1015,12 @@
         "entry": "isIsomorphic",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-088",
+        "entry": "isIsomorphic",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -916,6 +1054,12 @@
         "runnerId": "shape-109",
         "entry": "canConstruct",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-088",
+        "entry": "canConstruct",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -951,6 +1095,12 @@
         "runnerId": "shape-055",
         "entry": "containsNearbyDuplicate",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-054",
+        "entry": "containsNearbyDuplicate",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1039,6 +1189,12 @@
         "entry": "reorganizeString",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "reorganizeString",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1073,6 +1229,12 @@
         "runnerId": "shape-051",
         "entry": "longestConsecutive",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "longestConsecutive",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1111,6 +1273,12 @@
         "runnerId": "shape-050",
         "entry": "isPossible",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-049",
+        "entry": "isPossible",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1170,6 +1338,12 @@
         "runnerId": "shape-100",
         "entry": "numSplits",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "numSplits",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1245,6 +1419,12 @@
         "entry": "twoSum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-056",
+        "entry": "twoSum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1276,6 +1456,12 @@
         "runnerId": "shape-051",
         "entry": "maxArea",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxArea",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1314,6 +1500,12 @@
         "entry": "threeSum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-052",
+        "entry": "threeSum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1346,6 +1538,12 @@
         "entry": "trap",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "trap",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1364,6 +1562,12 @@
         "python": "class NumArray:\n\n    def __init__(self, nums: list[int]):\n        \n\n    def sumRange(self, left: int, right: int) -> int:\n        \n\n\n# Your NumArray object will be instantiated and called as such:\n# obj = NumArray(nums)\n# param_1 = obj.sumRange(left,right)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "NumArray",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "NumArray",
@@ -1399,6 +1603,12 @@
         "entry": "subarraySum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "subarraySum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1430,6 +1640,12 @@
         "runnerId": "shape-057",
         "entry": "subarraysDivByK",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "subarraysDivByK",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1469,6 +1685,12 @@
         "entry": "checkSubarraySum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-054",
+        "entry": "checkSubarraySum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1506,6 +1728,12 @@
         "entry": "findMaxLength",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "findMaxLength",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1532,6 +1760,12 @@
         "cpp": "class Solution {\npublic:\n    double findMaxAverage(vector<int>& nums, int k) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number}\n */\nvar findMaxAverage = function(nums, k) {\n    \n};",
         "python": "class Solution:\n    def findMaxAverage(self, nums: list[int], k: int) -> float:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "findMaxAverage",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1589,6 +1823,12 @@
         "entry": "checkInclusion",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-088",
+        "entry": "checkInclusion",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1620,6 +1860,12 @@
         "runnerId": "shape-057",
         "entry": "maximumSubarraySum",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "maximumSubarraySum",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1691,6 +1937,12 @@
         "entry": "lengthOfLongestSubstring",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "lengthOfLongestSubstring",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1754,6 +2006,12 @@
         "entry": "minSubArrayLen",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-043",
+        "entry": "minSubArrayLen",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1786,6 +2044,12 @@
         "runnerId": "shape-057",
         "entry": "longestOnes",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "longestOnes",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1857,6 +2121,12 @@
         "entry": "maxSubArray",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxSubArray",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1895,6 +2165,12 @@
         "entry": "maxSubarraySumCircular",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxSubarraySumCircular",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1928,6 +2204,12 @@
         "entry": "maxProduct",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxProduct",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -1958,6 +2240,12 @@
         "runnerId": "shape-051",
         "entry": "maxScoreSightseeingPair",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxScoreSightseeingPair",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -1991,6 +2279,12 @@
         "entry": "spiralOrder",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-071",
+        "entry": "spiralOrder",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2021,6 +2315,12 @@
         "runnerId": "shape-072",
         "entry": "rotate",
         "className": "Solution",
+        "actualRule": "in-place"
+      },
+      "javascript": {
+        "runnerId": "shape-073",
+        "entry": "rotate",
+        "className": "",
         "actualRule": "in-place"
       }
     },
@@ -2053,6 +2353,12 @@
         "runnerId": "shape-072",
         "entry": "setZeroes",
         "className": "Solution",
+        "actualRule": "in-place"
+      },
+      "javascript": {
+        "runnerId": "shape-073",
+        "entry": "setZeroes",
+        "className": "",
         "actualRule": "in-place"
       }
     },
@@ -2112,6 +2418,12 @@
         "entry": "gameOfLife",
         "className": "Solution",
         "actualRule": "in-place"
+      },
+      "javascript": {
+        "runnerId": "shape-073",
+        "entry": "gameOfLife",
+        "className": "",
+        "actualRule": "in-place"
       }
     },
     {
@@ -2149,6 +2461,12 @@
         "cpp": "/**\n * Definition for singly-linked list.\n * struct ListNode {\n *     int val;\n *     ListNode *next;\n *     ListNode(int x) : val(x), next(NULL) {}\n * };\n */\nclass Solution {\npublic:\n    ListNode *getIntersectionNode(ListNode *headA, ListNode *headB) {\n        \n    }\n};",
         "javascript": "/**\n * Definition for singly-linked list.\n * function ListNode(val) {\n *     this.val = val;\n *     this.next = null;\n * }\n */\n\n/**\n * @param {ListNode} headA\n * @param {ListNode} headB\n * @return {ListNode}\n */\nvar getIntersectionNode = function(headA, headB) {\n    \n};",
         "python": "# Definition for singly-linked list.\n# class ListNode:\n#     def __init__(self, x):\n#         self.val = x\n#         self.next = None\n\nclass Solution:\n    def getIntersectionNode(self, headA: ListNode, headB: ListNode) -> Optional[ListNode]:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-004",
+        "entry": "getIntersectionNode",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2166,6 +2484,12 @@
         "python": "class MyLinkedList:\n\n    def __init__(self):\n        \n\n    def get(self, index: int) -> int:\n        \n\n    def addAtHead(self, val: int) -> None:\n        \n\n    def addAtTail(self, val: int) -> None:\n        \n\n    def addAtIndex(self, index: int, val: int) -> None:\n        \n\n    def deleteAtIndex(self, index: int) -> None:\n        \n\n\n# Your MyLinkedList object will be instantiated and called as such:\n# obj = MyLinkedList()\n# param_1 = obj.get(index)\n# obj.addAtHead(val)\n# obj.addAtTail(val)\n# obj.addAtIndex(index,val)\n# obj.deleteAtIndex(index)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MyLinkedList",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "MyLinkedList",
@@ -2206,6 +2530,12 @@
         "entry": "removeNthFromEnd",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-005",
+        "entry": "removeNthFromEnd",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2236,6 +2566,12 @@
         "runnerId": "shape-001",
         "entry": "deleteDuplicates",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "deleteDuplicates",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2275,6 +2611,12 @@
         "entry": "swapPairs",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "swapPairs",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2304,6 +2646,12 @@
         "cpp": "/*\n// Definition for a Node.\nclass Node {\npublic:\n    int val;\n    Node* next;\n    Node* random;\n    \n    Node(int _val) {\n        val = _val;\n        next = NULL;\n        random = NULL;\n    }\n};\n*/\n\nclass Solution {\npublic:\n    Node* copyRandomList(Node* head) {\n        \n    }\n};",
         "javascript": "/**\n * // Definition for a _Node.\n * function _Node(val, next, random) {\n *    this.val = val;\n *    this.next = next;\n *    this.random = random;\n * };\n */\n\n/**\n * @param {_Node} head\n * @return {_Node}\n */\nvar copyRandomList = function(head) {\n    \n};",
         "python": "\"\"\"\n# Definition for a Node.\nclass Node:\n    def __init__(self, x: int, next: 'Node' = None, random: 'Node' = None):\n        self.val = int(x)\n        self.next = next\n        self.random = random\n\"\"\"\n\nclass Solution:\n    def copyRandomList(self, head: 'Optional[Node]') -> 'Optional[Node]':\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-022",
+        "entry": "copyRandomList",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2335,6 +2683,12 @@
         "entry": "partition",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-005",
+        "entry": "partition",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2365,6 +2719,12 @@
         "runnerId": "shape-005",
         "entry": "rotateRight",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-005",
+        "entry": "rotateRight",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2402,6 +2762,12 @@
         "entry": "addTwoNumbers",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-004",
+        "entry": "addTwoNumbers",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2433,6 +2799,12 @@
         "cpp": "/*\n// Definition for a Node.\nclass Node {\npublic:\n    int val;\n    Node* prev;\n    Node* next;\n    Node* child;\n};\n*/\n\nclass Solution {\npublic:\n    Node* flatten(Node* head) {\n        \n    }\n};",
         "javascript": "/**\n * // Definition for a _Node.\n * function _Node(val,prev,next,child) {\n *    this.val = val;\n *    this.prev = prev;\n *    this.next = next;\n *    this.child = child;\n * };\n */\n\n/**\n * @param {_Node} head\n * @return {_Node}\n */\nvar flatten = function(head) {\n    \n};",
         "python": "\"\"\"\n# Definition for a Node.\nclass Node:\n    def __init__(self, val, prev, next, child):\n        self.val = val\n        self.prev = prev\n        self.next = next\n        self.child = child\n\"\"\"\n\nclass Solution:\n    def flatten(self, head: 'Optional[Node]') -> 'Optional[Node]':\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-022",
+        "entry": "flatten",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2491,6 +2863,12 @@
         "entry": "reverseList",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "reverseList",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2548,6 +2926,12 @@
         "entry": "reverseKGroup",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-005",
+        "entry": "reverseKGroup",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2580,6 +2964,12 @@
         "entry": "middleNode",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "middleNode",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2609,6 +2999,12 @@
         "runnerId": "shape-025",
         "entry": "isHappy",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-030",
+        "entry": "isHappy",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2647,6 +3043,12 @@
         "runnerId": "shape-001",
         "entry": "detectCycle",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "detectCycle",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2690,6 +3092,12 @@
         "entry": "isValid",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-081",
+        "entry": "isValid",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2721,6 +3129,12 @@
         "entry": "removeDuplicates",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "removeDuplicates",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2738,6 +3152,12 @@
         "python": "class MinStack:\n\n    def __init__(self):\n        \n\n    def push(self, value: int) -> None:\n        \n\n    def pop(self) -> None:\n        \n\n    def top(self) -> int:\n        \n\n    def getMin(self) -> int:\n        \n\n\n# Your MinStack object will be instantiated and called as such:\n# obj = MinStack()\n# obj.push(value)\n# obj.pop()\n# param_3 = obj.top()\n# param_4 = obj.getMin()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MinStack",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "MinStack",
@@ -2772,6 +3192,12 @@
         "entry": "removeDuplicateLetters",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "removeDuplicateLetters",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2804,6 +3230,12 @@
         "runnerId": "shape-103",
         "entry": "removeStars",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "removeStars",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2873,6 +3305,12 @@
         "entry": "calculate",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "calculate",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2909,6 +3347,12 @@
         "entry": "longestValidParentheses",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "longestValidParentheses",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2942,6 +3386,12 @@
         "runnerId": "shape-066",
         "entry": "nextGreaterElement",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-063",
+        "entry": "nextGreaterElement",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -2977,6 +3427,12 @@
         "entry": "dailyTemperatures",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "dailyTemperatures",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -2997,6 +3453,12 @@
         "entry": "next",
         "className": "StockSpanner",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "StockSpanner",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -3035,6 +3497,12 @@
         "entry": "find132pattern",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-049",
+        "entry": "find132pattern",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3068,6 +3536,12 @@
         "entry": "canSeePersonsCount",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "canSeePersonsCount",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3099,6 +3573,12 @@
         "entry": "largestRectangleArea",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "largestRectangleArea",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3120,6 +3600,12 @@
         "entry": "ping",
         "className": "RecentCounter",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "RecentCounter",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -3154,6 +3640,12 @@
         "entry": "timeRequiredToBuy",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "timeRequiredToBuy",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3185,6 +3677,12 @@
         "runnerId": "shape-052",
         "entry": "deckRevealedIncreasing",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "deckRevealedIncreasing",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3221,6 +3719,12 @@
         "runnerId": "shape-057",
         "entry": "maxResult",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "maxResult",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3259,6 +3763,12 @@
         "entry": "longestSubarray",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "longestSubarray",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3290,6 +3800,12 @@
         "runnerId": "shape-059",
         "entry": "maxSlidingWindow",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-056",
+        "entry": "maxSlidingWindow",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3327,6 +3843,12 @@
         "entry": "findMaxValueOfEquation",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-075",
+        "entry": "findMaxValueOfEquation",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3363,6 +3885,12 @@
         "runnerId": "shape-103",
         "entry": "frequencySort",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "frequencySort",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3424,6 +3952,12 @@
         "entry": "maximumGap",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maximumGap",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3459,6 +3993,12 @@
         "entry": "mergeTwoLists",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-004",
+        "entry": "mergeTwoLists",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3491,6 +4031,12 @@
         "cpp": "class Solution {\npublic:\n    double myPow(double x, int n) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number} x\n * @param {number} n\n * @return {number}\n */\nvar myPow = function(x, n) {\n    \n};",
         "python": "class Solution:\n    def myPow(self, x: float, n: int) -> float:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-036",
+        "entry": "myPow",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3526,6 +4072,12 @@
         "runnerId": "shape-103",
         "entry": "decodeString",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "decodeString",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3610,6 +4162,12 @@
         "entry": "constructMaximumBinaryTree",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-048",
+        "entry": "constructMaximumBinaryTree",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3644,6 +4202,12 @@
         "entry": "sortList",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-001",
+        "entry": "sortList",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3675,6 +4239,12 @@
         "runnerId": "shape-051",
         "entry": "reversePairs",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "reversePairs",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3709,6 +4279,12 @@
         "entry": "sortColors",
         "className": "Solution",
         "actualRule": "in-place"
+      },
+      "javascript": {
+        "runnerId": "shape-053",
+        "entry": "sortColors",
+        "className": "",
+        "actualRule": "in-place"
       }
     },
     {
@@ -3738,6 +4314,12 @@
         "runnerId": "shape-057",
         "entry": "findKthLargest",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "findKthLargest",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3775,6 +4357,12 @@
         "entry": "searchInsert",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "searchInsert",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3810,6 +4398,12 @@
         "runnerId": "shape-059",
         "entry": "searchRange",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-056",
+        "entry": "searchRange",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3848,6 +4442,12 @@
         "entry": "search",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "search",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3881,6 +4481,12 @@
         "entry": "findPeakElement",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "findPeakElement",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -3898,6 +4504,12 @@
         "python": "class Solution:\n\n    def __init__(self, w: list[int]):\n        \n\n    def pickIndex(self) -> int:\n        \n\n\n# Your Solution object will be instantiated and called as such:\n# obj = Solution(w)\n# param_1 = obj.pickIndex()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "Solution",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "Solution",
@@ -3936,6 +4548,12 @@
         "runnerId": "shape-057",
         "entry": "minEatingSpeed",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "minEatingSpeed",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -3976,6 +4594,12 @@
         "runnerId": "shape-051",
         "entry": "findMin",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "findMin",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4060,6 +4684,12 @@
         "cpp": "class Solution {\npublic:\n    double findMedianSortedArrays(vector<int>& nums1, vector<int>& nums2) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number[]} nums1\n * @param {number[]} nums2\n * @return {number}\n */\nvar findMedianSortedArrays = function(nums1, nums2) {\n    \n};",
         "python": "class Solution:\n    def findMedianSortedArrays(self, nums1: list[int], nums2: list[int]) -> float:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-062",
+        "entry": "findMedianSortedArrays",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4118,6 +4748,12 @@
         "entry": "permute",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-052",
+        "entry": "permute",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4148,6 +4784,12 @@
         "runnerId": "shape-053",
         "entry": "subsets",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-052",
+        "entry": "subsets",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4186,6 +4828,12 @@
         "entry": "combinationSum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-057",
+        "entry": "combinationSum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4216,6 +4864,12 @@
         "runnerId": "shape-060",
         "entry": "combinationSum2",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-057",
+        "entry": "combinationSum2",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4323,6 +4977,12 @@
         "entry": "levelOrder",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-013",
+        "entry": "levelOrder",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4361,6 +5021,12 @@
         "entry": "rightSideView",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-012",
+        "entry": "rightSideView",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4395,6 +5061,12 @@
         "entry": "zigzagLevelOrder",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-013",
+        "entry": "zigzagLevelOrder",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4420,6 +5092,12 @@
         "cpp": "/*\n// Definition for a Node.\nclass Node {\npublic:\n    int val;\n    Node* left;\n    Node* right;\n    Node* next;\n\n    Node() : val(0), left(NULL), right(NULL), next(NULL) {}\n\n    Node(int _val) : val(_val), left(NULL), right(NULL), next(NULL) {}\n\n    Node(int _val, Node* _left, Node* _right, Node* _next)\n        : val(_val), left(_left), right(_right), next(_next) {}\n};\n*/\n\nclass Solution {\npublic:\n    Node* connect(Node* root) {\n        \n    }\n};",
         "javascript": "/**\n * // Definition for a _Node.\n * function _Node(val, left, right, next) {\n *    this.val = val === undefined ? null : val;\n *    this.left = left === undefined ? null : left;\n *    this.right = right === undefined ? null : right;\n *    this.next = next === undefined ? null : next;\n * };\n */\n\n/**\n * @param {_Node} root\n * @return {_Node}\n */\nvar connect = function(root) {\n    \n};",
         "python": "\"\"\"\n# Definition for a Node.\nclass Node:\n    def __init__(self, val: int = 0, left: 'Node' = None, right: 'Node' = None, next: 'Node' = None):\n        self.val = val\n        self.left = left\n        self.right = right\n        self.next = next\n\"\"\"\n\nclass Solution:\n    def connect(self, root: 'Node') -> 'Node':\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-022",
+        "entry": "connect",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4456,6 +5134,12 @@
         "runnerId": "shape-013",
         "entry": "widthOfBinaryTree",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "widthOfBinaryTree",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4494,6 +5178,12 @@
         "runnerId": "shape-015",
         "entry": "preorderTraversal",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-012",
+        "entry": "preorderTraversal",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4553,6 +5243,12 @@
         "entry": "isSymmetric",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-010",
+        "entry": "isSymmetric",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4610,6 +5306,12 @@
         "entry": "sortedArrayToBST",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-048",
+        "entry": "sortedArrayToBST",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4645,6 +5347,12 @@
         "entry": "countNodes",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "countNodes",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4677,6 +5385,12 @@
         "entry": "pathSum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-019",
+        "entry": "pathSum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4707,6 +5421,12 @@
         "runnerId": "shape-013",
         "entry": "maxAncestorDiff",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "maxAncestorDiff",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4743,6 +5463,12 @@
         "entry": "buildTree",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-061",
+        "entry": "buildTree",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4777,6 +5503,12 @@
         "runnerId": "shape-063",
         "entry": "buildTree",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-061",
+        "entry": "buildTree",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4846,6 +5578,12 @@
         "entry": "inorderTraversal",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-012",
+        "entry": "inorderTraversal",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4876,6 +5614,12 @@
         "entry": "minDiffInBST",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "minDiffInBST",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4905,6 +5649,12 @@
         "runnerId": "shape-013",
         "entry": "getMinimumDifference",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "getMinimumDifference",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -4937,6 +5687,12 @@
         "entry": "isValidBST",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-010",
+        "entry": "isValidBST",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4968,6 +5724,12 @@
         "entry": "kthSmallest",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-019",
+        "entry": "kthSmallest",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -4985,6 +5747,12 @@
         "python": "# Definition for a binary tree node.\n# class TreeNode:\n#     def __init__(self, val=0, left=None, right=None):\n#         self.val = val\n#         self.left = left\n#         self.right = right\nclass BSTIterator:\n\n    def __init__(self, root: TreeNode | None):\n        \n\n    def next(self) -> int:\n        \n\n    def hasNext(self) -> bool:\n        \n\n\n# Your BSTIterator object will be instantiated and called as such:\n# obj = BSTIterator(root)\n# param_1 = obj.next()\n# param_2 = obj.hasNext()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "BSTIterator",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "BSTIterator",
@@ -5026,6 +5794,12 @@
         "runnerId": "shape-015",
         "entry": "postorderTraversal",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-012",
+        "entry": "postorderTraversal",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5085,6 +5859,12 @@
         "runnerId": "shape-013",
         "entry": "diameterOfBinaryTree",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "diameterOfBinaryTree",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5235,6 +6015,12 @@
         "entry": "distributeCoins",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "distributeCoins",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5266,6 +6052,12 @@
         "runnerId": "shape-013",
         "entry": "maxPathSum",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "maxPathSum",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5314,6 +6106,12 @@
         "entry": "book",
         "className": "MyCalendar",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MyCalendar",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -5334,6 +6132,12 @@
         "entry": "book",
         "className": "MyCalendarTwo",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MyCalendarTwo",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -5351,6 +6155,12 @@
         "python": "class StockPrice:\n\n    def __init__(self):\n        \n\n    def update(self, timestamp: int, price: int) -> None:\n        \n\n    def current(self) -> int:\n        \n\n    def maximum(self) -> int:\n        \n\n    def minimum(self) -> int:\n        \n\n\n# Your StockPrice object will be instantiated and called as such:\n# obj = StockPrice()\n# obj.update(timestamp,price)\n# param_2 = obj.current()\n# param_3 = obj.maximum()\n# param_4 = obj.minimum()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "StockPrice",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "StockPrice",
@@ -5376,6 +6186,12 @@
         "entry": "",
         "className": "Trie",
         "actualRule": "method-sequence"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "Trie",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -5395,6 +6211,12 @@
         "python": "class WordDictionary:\n\n    def __init__(self):\n        \n\n    def addWord(self, word: str) -> None:\n        \n\n    def search(self, word: str) -> bool:\n        \n\n\n# Your WordDictionary object will be instantiated and called as such:\n# obj = WordDictionary()\n# obj.addWord(word)\n# param_2 = obj.search(word)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "WordDictionary",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "WordDictionary",
@@ -5463,6 +6285,12 @@
         "entry": "longestWord",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-098",
+        "entry": "longestWord",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5493,6 +6321,12 @@
         "runnerId": "shape-051",
         "entry": "findMaximumXOR",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "findMaximumXOR",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5588,6 +6422,12 @@
         "entry": "getOrder",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-071",
+        "entry": "getOrder",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5622,6 +6462,12 @@
         "entry": "assignTasks",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-063",
+        "entry": "assignTasks",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5639,6 +6485,12 @@
         "python": "class MedianFinder:\n\n    def __init__(self):\n        \n\n    def addNum(self, num: int) -> None:\n        \n\n    def findMedian(self) -> float:\n        \n\n\n# Your MedianFinder object will be instantiated and called as such:\n# obj = MedianFinder()\n# obj.addNum(num)\n# param_2 = obj.findMedian()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "MedianFinder",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "MedianFinder",
@@ -5679,6 +6531,12 @@
         "entry": "findMaximizedCapital",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-040",
+        "entry": "findMaximizedCapital",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5704,6 +6562,12 @@
         "cpp": "class Solution {\npublic:\n    vector<double> medianSlidingWindow(vector<int>& nums, int k) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number[]} nums\n * @param {number} k\n * @return {number[]}\n */\nvar medianSlidingWindow = function(nums, k) {\n    \n};",
         "python": "class Solution:\n    def medianSlidingWindow(self, nums: list[int], k: int) -> list[float]:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-056",
+        "entry": "medianSlidingWindow",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5735,6 +6599,12 @@
         "python": "class KthLargest:\n\n    def __init__(self, k: int, nums: list[int]):\n        \n\n    def add(self, val: int) -> int:\n        \n\n\n# Your KthLargest object will be instantiated and called as such:\n# obj = KthLargest(k, nums)\n# param_1 = obj.add(val)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "KthLargest",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "KthLargest",
@@ -5774,6 +6644,12 @@
         "runnerId": "shape-059",
         "entry": "topKFrequent",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-056",
+        "entry": "topKFrequent",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5838,6 +6714,12 @@
         "runnerId": "shape-077",
         "entry": "merge",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-072",
+        "entry": "merge",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5906,6 +6788,12 @@
         "entry": "findMinArrowShots",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "findMinArrowShots",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -5937,6 +6825,12 @@
         "runnerId": "shape-075",
         "entry": "maxEvents",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "maxEvents",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -5975,6 +6869,12 @@
         "runnerId": "shape-075",
         "entry": "eraseOverlapIntervals",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "eraseOverlapIntervals",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -6038,6 +6938,12 @@
         "runnerId": "shape-079",
         "entry": "kthSmallest",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-075",
+        "entry": "kthSmallest",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -6106,6 +7012,12 @@
         "entry": "smallestRange",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-071",
+        "entry": "smallestRange",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6136,6 +7048,12 @@
         "entry": "",
         "className": "BrowserHistory",
         "actualRule": "method-sequence"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "BrowserHistory",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -6155,6 +7073,12 @@
         "python": "class TimeMap:\n\n    def __init__(self):\n        \n\n    def set(self, key: str, value: str, timestamp: int) -> None:\n        \n\n    def get(self, key: str, timestamp: int) -> str:\n        \n\n\n# Your TimeMap object will be instantiated and called as such:\n# obj = TimeMap()\n# obj.set(key,value,timestamp)\n# param_2 = obj.get(key,timestamp)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "TimeMap",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "TimeMap",
@@ -6189,6 +7113,12 @@
         "entry": "",
         "className": "SnapshotArray",
         "actualRule": "method-sequence"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "SnapshotArray",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -6208,6 +7138,12 @@
         "python": "class Twitter:\n\n    def __init__(self):\n        \n\n    def postTweet(self, userId: int, tweetId: int) -> None:\n        \n\n    def getNewsFeed(self, userId: int) -> list[int]:\n        \n\n    def follow(self, followerId: int, followeeId: int) -> None:\n        \n\n    def unfollow(self, followerId: int, followeeId: int) -> None:\n        \n\n\n# Your Twitter object will be instantiated and called as such:\n# obj = Twitter()\n# obj.postTweet(userId,tweetId)\n# param_2 = obj.getNewsFeed(userId)\n# obj.follow(followerId,followeeId)\n# obj.unfollow(followerId,followeeId)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "Twitter",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "Twitter",
@@ -6234,6 +7170,12 @@
         "entry": "",
         "className": "LRUCache",
         "actualRule": "method-sequence"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "LRUCache",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -6251,6 +7193,12 @@
         "python": "class RandomizedSet:\n\n    def __init__(self):\n        \n\n    def insert(self, val: int) -> bool:\n        \n\n    def remove(self, val: int) -> bool:\n        \n\n    def getRandom(self) -> int:\n        \n\n\n# Your RandomizedSet object will be instantiated and called as such:\n# obj = RandomizedSet()\n# param_1 = obj.insert(val)\n# param_2 = obj.remove(val)\n# param_3 = obj.getRandom()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "RandomizedSet",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "RandomizedSet",
@@ -6282,6 +7230,12 @@
         "entry": "",
         "className": "FoodRatings",
         "actualRule": "method-sequence"
+      },
+      "javascript": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "FoodRatings",
+        "actualRule": "method-sequence"
       }
     },
     {
@@ -6299,6 +7253,12 @@
         "python": "class FreqStack:\n\n    def __init__(self):\n        \n\n    def push(self, val: int) -> None:\n        \n\n    def pop(self) -> int:\n        \n\n\n# Your FreqStack object will be instantiated and called as such:\n# obj = FreqStack()\n# obj.push(val)\n# param_2 = obj.pop()"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "FreqStack",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "FreqStack",
@@ -6335,6 +7295,12 @@
         "entry": "jump",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "jump",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6365,6 +7331,12 @@
         "entry": "minAddToMakeValid",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "minAddToMakeValid",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6393,6 +7365,12 @@
         "cpp": "class Solution {\npublic:\n    int canCompleteCircuit(vector<int>& gas, vector<int>& cost) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number[]} gas\n * @param {number[]} cost\n * @return {number}\n */\nvar canCompleteCircuit = function(gas, cost) {\n    \n};",
         "python": "class Solution:\n    def canCompleteCircuit(self, gas: list[int], cost: list[int]) -> int:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-062",
+        "entry": "canCompleteCircuit",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6489,6 +7467,12 @@
         "runnerId": "shape-051",
         "entry": "candy",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "candy",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -6588,6 +7572,12 @@
         "entry": "numOfMinutes",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-040",
+        "entry": "numOfMinutes",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6623,6 +7613,12 @@
         "entry": "allPathsSourceTarget",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-072",
+        "entry": "allPathsSourceTarget",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6657,6 +7653,12 @@
         "cpp": "/*\n// Definition for a Node.\nclass Node {\npublic:\n    int val;\n    vector<Node*> neighbors;\n    Node() {\n        val = 0;\n        neighbors = vector<Node*>();\n    }\n    Node(int _val) {\n        val = _val;\n        neighbors = vector<Node*>();\n    }\n    Node(int _val, vector<Node*> _neighbors) {\n        val = _val;\n        neighbors = _neighbors;\n    }\n};\n*/\n\nclass Solution {\npublic:\n    Node* cloneGraph(Node* node) {\n        \n    }\n};",
         "javascript": "/**\n * // Definition for a _Node.\n * function _Node(val, neighbors) {\n *    this.val = val === undefined ? 0 : val;\n *    this.neighbors = neighbors === undefined ? [] : neighbors;\n * };\n */\n\n/**\n * @param {_Node} node\n * @return {_Node}\n */\nvar cloneGraph = function(node) {\n    \n};",
         "python": "\"\"\"\n# Definition for a Node.\nclass Node:\n    def __init__(self, val = 0, neighbors = None):\n        self.val = val\n        self.neighbors = neighbors if neighbors is not None else []\n\"\"\"\n\nfrom typing import Optional\nclass Solution:\n    def cloneGraph(self, node: Optional['Node']) -> Optional['Node']:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-022",
+        "entry": "cloneGraph",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6807,6 +7809,12 @@
         "entry": "pacificAtlantic",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-072",
+        "entry": "pacificAtlantic",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6846,6 +7854,12 @@
         "entry": "largestIsland",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "largestIsland",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6884,6 +7898,12 @@
         "entry": "orangesRotting",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "orangesRotting",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -6917,6 +7937,12 @@
         "runnerId": "shape-077",
         "entry": "updateMatrix",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-072",
+        "entry": "updateMatrix",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -6988,6 +8014,12 @@
         "entry": "shortestPath",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-075",
+        "entry": "shortestPath",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7022,6 +8054,12 @@
         "runnerId": "shape-081",
         "entry": "numBusesToDestination",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-077",
+        "entry": "numBusesToDestination",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7094,6 +8132,12 @@
         "entry": "findOrder",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-045",
+        "entry": "findOrder",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7131,6 +8175,12 @@
         "entry": "eventualSafeNodes",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-071",
+        "entry": "eventualSafeNodes",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7165,6 +8215,12 @@
         "runnerId": "shape-043",
         "entry": "findMinHeightTrees",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-045",
+        "entry": "findMinHeightTrees",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7230,6 +8286,12 @@
         "entry": "findCircleNum",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "findCircleNum",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7264,6 +8326,12 @@
         "runnerId": "shape-076",
         "entry": "findRedundantConnection",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-071",
+        "entry": "findRedundantConnection",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7360,6 +8428,12 @@
         "entry": "minCostConnectPoints",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "minCostConnectPoints",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7398,6 +8472,12 @@
         "runnerId": "shape-081",
         "entry": "networkDelayTime",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-077",
+        "entry": "networkDelayTime",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7512,6 +8592,12 @@
         "entry": "minimumEffortPath",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "minimumEffortPath",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7546,6 +8632,12 @@
         "runnerId": "shape-075",
         "entry": "swimInWater",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "swimInWater",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7634,6 +8726,12 @@
         "entry": "climbStairs",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "climbStairs",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7666,6 +8764,12 @@
         "entry": "minCostClimbingStairs",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "minCostClimbingStairs",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7697,6 +8801,12 @@
         "runnerId": "shape-051",
         "entry": "rob",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "rob",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7734,6 +8844,12 @@
         "entry": "rob",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "rob",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7765,6 +8881,12 @@
         "runnerId": "shape-050",
         "entry": "canPartition",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-049",
+        "entry": "canPartition",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7799,6 +8921,12 @@
         "entry": "findTargetSumWays",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "findTargetSumWays",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7829,6 +8957,12 @@
         "runnerId": "shape-051",
         "entry": "lastStoneWeightII",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "lastStoneWeightII",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7865,6 +8999,12 @@
         "runnerId": "shape-057",
         "entry": "coinChange",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "coinChange",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7904,6 +9044,12 @@
         "entry": "change",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-043",
+        "entry": "change",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -7934,6 +9080,12 @@
         "runnerId": "shape-027",
         "entry": "numSquares",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "numSquares",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -7970,6 +9122,12 @@
         "entry": "lengthOfLIS",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "lengthOfLIS",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8003,6 +9161,12 @@
         "entry": "findNumberOfLIS",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "findNumberOfLIS",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8034,6 +9198,12 @@
         "runnerId": "shape-075",
         "entry": "maxEnvelopes",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "maxEnvelopes",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8068,6 +9238,12 @@
         "entry": "uniquePathsWithObstacles",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "uniquePathsWithObstacles",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8100,6 +9276,12 @@
         "runnerId": "shape-075",
         "entry": "minPathSum",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "minPathSum",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8134,6 +9316,12 @@
         "entry": "minimumTotal",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "minimumTotal",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8166,6 +9354,12 @@
         "runnerId": "shape-075",
         "entry": "countSquares",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "countSquares",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8201,6 +9395,12 @@
         "runnerId": "shape-075",
         "entry": "maxPoints",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "maxPoints",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8265,6 +9465,12 @@
         "entry": "maxCoins",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxCoins",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8299,6 +9505,12 @@
         "runnerId": "shape-075",
         "entry": "cherryPickup",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "cherryPickup",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8338,6 +9550,12 @@
         "entry": "longestIncreasingPath",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "longestIncreasingPath",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8375,6 +9593,12 @@
         "entry": "longestCommonSubsequence",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-089",
+        "entry": "longestCommonSubsequence",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8407,6 +9631,12 @@
         "entry": "longestPalindromeSubseq",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "longestPalindromeSubseq",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8438,6 +9668,12 @@
         "runnerId": "shape-110",
         "entry": "minDistance",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-089",
+        "entry": "minDistance",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8475,6 +9711,12 @@
         "runnerId": "shape-100",
         "entry": "numDecodings",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "numDecodings",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8578,6 +9820,12 @@
         "entry": "isMatch",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-088",
+        "entry": "isMatch",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8609,6 +9857,12 @@
         "runnerId": "shape-110",
         "entry": "numDistinct",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-089",
+        "entry": "numDistinct",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8645,6 +9899,12 @@
         "entry": "minCut",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-082",
+        "entry": "minCut",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8676,6 +9936,12 @@
         "runnerId": "shape-013",
         "entry": "rob",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "rob",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8764,6 +10030,12 @@
         "entry": "minCameraCover",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-011",
+        "entry": "minCameraCover",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8802,6 +10074,12 @@
         "runnerId": "shape-043",
         "entry": "sumOfDistancesInTree",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-045",
+        "entry": "sumOfDistancesInTree",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8842,6 +10120,12 @@
         "entry": "minSessions",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "minSessions",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8874,6 +10158,12 @@
         "runnerId": "shape-057",
         "entry": "distributeCookies",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-055",
+        "entry": "distributeCookies",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -8911,6 +10201,12 @@
         "entry": "shortestPathLength",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "shortestPathLength",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8941,6 +10237,12 @@
         "entry": "countNumbersWithUniqueDigits",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "countNumbersWithUniqueDigits",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -8969,6 +10271,12 @@
         "runnerId": "shape-027",
         "entry": "countDigitOne",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "countDigitOne",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -9061,6 +10369,12 @@
         "cpp": "class Solution {\npublic:\n    double soupServings(int n) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number} n\n * @return {number}\n */\nvar soupServings = function(n) {\n    \n};",
         "python": "class Solution:\n    def soupServings(self, n: int) -> float:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "soupServings",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9122,6 +10436,12 @@
         "entry": "maxProfit",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxProfit",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9159,6 +10479,12 @@
         "entry": "maxProfit",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-050",
+        "entry": "maxProfit",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9195,6 +10521,12 @@
         "entry": "isPalindrome",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-030",
+        "entry": "isPalindrome",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9227,6 +10559,12 @@
         "runnerId": "shape-027",
         "entry": "reverse",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "reverse",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -9262,6 +10600,12 @@
         "runnerId": "shape-027",
         "entry": "trailingZeroes",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-031",
+        "entry": "trailingZeroes",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -9324,6 +10668,12 @@
         "cpp": "class Solution {\npublic:\n    double minAreaFreeRect(vector<vector<int>>& points) {\n        \n    }\n};",
         "javascript": "/**\n * @param {number[][]} points\n * @return {number}\n */\nvar minAreaFreeRect = function(points) {\n    \n};",
         "python": "class Solution:\n    def minAreaFreeRect(self, points: list[list[int]]) -> float:\n        "
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "minAreaFreeRect",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9356,6 +10706,12 @@
         "entry": "maxPoints",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-070",
+        "entry": "maxPoints",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9387,6 +10743,12 @@
         "entry": "repeatedStringMatch",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-089",
+        "entry": "repeatedStringMatch",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9416,6 +10778,12 @@
         "runnerId": "shape-103",
         "entry": "shortestPalindrome",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "shortestPalindrome",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -9447,6 +10815,12 @@
         "entry": "longestDupSubstring",
         "className": "Solution",
         "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-083",
+        "entry": "longestDupSubstring",
+        "className": "",
+        "actualRule": "pure"
       }
     },
     {
@@ -9467,6 +10841,12 @@
         "python": "class NumArray:\n\n    def __init__(self, nums: list[int]):\n        \n\n    def update(self, index: int, val: int) -> None:\n        \n\n    def sumRange(self, left: int, right: int) -> int:\n        \n\n\n# Your NumArray object will be instantiated and called as such:\n# obj = NumArray(nums)\n# obj.update(index,val)\n# param_2 = obj.sumRange(left,right)"
       },
       "python": {
+        "runnerId": "method-sequence",
+        "entry": "",
+        "className": "NumArray",
+        "actualRule": "method-sequence"
+      },
+      "javascript": {
         "runnerId": "method-sequence",
         "entry": "",
         "className": "NumArray",
@@ -9505,6 +10885,12 @@
         "runnerId": "shape-052",
         "entry": "countSmaller",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-051",
+        "entry": "countSmaller",
+        "className": "",
         "actualRule": "pure"
       }
     },
@@ -9567,6 +10953,12 @@
         "runnerId": "shape-077",
         "entry": "getSkyline",
         "className": "Solution",
+        "actualRule": "pure"
+      },
+      "javascript": {
+        "runnerId": "shape-072",
+        "entry": "getSkyline",
+        "className": "",
         "actualRule": "pure"
       }
     }

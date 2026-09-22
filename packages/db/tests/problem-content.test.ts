@@ -1,8 +1,8 @@
-// Feature 18a.1 gate (dataset shape): the committed problem-content dataset
-// must exactly cover the catalog with cleaned copy, verbatim starters, and
-// resolvable Python runner links. Reads PROBLEM_CONTENT_PATH when set (used
-// to prove the gate rejects a broken dataset), otherwise the repo-root
-// dataset this feature generates.
+// Feature 18a.1/18a.2 gate (dataset shape): the committed problem-content
+// dataset must exactly cover the catalog with cleaned copy, verbatim
+// starters, and resolvable Python/JavaScript runner links. Reads
+// PROBLEM_CONTENT_PATH when set (used to prove the gate rejects a broken
+// dataset), otherwise the repo-root dataset this feature generates.
 import { describe, expect, it } from "vitest";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
@@ -21,6 +21,14 @@ const runnersDir = resolve(
 const methodSequenceRunner = resolve(
   here,
   "../../../packages/backend/src/shape-runners/python/method_sequence.py",
+);
+const jsRunnersDir = resolve(
+  here,
+  "../../../packages/backend/src/shape-runners/javascript/runners",
+);
+const jsMethodSequenceRunner = resolve(
+  here,
+  "../../../packages/backend/src/shape-runners/javascript/method_sequence.js",
 );
 
 interface DatasetExample {
@@ -41,6 +49,12 @@ interface DatasetRecord {
     readonly python?: unknown;
   };
   readonly python?: {
+    readonly runnerId?: unknown;
+    readonly entry?: unknown;
+    readonly className?: unknown;
+    readonly actualRule?: unknown;
+  };
+  readonly javascript?: {
     readonly runnerId?: unknown;
     readonly entry?: unknown;
     readonly className?: unknown;
@@ -67,6 +81,12 @@ function runnerFile(runnerId: string): string {
   return runnerId === "method-sequence"
     ? methodSequenceRunner
     : resolve(runnersDir, `${runnerId}.py`);
+}
+
+function jsRunnerFile(runnerId: string): string {
+  return runnerId === "method-sequence"
+    ? jsMethodSequenceRunner
+    : resolve(jsRunnersDir, `${runnerId}.js`);
 }
 
 describe("problem-content dataset (feature 18a.1)", () => {
@@ -143,6 +163,35 @@ describe("problem-content dataset (feature 18a.1)", () => {
         expect(
           (p.starters?.python as string).includes(`def ${entry as string}(`),
           `${p.id} starter defines entry method`,
+        ).toBe(true);
+      }
+    }
+    expect(linked, "linked problems").toBeGreaterThan(0);
+  });
+
+  it("every javascript link resolves to an existing runner and names its entry", () => {
+    let linked = 0;
+    for (const p of dataset.problems) {
+      if (p.javascript === undefined) continue;
+      linked += 1;
+      const { runnerId, entry, className, actualRule } = p.javascript;
+      expect(typeof runnerId, `${p.id} runnerId`).toBe("string");
+      expect(existsSync(jsRunnerFile(runnerId as string)), `${p.id} runner file`).toBe(true);
+      expect(["pure", "in-place", "method-sequence"], `${p.id} actualRule`).toContain(actualRule);
+      const starter = p.starters?.javascript as string;
+      if (actualRule === "method-sequence") {
+        expect(typeof className, `${p.id} className`).toBe("string");
+        expect((className as string).trim().length, `${p.id} className`).toBeGreaterThan(0);
+        expect(
+          starter.includes(className as string),
+          `${p.id} starter defines linked constructor`,
+        ).toBe(true);
+      } else {
+        expect(typeof entry, `${p.id} entry`).toBe("string");
+        expect((entry as string).trim().length, `${p.id} entry`).toBeGreaterThan(0);
+        expect(
+          new RegExp(`\\b${entry as string}\\s*=\\s*function\\b`).test(starter),
+          `${p.id} starter defines entry function`,
         ).toBe(true);
       }
     }
