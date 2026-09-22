@@ -4,6 +4,8 @@ dist/
 *.log
 logs/
 *.tsbuildinfo
+content/
+scripts/
 blueprint/references
 opencode.jsonc
 opencode.json
