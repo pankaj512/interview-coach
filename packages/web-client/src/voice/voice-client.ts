@@ -30,6 +30,7 @@ import {
   buildSessionUpdate,
 } from "./session.js";
 import { forwardToolCall, ToolOutputLedger, type ToolExecutor } from "./tool-forwarder.js";
+import { loadVoicePreference } from "./voice-prefs.js";
 
 export type VoiceConnectionState =
   | "idle"
@@ -256,7 +257,7 @@ export class VoiceInterviewClient {
       this.handleClose(event.code, event.reason);
     };
 
-    ws.send(JSON.stringify(buildSessionUpdate(session)));
+    ws.send(JSON.stringify(buildSessionUpdate(session, loadVoicePreference() ?? undefined)));
     this.metric("voice.session_update_sent", { interviewId });
 
     // Wait for session.updated like the CLI (3s), then proceed regardless —

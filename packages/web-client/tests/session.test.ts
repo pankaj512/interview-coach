@@ -61,6 +61,12 @@ describe("session wire format", () => {
     expect(submit?.parameters.required).toEqual([]);
   });
 
+  it("prefers a stored voice override but falls back to the mint", () => {
+    expect(buildSessionUpdate(mint(), "sage").session["voice"]).toBe("sage");
+    expect(buildSessionUpdate(mint(), "").session["voice"]).toBe("alloy");
+    expect(buildSessionUpdate(mint()).session["voice"]).toBe("alloy");
+  });
+
   it("builds a CLI-compatible session.update from the mint", () => {
     const update = buildSessionUpdate(mint());
     expect(update.type).toBe("session.update");

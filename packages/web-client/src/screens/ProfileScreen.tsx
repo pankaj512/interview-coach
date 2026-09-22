@@ -8,7 +8,7 @@ import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { ProfileInput, SerializedUserProfile } from "../api/types.js";
 import { ProfileForm } from "../components/ProfileForm.js";
-import { FormCard, SectionHead } from "../ds/primitives.js";
+import { FormCard } from "../ds/primitives.js";
 import { formatApiError } from "../state/use-interview.js";
 
 export function ProfileScreen({
@@ -39,7 +39,7 @@ export function ProfileScreen({
 
   return (
     <>
-      <SectionHead title="Profile" meta="Account and interview goals" />
+      <h1 className="visually-hidden">Profile</h1>
       <FormCard title="Account">
         <div className="profile-identity">
           <span className="avatar avatar-lg" aria-hidden="true">

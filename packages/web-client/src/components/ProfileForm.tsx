@@ -57,6 +57,13 @@ export function ProfileForm({
     level !== (initial?.level ?? "") ||
     goals.trim() !== (initial?.goals ?? "");
 
+  function reset() {
+    setInterviewTypes(initial?.interviewTypes ?? ["dsa"]);
+    setRole(initial?.role ?? "");
+    setLevel(initial?.level ?? "");
+    setGoals(initial?.goals ?? "");
+  }
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (invalid) return;
@@ -128,6 +135,11 @@ export function ProfileForm({
       )}
       <div className="row actions">
         {onCancel !== undefined && <GhostButton onClick={onCancel}>Cancel</GhostButton>}
+        {dirty && !busy && (
+          <GhostButton type="button" onClick={reset}>
+            Discard changes
+          </GhostButton>
+        )}
         {(!hideSubmitUntilDirty || dirty) && (
           <PrimaryButton type="submit" disabled={busy || invalid}>
             {busy ? "Saving…" : submitLabel}

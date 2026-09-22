@@ -225,16 +225,23 @@ export function App() {
   }, []);
 
   function navigate(key: NavKey) {
+    // Profile is a flow, not a nav view; the tab just enters it. Guests
+    // and signed-out visitors have no profile, so they get sign-in.
+    if (key === "profile") {
+      goAuth("profile");
+      return;
+    }
     setNav(key);
     setFlow(null);
     pushPath(pathForSnapshot(key, null, session !== null || guestMode));
   }
 
   function goAuth(target: "signin" | "signup" | "profile") {
+    const resolved = target === "profile" && session === null ? "signin" : target;
     setNav(null);
-    setFlow(target);
-    if (session === null && !guestMode && (target === "signin" || target === "signup")) {
-      pushPath(`/${target}`);
+    setFlow(resolved);
+    if (session === null && !guestMode && (resolved === "signin" || resolved === "signup")) {
+      pushPath(`/${resolved}`);
     }
   }
 
@@ -579,7 +586,7 @@ export function App() {
   if (flow === "profile" && session !== null) {
     return (
       <AppShell
-        active={null}
+        active="profile"
         onNavigate={navigate}
         onSignIn={() => goAuth("signin")}
         onProfile={() => goAuth("profile")}

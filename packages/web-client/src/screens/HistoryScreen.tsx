@@ -1,18 +1,15 @@
-// H-History (ux-spec §26): searchable, filterable, date-grouped past interviews.
+// H-History (ux-spec §26): server-kept record as a flat table; detail views
+// re-fetch canonical state. Filters, per-row delete, and pagination are kept;
+// scores render verbatim in canonical /100 units.
 
 import { useMemo, useState } from "react";
 import { GhostButton, PrimaryButton } from "../ds/buttons.js";
-import { Card, ChipList, Pill, SectionHead } from "../ds/primitives.js";
+import { Card, ChipList, Pill } from "../ds/primitives.js";
+import { formatRecommendation } from "../progress.js";
 import type { HistoryEntry } from "../history.js";
 
-function dayLabel(iso: string): string {
-  const date = new Date(iso);
-  const today = new Date();
-  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const diff = Math.round((startOf(today) - startOf(date)) / 86_400_000);
-  if (diff <= 0) return "Today";
-  if (diff === 1) return "Yesterday";
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+function shortDate(iso: string): string {
+  return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 export function HistoryScreen({
@@ -59,20 +56,17 @@ export function HistoryScreen({
     return "not evaluated";
   };
 
-  const groups = useMemo(() => {
-    const map = new Map<string, HistoryEntry[]>();
-    for (const entry of filtered) {
-      const key = dayLabel(entry.at);
-      const list = map.get(key) ?? [];
-      list.push(entry);
-      map.set(key, list);
-    }
-    return [...map.entries()];
-  }, [filtered]);
+  const frozen = busyId !== null || deletingId !== null || loading;
 
   return (
     <>
-      <SectionHead title="Interview History" meta={filtered.length === 1 ? "1 session" : `${filtered.length} sessions`} />
+      <div className="page-head">
+        <div>
+          <h1 className="page-title">Interview history</h1>
+          <p className="lede">Your completed interviews and their scores. Opening a row loads its full detail.</p>
+        </div>
+        <PrimaryButton onClick={onNew}>Start new interview</PrimaryButton>
+      </div>
       <ChipList label="Quick filters">
         <Pill label="All" selected={quick === "all"} onClick={() => setQuick("all")} />
         <Pill label="Evaluated" selected={quick === "evaluated"} onClick={() => setQuick("evaluated")} />
@@ -98,84 +92,76 @@ export function HistoryScreen({
 
       {filtered.length === 0 ? (
         <Card className="empty-state">
-          <p>{entries.length === 0 ? "No interviews yet." : "No interviews match your filters."}</p>
-          <p className="hint">Your server-backed practice history will appear here.</p>
-          <PrimaryButton onClick={onNew}>Start your first interview</PrimaryButton>
+          {entries.length === 0 ? (
+            <>
+              <h2>No interviews to show yet</h2>
+              <p className="hint">Your recent sessions will appear here once you complete one.</p>
+              <PrimaryButton onClick={onNew}>Start practice</PrimaryButton>
+            </>
+          ) : (
+            <p>No interviews match your filters.</p>
+          )}
         </Card>
       ) : (
-        groups.map(([label, items]) => (
-          <section key={label} className="history-group">
-            <h2 className="history-day">{label}</h2>
-            <ul className="history-list">
-              {items.map((entry) => (
-                <li key={entry.id}>
-                  <div
-                    className="history-row"
-                    role="button"
-                    tabIndex={0}
-                    aria-disabled={busyId !== null || deletingId !== null || loading}
-                    onClick={() => {
-                      if (busyId !== null || deletingId !== null || loading) return;
-                      onSelect(entry);
-                    }}
-                    onKeyDown={(event) => {
-                      if (event.key !== "Enter" && event.key !== " ") return;
-                      event.preventDefault();
-                      if (busyId !== null || deletingId !== null || loading) return;
-                      onSelect(entry);
-                    }}
-                  >
-                    <span className="history-main">
-                      <strong>{entry.interviewType ?? "Coding"}</strong>
-                      <span className="hint">{entry.status.replace(/_/g, " ")}</span>
-                    </span>
-                    <span className="history-score">
-                      {entry.overallScore !== undefined && `${entry.overallScore.toFixed(1)} / 10`}
-                    </span>
-                    <span className="history-meta">
-                      <span className="badge">{evaluationLabel(entry.evaluationStatus)}</span>
-                      {entry.difficulty !== undefined && <span className="badge">{entry.difficulty}</span>}
-                      <span className="hint">{entry.durationMin === undefined ? "" : `${entry.durationMin} min`}</span>
-                    </span>
-                    <span className="history-action">
-                      <PrimaryButton
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onSelect(entry);
-                        }}
-                        disabled={busyId !== null || deletingId !== null || loading}
-                      >
-                        {busyId === entry.id || loading ? "Loading…" : "Review"}
-                      </PrimaryButton>
-                      <GhostButton
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          onDelete(entry);
-                        }}
-                        disabled={(deletingId !== null && deletingId !== entry.id) || busyId !== null || loading}
-                      >
-                        {deletingId === entry.id ? "Deleting…" : "Delete"}
-                      </GhostButton>
-                    </span>
-                  </div>
-                </li>
+        <Card className="table-card">
+          <table className="hist-table">
+            <caption className="visually-hidden">
+              {filtered.length === 1 ? "1 session" : `${filtered.length} sessions`}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Session</th>
+                <th scope="col">Date</th>
+                <th scope="col">Score</th>
+                <th scope="col">Evaluation</th>
+                <th scope="col">Difficulty</th>
+                <th scope="col">
+                  <span className="visually-hidden">Row actions</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((entry) => (
+                <tr key={entry.id}>
+                  <td>
+                    <strong>{entry.interviewType ?? "Coding"}</strong>{" "}
+                    <span className="hint">{entry.status.replace(/_/g, " ")}</span>
+                  </td>
+                  <td>{shortDate(entry.at)}</td>
+                  <td className="score">{entry.overallScore === undefined ? "" : `${entry.overallScore} / 100`}</td>
+                  <td>
+                    {entry.recommendation === undefined || entry.recommendation === "" ? (
+                      <span className="pill">{evaluationLabel(entry.evaluationStatus)}</span>
+                    ) : (
+                      <span className="pill hot">{formatRecommendation(entry.recommendation)}</span>
+                    )}
+                  </td>
+                  <td>{entry.difficulty === undefined ? <span className="hint">—</span> : <span className="pill">{entry.difficulty}</span>}</td>
+                  <td className="hist-actions">
+                    <PrimaryButton onClick={() => onSelect(entry)} disabled={frozen}>
+                      {busyId === entry.id || loading ? "Loading…" : "Review"}
+                    </PrimaryButton>
+                    <GhostButton
+                      onClick={() => onDelete(entry)}
+                      disabled={(deletingId !== null && deletingId !== entry.id) || busyId !== null || loading}
+                    >
+                      {deletingId === entry.id ? "Deleting…" : "Delete"}
+                    </GhostButton>
+                  </td>
+                </tr>
               ))}
-            </ul>
-          </section>
-        ))
+            </tbody>
+          </table>
+        </Card>
       )}
 
       {hasMore && (
         <div className="row actions">
-          <GhostButton onClick={onLoadMore} disabled={busyId !== null || deletingId !== null || loading}>
+          <GhostButton onClick={onLoadMore} disabled={frozen}>
             {loading ? "Loading…" : "Load more"}
           </GhostButton>
         </div>
       )}
-
-      <div className="row actions">
-        <PrimaryButton onClick={onNew}>Start new interview</PrimaryButton>
-      </div>
     </>
   );
 }

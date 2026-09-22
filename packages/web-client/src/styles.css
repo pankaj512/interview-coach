@@ -584,6 +584,18 @@ h4 {
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
   width: 100%;
+  /* Vertical rhythm: stacked cards had zero separation (plain block
+     container, marginless cards). One 24px gap matches the .cols
+     gutters for a uniform grid feel. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+/* The flex gap already separates the intro line; its legacy bottom
+   margin would double the space. */
+.wrap > .prep {
+  margin-bottom: 0;
 }
 
 .wrap > h1 {
@@ -715,6 +727,38 @@ h4 {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--space-lg);
+}
+
+/* Page header: title + lede left, primary action right, no scroll needed. */
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+/* Progress two-column layout: trend + curriculum left, focus + strengths +
+   mastery right; collapses below 640px. Columns stack their cards with a
+   uniform gap. */
+.prog-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: var(--space-lg);
+  align-items: start;
+}
+
+.prog-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .prog-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 700px) {
@@ -854,8 +898,12 @@ button.brand {
 
 .shell-nav-active {
   color: var(--text);
-  font-weight: 600;
-  border-bottom-color: var(--primary);
+  font-weight: 700;
+  border-bottom-color: transparent;
+  background: var(--primary-soft);
+  border-radius: var(--radius-full);
+  padding-left: var(--space-sm);
+  padding-right: var(--space-sm);
 }
 
 .shell-topbar .who {
@@ -912,6 +960,9 @@ button.brand {
 .section-title {
   font-size: var(--fs-heading);
   font-weight: var(--fw-bold);
+  /* Air between the title and the first list divider: without it the top
+     border of the first row reads as a title underline. */
+  margin-bottom: var(--space-sm);
 }
 
 .section-head {
@@ -2477,13 +2528,6 @@ textarea.code {
 }
 
 /* ---------- Progress ---------- */
-.progress-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: var(--s-12);
-  align-items: start;
-}
-
 .trend-chart {
   width: 100%;
   height: auto;
@@ -2493,6 +2537,11 @@ textarea.code {
 .trend-grid {
   stroke: var(--line-base);
   stroke-width: 1;
+}
+
+.trend-tick {
+  font-size: 11px;
+  fill: var(--ink-muted);
 }
 
 .trend-line {
@@ -2507,7 +2556,45 @@ textarea.code {
   fill: var(--info-solid);
 }
 
+.trow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-sm);
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+/* Dividers sit between rows only: an opening divider under the card title
+   with no closing one reads as a title underline (same rule .item uses). */
+.trow + .trow {
+  border-top: 1px solid var(--border);
+}
+
+.trow > span:first-child {
+  flex: 1;
+}
+
+.trow .pct {
+  margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
 /* ---------- History ---------- */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 .history-controls {
   display: flex;
   gap: var(--s-12);
@@ -2519,74 +2606,42 @@ textarea.code {
   min-width: 240px;
 }
 
-.history-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-8);
-}
-
-.history-day {
-  font-size: var(--fs-small);
-  font-weight: var(--fw-medium);
-  color: var(--ink-muted);
-}
-
-.history-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--s-8);
-}
-
-.history-row {
+.hist-table {
   width: 100%;
-  display: grid;
-  grid-template-columns: 1fr 140px 200px auto;
-  align-items: center;
-  gap: var(--s-12);
-  background: var(--surface-base);
-  border: var(--bw-1) solid var(--line-base);
-  border-radius: var(--r-md);
-  padding: var(--s-12) var(--s-16);
-  color: var(--ink-base);
-  cursor: pointer;
+  border-collapse: collapse;
+  font-size: var(--fs-small);
+}
+
+.hist-table th {
   text-align: left;
-}
-
-.history-row:hover:not(:disabled) {
-  border-color: var(--line-strong);
-}
-
-.history-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.history-score {
-  font-size: var(--fs-heading);
-  font-weight: var(--fw-bold);
-}
-
-.history-meta {
-  display: flex;
-  align-items: center;
-  gap: var(--s-8);
-}
-
-.history-meta .hint {
+  color: var(--ink-muted);
+  font-weight: var(--fw-medium);
+  font-size: 12px;
+  padding: var(--s-8) var(--s-12);
+  border-bottom: var(--bw-1) solid var(--line-base);
   white-space: nowrap;
 }
 
-.history-action {
-  color: var(--info-solid);
-  font-size: var(--fs-small);
-  text-align: right;
+.hist-table td {
+  padding: var(--s-8) var(--s-12);
+  border-bottom: var(--bw-1) solid var(--line-base);
+  vertical-align: middle;
+}
+
+.hist-table tr:last-child td {
+  border-bottom: 0;
+}
+
+.hist-table .score {
+  font-family: var(--font-mono);
+  white-space: nowrap;
+}
+
+.hist-actions {
   display: flex;
   gap: var(--s-8);
   justify-content: flex-end;
+  white-space: nowrap;
 }
 
 .badge {
@@ -2623,6 +2678,24 @@ textarea.code {
 
 .setting-row > span:first-child {
   color: var(--ink-base);
+}
+
+.kv {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s-16);
+  padding: var(--s-8) 0;
+  border-bottom: var(--bw-1) solid var(--line-base);
+  font-size: var(--fs-small);
+}
+
+.kv:last-of-type {
+  border-bottom: 0;
+}
+
+.kv > span:first-child {
+  color: var(--ink-muted);
+  min-width: 120px;
 }
 
 .switch {
@@ -2738,14 +2811,12 @@ textarea.code {
   display: flex;
   flex-direction: column;
   gap: var(--s-8);
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 
 /* ---------- Responsive (ux-spec §34) ---------- */
 @media (max-width: 1100px) {
-  .progress-grid {
-    grid-template-columns: 1fr;
-  }
   .setup-layout {
     grid-template-columns: 1fr;
   }
@@ -2774,12 +2845,8 @@ textarea.code {
     align-items: flex-start;
     gap: var(--s-16);
   }
-  .history-row {
-    grid-template-columns: 1fr auto;
-  }
-  .history-meta,
-  .history-action {
-    grid-column: 1 / -1;
+  .hist-table {
+    font-size: 13px;
   }
   .control-bar {
     flex-wrap: wrap;
@@ -2892,21 +2959,7 @@ textarea.code {
   color: var(--danger-solid);
 }
 
-.account-row {
-  display: flex;
-  align-items: center;
-  gap: var(--s-12);
-  flex-wrap: wrap;
-}
-
-.account-id-inline {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.chip-guest,
-.chip-signed {
+.chip-guest {
   display: inline-flex;
   align-items: center;
   gap: var(--s-4);
@@ -2919,11 +2972,6 @@ textarea.code {
 .chip-guest {
   color: var(--warning-solid);
   border-color: var(--warning-solid);
-}
-
-.chip-signed {
-  color: var(--voice-solid);
-  border-color: var(--voice-solid);
 }
 
 .auth-wrap {

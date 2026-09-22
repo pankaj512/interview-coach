@@ -6,12 +6,13 @@
 import type { ReactNode } from "react";
 import { AccountMenu } from "./AccountMenu.js";
 
-export type NavKey = "dashboard" | "history" | "progress" | "settings";
+export type NavKey = "dashboard" | "history" | "progress" | "profile" | "settings";
 
 const NAV: readonly { key: NavKey; label: string }[] = [
   { key: "dashboard", label: "Dashboard" },
   { key: "history", label: "Interview History" },
   { key: "progress", label: "Progress" },
+  { key: "profile", label: "Profile" },
   { key: "settings", label: "Settings" },
 ];
 

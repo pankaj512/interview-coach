@@ -1,7 +1,6 @@
-// Settings > Account section (ux-spec H-Account).
-//
-// Phase 2: there is no anonymous loop, so the signed-out state just points at
-// sign-in (the App gate normally prevents reaching Settings signed out).
+// Settings > Account card (ux-spec §30): signed-in identity with profile
+// management, or the signed-in entry point (the App gate normally prevents
+// reaching Settings signed out, so this is a fallback, not a loop).
 
 import { Card } from "../ds/primitives.js";
 import { DangerButton, PrimaryButton } from "../ds/buttons.js";
@@ -21,7 +20,7 @@ export function AccountSection({
   if (session === null) {
     return (
       <Card className="settings-section">
-        <h3 className="section-title">Account</h3>
+        <h2 className="section-title">Account</h2>
         <p className="hint">Sign in to save your interviews and track progress.</p>
         <div className="row actions">
           <PrimaryButton onClick={onSignIn}>Sign in</PrimaryButton>
@@ -35,13 +34,14 @@ export function AccountSection({
 
   return (
     <Card className="settings-section">
-      <h3 className="section-title">Account</h3>
-      <div className="account-row">
-        <span className="chip-signed">● Signed in</span>
-        <div className="account-id-inline">
-          <strong>{session.displayName}</strong>
-          <span className="hint">{session.email}</span>
-        </div>
+      <h2 className="section-title">Account</h2>
+      <div className="kv">
+        <span>Display name</span>
+        <strong>{session.displayName}</strong>
+      </div>
+      <div className="kv">
+        <span>Email</span>
+        <strong>{session.email}</strong>
       </div>
       <div className="row actions">
         <DangerButton onClick={onSignOut}>Sign out</DangerButton>

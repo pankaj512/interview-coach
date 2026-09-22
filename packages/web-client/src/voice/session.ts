@@ -88,7 +88,12 @@ export function buildAuthenticatedVoiceUrl(session: VoiceSessionPayload): string
 
 // session.update built from the backend mint (frozen section 3). Field names
 // follow the CLI harness (`input_audio_format`, `turn_detection.*_ms`).
-export function buildSessionUpdate(session: VoiceSessionPayload): {
+// A stored interviewer-voice preference overrides the minted voice; without
+// one (or with an empty override) the server value stands.
+export function buildSessionUpdate(
+  session: VoiceSessionPayload,
+  voiceOverride?: string,
+): {
   type: "session.update";
   session: Record<string, unknown>;
 } {
@@ -98,7 +103,7 @@ export function buildSessionUpdate(session: VoiceSessionPayload): {
     session: {
       modalities: ["text", "audio"],
       instructions: session.instructions,
-      voice: session.voice,
+      voice: voiceOverride === undefined || voiceOverride === "" ? session.voice : voiceOverride,
       input_audio_format: cfg.audio.inputFormat,
       output_audio_format: cfg.audio.outputFormat,
       turn_detection: {

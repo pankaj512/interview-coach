@@ -99,12 +99,12 @@ const entries: readonly HistoryEntry[] = [
     difficulty: "Hard",
     mode: "Realistic Interview",
     durationMin: 32,
-    overallScore: 8.1,
+    overallScore: 81,
     recommendation: "hire",
     hintsUsed: 1,
     strengths: ["Clear"],
     weaknesses: ["Complexity analysis"],
-    dimensions: { coding: 8.1, communication: 7.9 },
+    dimensions: { coding: 4, communication: 3.5 },
   },
 ];
 
@@ -187,7 +187,9 @@ describe("screen render smoke", () => {
       </AppShell>,
     );
     expect(html).toContain("Interview History");
+    expect(html).toContain("Profile");
     expect(html).toContain("Sign in");
+    expect(html).toContain("shell-nav-active");
   });
   it("DashboardScreen renders the recommendation CTA and progress", () => {
     const html = renderToString(
@@ -317,23 +319,28 @@ describe("screen render smoke", () => {
         onNew={noop}
       />,
     );
-    expect(html).toContain("Interview History");
-    expect(html.match(/8\.1 \/ 10/g)).toHaveLength(1);
+    expect(html).toContain("Interview history");
+    expect(html).toContain("Start new interview");
+    expect(html.match(/81 \/ 100/g)).toHaveLength(1);
     expect(html).not.toContain("—");
     expect(html).toContain("2 sessions");
   });
-  it("ProgressScreen renders", () => {
-    expect(
-      renderToString(
-        <ProgressScreen
-          entries={entries}
-          data={dashboardData}
-          starting={false}
-          onWeakAreas={noop}
-          onStartRecommendation={noop}
-        />,
-      ),
-    ).toContain("Overall performance");
+  it("ProgressScreen renders actions without the recommendation banner", () => {
+    const html = renderToString(
+      <ProgressScreen
+        entries={entries}
+        data={dashboardData}
+        starting={false}
+        onWeakAreas={noop}
+        onStartRecommendation={noop}
+      />,
+    );
+    expect(html).toContain("Overall performance");
+    expect(html).toContain("Recommended practice");
+    expect(html).toContain("Overall trend");
+    expect(html).toContain("prog-grid");
+    expect(html).toContain("hero-number");
+    expect(html).not.toContain("Start recommended");
   });
   it("WeakAreasScreen renders one card per weak dimension", () => {
     const weakEntries: readonly HistoryEntry[] = entries.map((e) => ({
@@ -361,6 +368,12 @@ describe("screen render smoke", () => {
     );
     expect(html).toContain("Settings");
     expect(html).toContain("Account");
+    expect(html).toContain("Interviewer voice");
+    // No implementation leaks: the dropdown shows the real default voice,
+    // and no copy mentions the server.
+    expect(html).toContain("Reload interviews");
+    expect(html).not.toContain("Server default");
+    expect(html).not.toContain("server");
   });
   it("SignInScreen renders", () => {
     const html = renderToString(<SignInScreen backend={backend} onSuccess={noop} onGoCreate={noop} />);
@@ -438,5 +451,6 @@ describe("screen render smoke", () => {
     expect(html).toContain("Backend Engineer");
     expect(html).not.toContain("auth-card");
     expect(html).not.toContain("Save changes");
+    expect(html).not.toContain("Account and interview goals");
   });
 });
