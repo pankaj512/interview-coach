@@ -40,8 +40,8 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 
 Next (unchecked in `build-plan.md` 14-20): green main, UI prototype,
 isolated multi-language sandbox, fresh UI rebuild, problem content
-and Submit in four stages (clean + reseed all 300 + new endpoints +
-AI-only Submit), loop verification, client URL routing.
+(shared runner library in three language slices + reseed all 300 + new
+endpoints + AI-only Submit), loop verification, client URL routing.
 
 ## 4. Data - What are we storing?
 
@@ -52,6 +52,10 @@ PostgreSQL via Drizzle (`packages/db/src/schema.ts`); backend owns truth:
   `curriculum_modules`, `curriculum_topics`, `curriculum_topic_problems`
 - Problem statement/sample/starter content is DB-owned once reseeded;
   the external lookup cache stays a build-time import source only.
+  Editors show the fetched LeetCode starters verbatim; a committed shared
+  shape-runner library (one runner per I/O signature shape per language,
+  `{runnerId, entry, codecs}` link per problem, shared ListNode/TreeNode
+  prelude per language) makes sample tests executable in the sandbox.
 - `user_skill_states` (PK `(user_id, curriculum_id, topic_id)`, mastery
   `not_started -> learning -> developing -> proficient -> mastered`,
   `last_evaluation_id` idempotency key), `user_curriculum_progress`

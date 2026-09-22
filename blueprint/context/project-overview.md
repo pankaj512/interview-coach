@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 2a1dd3a4742402cfaf02c3d44c56a513fc90661ff29cb121023cd69e71fabd0e -->
+<!-- blueprint:source-hash 726c7cdbd85fd6c92762863b6f6606895f2cef46847a83c7b8a34472172237db -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -55,8 +55,10 @@ Shipped (1-17, 20):
 
 Next (18-19):
 
-- **18. Problem content and Submit** - Postgres is the system of record, lookup cache a build-time import source only; generic-`solve` starters + array-encoded sample cases (native runners and node helpers parked); all 300 reseeded; new problem-content endpoints (old ones retired later); AI-only Submit, no sandbox run, no persistence in this pass.
-  - **18a. Data cleaning + starter/case generation** - cleaned statements, constraints, array-encoded samples, generic-`solve` starters; no hidden tests, AI judges correctness.
+- **18. Problem content, shared runners, and Submit** - Postgres is the system of record, lookup cache a build-time import source only; editors show fetched LeetCode starters verbatim; a committed shared shape-runner library (one runner per I/O signature shape per language, `{runnerId, entry, codecs}` link per problem, inline runner only when no shape fits, shared ListNode/TreeNode prelude per language) makes Test executable in the sandbox; all 300 reseeded; new problem-content endpoints (old ones retired later); AI-only Submit, no sandbox run, no persistence in this pass.
+  - **18a.1. Python: cleaned data + shared runners** - cleaned statements, constraints, array-encoded samples for all 300; Python signature census; shared node-type prelude + shape runners; link metadata per problem; no hidden tests, AI judges correctness.
+  - **18a.2. JavaScript: shared runners** - JS signature census; shared prelude + shape runners; link metadata; same gate shape as 18a.1.
+  - **18a.3. C++: shared runners** - C++ signature census; shared prelude + shape runners; link metadata; same gate shape as 18a.1.
   - **18b. Full reseed** - all 300 problems reseeded from the cleaned data in one pass.
   - **18c. API + client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched.
   - **18d. AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only.
@@ -88,8 +90,12 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 - `id` (`prob_<slug>`), `title`, `difficulty`, `topicId`, source links
 - Statement/sample/starter content is DB-owned once reseeded (18b);
   the external lookup cache stays a build-time import source only.
-- Sample cases are array-encoded (linked lists / trees as arrays);
-  starters follow the generic-`solve` pattern, one per language.
+- Editors show the fetched LeetCode starters verbatim; sample tests run
+  them in the sandbox via the shared shape-runner library: one committed
+  runner per I/O signature shape per language, `{runnerId, entry, codecs}`
+  link per problem (inline runner only when no shape fits), shared
+  ListNode/TreeNode prelude per language, lists/trees array-encoded
+  across the case boundary.
 
 ### Curriculum tree
 
@@ -186,7 +192,7 @@ two auth-entry/nav fixes. Confirmed ritual flow:
 
 - > TODO (confirm): broader tracks beyond DSA and their timing.
 - > TODO (confirm): monetization, if any.
-- Plan drift (does not block 18a): `project-plan.md` §3 still frames items
+- Plan drift (does not block 18a.1): `project-plan.md` §3 still frames items
   14-20 as "unchecked" and §7 lists 17c/17d screens as pending, while
   `build-plan.md` marks 14-17 (incl. 17c/d) and 20 checked. Fix in the plans,
   then re-run `/overview`.
