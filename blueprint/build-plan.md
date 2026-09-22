@@ -37,7 +37,11 @@ per-interview ownership, audit remediation P1-P8.
   - [x] 17b. **Practice loop screens** - rebuild Dashboard, Lobby, Live, Evaluating on the new theme
   - [x] 17c. **Feedback screens** - rebuild Results, Transcript review, Feedback detail, Weak areas
   - [x] 17d. **Account and history screens** - rebuild History, Progress, Settings, Profile; delete consumed `prototypes/`
-- [ ] 18. **Problem content enrichment** - statement text, sample cases, and per-language boilerplate per problem, sourced via external lookup for the problem URL; enhances the problem pane post-MVP
+- [ ] 18. **Problem content and Submit** - Postgres is the system of record with the existing lookup cache as a build-time import source only; generic-`solve` starters plus array-encoded sample cases (native runners and node helpers explicitly parked); all 300 problems reseeded; new problem-content endpoints with old ones retired later; AI-only Submit with no sandbox run and no persistence in this pass
+  - [ ] 18a. **Problem data cleaning and starter/case generation** - cleaned statements, constraints, array-encoded sample cases, and generic-`solve` starters ready for import; no hidden tests, AI judges correctness
+  - [ ] 18b. **Full problem reseed** - all 300 problems reseeded from the cleaned data in one pass
+  - [ ] 18c. **Problem-content API and client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched, retirements deferred
+  - [ ] 18d. **AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only
 - [ ] 19. **Loop verification** - end-to-end dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB, no new product functionality
 - [x] 20. **Client URL routing** - History-API routing for the web client (no new router dependency): every nav view and auth/ritual state gets a real URL, browser back/forward works, refresh and deep links land somewhere sane; in-page `#how/#scoring/#why` anchors keep working
 

@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 4f60292fc0f3b4b2cdeccba330fb92e9606c43f6338a1c71585992a02e6d62f9 -->
+<!-- blueprint:source-hash 2a1dd3a4742402cfaf02c3d44c56a513fc90661ff29cb121023cd69e71fabd0e -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -32,7 +32,7 @@ is chosen by the system from persisted skill state, not by browsing.
 
 ## Features
 
-Shipped (1-16, 17a/b, 20):
+Shipped (1-17, 20):
 
 1. **Architecture principles** - ADR-002 alignment; LLM advisory, backend owns truth.
 2. **Profile + onboarding** - `UserProfile`, taxonomy, required first-run gate.
@@ -50,14 +50,16 @@ Shipped (1-16, 17a/b, 20):
 14. **Green main** - typecheck + test failures fixed; CI green.
 15. **UI prototype** - throwaway mockups rethinking the client; locked target for the rebuild.
 16. **Isolated sandbox** - Docker-isolated C++/JS/Python execution behind the existing sandbox routes; local runner retired.
-- **17a/b (UI rebuild, part)** - theme shell + public screens, then Dashboard/Lobby/Live/Evaluating on the new theme.
-- **20. Client URL routing** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
+17. **Fresh UI rebuild** - theme shell + public screens (17a), practice-loop screens (17b), feedback screens (17c), account/history screens (17d) on the new theme.
+18. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
 
-Next (17c/d, 18-19):
+Next (18-19):
 
-- **17c. Feedback screens** - rebuild Results, Transcript review, Feedback detail, Weak areas.
-- **17d. Account and history screens** - rebuild History, Progress, Settings, Profile; delete consumed `prototypes/`.
-- **18. Problem enrichment** - statement, samples, boilerplate per problem (title-only until then).
+- **18. Problem content and Submit** - Postgres is the system of record, lookup cache a build-time import source only; generic-`solve` starters + array-encoded sample cases (native runners and node helpers parked); all 300 reseeded; new problem-content endpoints (old ones retired later); AI-only Submit, no sandbox run, no persistence in this pass.
+  - **18a. Data cleaning + starter/case generation** - cleaned statements, constraints, array-encoded samples, generic-`solve` starters; no hidden tests, AI judges correctness.
+  - **18b. Full reseed** - all 300 problems reseeded from the cleaned data in one pass.
+  - **18c. API + client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched.
+  - **18d. AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only.
 - **19. Loop verification** - end-to-end pass against a live DB; no new functionality.
 
 Deferred to v2: security/observability hardening, testing consolidation,
@@ -84,6 +86,10 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 ### Problem
 
 - `id` (`prob_<slug>`), `title`, `difficulty`, `topicId`, source links
+- Statement/sample/starter content is DB-owned once reseeded (18b);
+  the external lookup cache stays a build-time import source only.
+- Sample cases are array-encoded (linked lists / trees as arrays);
+  starters follow the generic-`solve` pattern, one per language.
 
 ### Curriculum tree
 
@@ -117,6 +123,8 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 
 - Submissions (`c++|javascript|python`; code <=50k) -> runs (test cases
   1-50, hidden actuals masked, timeout/error as results)
+- The 18d Submit path is AI-only: no sandbox run and no persisted
+  verdict in this pass.
 
 ### Recommendation
 
@@ -148,11 +156,11 @@ None established. No ads, memberships, or payments in code or docs.
 
 ## UI/UX
 
-Client rethink approved and rebuild underway: the approved prototype plus
+Client rethink approved and rebuild complete through 17d: the approved prototype plus
 `docs/interview-coach-ui-specification.md` (locked target) define the look.
 Shipped: theme shell + public screens (17a), practice-loop screens (17b),
-client URL routing (20), two auth-entry/nav fixes. Pending: 17c/17d screens.
-Confirmed ritual flow:
+feedback screens (17c), account/history screens (17d), client URL routing (20),
+two auth-entry/nav fixes. Confirmed ritual flow:
 
 - `/` landing -> sign-in -> onboarding -> dashboard (recommendation CTA) ->
   lobby (automated checks) -> live DSA (problem + editor) -> evaluating ->
@@ -178,3 +186,7 @@ Confirmed ritual flow:
 
 - > TODO (confirm): broader tracks beyond DSA and their timing.
 - > TODO (confirm): monetization, if any.
+- Plan drift (does not block 18a): `project-plan.md` §3 still frames items
+  14-20 as "unchecked" and §7 lists 17c/17d screens as pending, while
+  `build-plan.md` marks 14-17 (incl. 17c/d) and 20 checked. Fix in the plans,
+  then re-run `/overview`.
