@@ -49,16 +49,20 @@ domain/db/backend. Emitting compiled JS is a follow-up.
 
 ## Code sandbox (audit F8-1 / F6-1)
 
-The `LocalCodeRunner` executes candidate code as a subprocess of the backend.
-It is hardened (scrubbed env allowlist, dropped privileges when root, Node heap
-cap, wall-clock timeout, output caps) but it is **not** a security boundary —
-there is no namespace/cgroup/network isolation.
+Candidate code executes in one Docker container per run
+(`DockerCodeRunner`, `packages/backend/src/docker-runner.ts`). Each
+container runs with `--network=none`, all capabilities dropped,
+a read-only rootfs (writable `/tmp` only), `--user 65534:65534`,
+and quotas from `SANDBOX_MEMORY`, `SANDBOX_CPUS`, `SANDBOX_PIDS_LIMIT`
+(defaults `512m` / `1.0` / `128`). Images come from `SANDBOX_IMAGE_JS`,
+`SANDBOX_IMAGE_PY`, `SANDBOX_IMAGE_CPP` and are pulled on demand, so a
+deploy needs registry access at first run.
 
-To prevent remote code execution in a shipped deploy, the runner **refuses to
-execute when `NODE_ENV=production`** unless `ALLOW_INSECURE_CODE_RUNNER=true`
-is set explicitly (code runs then return `error`). Do **not** set that flag on
-an internet-facing host. The follow-up is a dedicated sandbox service
-(container per run with `--network=none`, CPU/memory quotas, read-only rootfs).
+The backend shells out to the `docker` CLI, so it needs a reachable
+daemon: the compose stack mounts `/var/run/docker.sock` into the backend
+container for this. When the daemon is unreachable (or a pull fails),
+code runs return `error` with the daemon/pull reason; there is no local
+fallback executor.
 
 ## Voice (audit F8-3)
 

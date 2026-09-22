@@ -249,6 +249,8 @@ export function buildRunArgs(spec: DockerRunSpec): string[] {
     `--cpus=${spec.cpus}`,
     `--pids-limit=${spec.pidsLimit}`,
     "--cap-drop=ALL",
+    "--security-opt",
+    "no-new-privileges",
     "--read-only",
     "--tmpfs",
     "/tmp:rw,exec,size=128m",
@@ -525,13 +527,19 @@ export class DockerCodeRunner implements CodeExecutor {
           });
         }
       } catch {
-        return {
-          status: "error",
-          results: [],
-          durationMs,
-          error: truncate(`Harness emitted non-JSON output: ${text.slice(0, 500)}`, 2000),
-        };
+        // Candidate debug prints are not verdicts; skip them so extra
+        // stdout no longer fails the run. A line shaped exactly like a
+        // verdict row still collides and is read as one.
+        continue;
       }
+    }
+    if (raws.length === 0 && loadError === undefined && text.trim() !== "") {
+      return {
+        status: "error",
+        results: [],
+        durationMs,
+        error: truncate(`Harness emitted non-JSON output: ${text.slice(0, 500)}`, 2000),
+      };
     }
     if (loadError !== undefined) {
       const detail = text

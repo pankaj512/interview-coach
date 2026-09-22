@@ -7,7 +7,7 @@
 > finding is `open` or `fixed`, then archives resolved findings with the work
 > and resets this file.
 
-### F-01 [P2] open - docs/deployment.md sandbox section describes the deleted local runner
+### F-01 [P2] fixed - docs/deployment.md sandbox section describes the deleted local runner
 
 **File:** docs/deployment.md:50-61
 **Found:** 2026-09-17 by /audit (scope: current; lens: quality)
@@ -15,7 +15,7 @@
 **Suggested fix:** Rewrite the section to describe the Docker runner (per-run `--network=none` containers, `SANDBOX_*` caps, image-pull requirement, socket mount, no-daemon means `error` runs). Historical audit docs under `docs/audit/` and the `SESSION_HANDOFF.md` history log stay untouched.
 **Resolution:**
 
-### F-02 [P2] open - C++ Value::quoted leaves C0 control characters unescaped, producing invalid JSON
+### F-02 [P2] fixed - C++ Value::quoted leaves C0 control characters unescaped, producing invalid JSON
 
 **File:** packages/backend/src/cpp-harness.ts:95-106
 **Found:** 2026-09-17 by /audit (scope: current; lens: tests)
@@ -23,7 +23,7 @@
 **Suggested fix:** Escape every code point below U+0020 (except the already-handled `\n`, `\r`, `\t`) as `\uXXXX` in `quoted()`, mirroring `cEscape()` on the TS side. Add a unit case with `\x01`, `\b`, `\f` round-tripping through `buildCppMain` output parsing.
 **Resolution:**
 
-### F-03 [P3] open - C++ JSON-lines parsing fails the whole run on any extra stdout line
+### F-03 [P3] fixed - C++ JSON-lines parsing fails the whole run on any extra stdout line
 
 **File:** packages/backend/src/docker-runner.ts:510-535
 **Found:** 2026-09-17 by /audit (scope: current; lens: quality)
@@ -31,7 +31,7 @@
 **Suggested fix:** None required for the current contract (submissions define `solve`; stdout printing is unspecified). If taken up, skip non-JSON lines that do not collide with verdict rows rather than failing the run, and cover it with a stubbed-spawn unit test.
 **Resolution:**
 
-### F-04 [P3] open - Per-run containers omit --security-opt=no-new-privileges
+### F-04 [P3] fixed - Per-run containers omit --security-opt=no-new-privileges
 
 **File:** packages/backend/src/docker-runner.ts:241-270
 **Found:** 2026-09-17 by /audit (scope: current; lens: security)

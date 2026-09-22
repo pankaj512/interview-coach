@@ -100,6 +100,15 @@ struct Value {
       else if (c == '\\n') out += "\\\\n";
       else if (c == '\\r') out += "\\\\r";
       else if (c == '\\t') out += "\\\\t";
+      else if (c == '\\b') out += "\\\\b";
+      else if (c == '\\f') out += "\\\\f";
+      else if (static_cast<unsigned char>(c) < 0x20) {
+        const unsigned char u = static_cast<unsigned char>(c);
+        const char* hex = "0123456789abcdef";
+        out += "\\\\u00";
+        out += hex[(u >> 4) & 0xF];
+        out += hex[u & 0xF];
+      }
       else out += c;
     }
     return out + "\\"";

@@ -52,6 +52,7 @@ describe("buildRunArgs", () => {
       "--cpus=1.0",
       "--pids-limit=128",
       "--cap-drop=ALL",
+      "--security-opt", "no-new-privileges",
       "--read-only",
       "--tmpfs", "/tmp:rw,exec,size=128m",
       "--user", "65534:65534",
@@ -176,6 +177,20 @@ describe("DockerCodeRunner with stubbed spawn", () => {
     const runner = new DockerCodeRunner({ spawn: stub(okSequence("not json at all")) });
     const outcome = await runner.execute({ ...SUBMISSION }, [...CASES], { timeoutMs: 5000 });
     expect(outcome).toMatchObject({ status: "error", results: [] });
+  });
+
+  it("skips debug prints interleaved with C++ verdict rows", async () => {
+    const lines = [
+      "debug: starting case adds",
+      '{"name":"adds","actual":5}',
+      "partial sums look right",
+    ].join("\n");
+    const runner = new DockerCodeRunner({ spawn: stub(okSequence(lines)) });
+    const outcome = await runner.execute({ ...SUBMISSION }, [...CASES], { timeoutMs: 5000 });
+    expect(outcome).toMatchObject({
+      status: "completed",
+      results: [{ name: "adds", passed: true, actual: 5 }],
+    });
   });
 
   it("pulls a missing image once", async () => {

@@ -68,6 +68,23 @@ describe("buildCppMain", () => {
     expect(main).toContain('"quote\\"name"');
   });
 
+  it("emits parseable JSON escapes for C0 controls in quoted()", () => {
+    // quoted() only exists inside the generated C++, so assert the
+    // generator carries the escape branches, then prove the exact
+    // sequences they emit round-trip through JSON.parse like the
+    // runner's JSON-lines parser does.
+    expect(main).toContain("static_cast<unsigned char>(c) < 0x20");
+    expect(main).toContain("0123456789abcdef");
+    const roundTrips: (readonly [string, string])[] = [
+      [String.fromCharCode(1), "\\u0001"],
+      ["\b", "\\b"],
+      ["\f", "\\f"],
+    ];
+    for (const [raw, emitted] of roundTrips) {
+      expect(JSON.parse(`"${emitted}"`)).toBe(raw);
+    }
+  });
+
   it("declares the filenames used by the runner", () => {
     expect(CPP_SUBMISSION_FILE).toBe("submission.cpp");
     expect(CPP_MAIN_FILE).toBe("main.cpp");
