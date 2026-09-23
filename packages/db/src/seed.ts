@@ -17,6 +17,7 @@ import {
   type CatalogTopicRaw,
   type CurriculumRaw,
   type Problem,
+  type ProblemExample,
   type ProblemRunnerLinks,
   type ProblemStarters,
 } from "@interview-coach/domain";
@@ -43,6 +44,9 @@ interface DatasetRunnerLink {
 
 interface DatasetProblem {
   readonly id?: unknown;
+  readonly description?: unknown;
+  readonly constraints?: unknown;
+  readonly examples?: unknown;
   readonly starters?: {
     readonly cpp?: unknown;
     readonly javascript?: unknown;
@@ -72,6 +76,40 @@ function toRunnerLink(raw: DatasetRunnerLink | undefined): ProblemRunnerLinks[ke
     className: raw.className,
     actualRule: raw.actualRule as "pure" | "in-place" | "method-sequence",
   };
+}
+
+function cleanCopyText(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const out = value.replace(/\r\n/g, "\n").trim();
+  return out.length > 0 ? out : undefined;
+}
+
+function toCopyExample(raw: unknown): ProblemExample | undefined {
+  if (typeof raw !== "object" || raw === null) return undefined;
+  const e = raw as { input?: unknown; output?: unknown; explanation?: unknown };
+  const input = cleanCopyText(e.input);
+  const output = cleanCopyText(e.output);
+  if (input === undefined || output === undefined) return undefined;
+  const explanation = cleanCopyText(e.explanation);
+  return explanation === undefined ? { input, output } : { input, output, explanation };
+}
+
+function toCopyConstraints(raw: unknown): string[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw.flatMap((c) => {
+    const t = cleanCopyText(c);
+    return t === undefined ? [] : [t];
+  });
+  return out.length > 0 ? out : undefined;
+}
+
+function toCopyExamples(raw: unknown): ProblemExample[] | undefined {
+  if (!Array.isArray(raw)) return undefined;
+  const out = raw.flatMap((e) => {
+    const t = toCopyExample(e);
+    return t === undefined ? [] : [t];
+  });
+  return out.length > 0 ? out : undefined;
 }
 
 // Merge the cleaned dataset onto the imported catalog problems. Problems
@@ -128,14 +166,19 @@ async function mergeDataset(problems: readonly Problem[]): Promise<{
       merged.push(problem);
       continue;
     }
+    // Dataset copy is preferred verbatim; malformed fields fall back to the
+    // catalog row (title-only) for that field, never invented.
+    const description = cleanCopyText(record?.description) ?? problem.description;
+    const constraints = toCopyConstraints(record?.constraints) ?? problem.constraints;
+    const examples = toCopyExamples(record?.examples) ?? problem.examples;
     const rebuilt = createProblem({
       id: problem.id,
       title: problem.title,
       difficulty: problem.difficulty,
       ...(problem.topicId === undefined ? {} : { topicId: problem.topicId }),
-      ...(problem.description === undefined ? {} : { description: problem.description }),
-      ...(problem.constraints === undefined ? {} : { constraints: problem.constraints }),
-      ...(problem.examples === undefined ? {} : { examples: problem.examples }),
+      ...(description === undefined ? {} : { description }),
+      ...(constraints === undefined ? {} : { constraints }),
+      ...(examples === undefined ? {} : { examples }),
       ...(problem.expectedConcepts === undefined
         ? {}
         : { expectedConcepts: problem.expectedConcepts }),
