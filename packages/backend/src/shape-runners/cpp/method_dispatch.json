@@ -1,0 +1,497 @@
+{
+  "prob_binary-search-tree-iterator": {
+    "class": "BSTIterator",
+    "ctor": [
+      "TreeNode*"
+    ],
+    "fragment": "TreeNode* c0 = arrayToTree(argsets[0].a[0]);\nBSTIterator obj(c0);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"next\") {\nresults.push_back(Value(static_cast<int>(obj.next())));\n} else if (ops[k] == \"hasNext\") {\nresults.push_back(Value((obj.hasNext()) ? true : false));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "hasNext": {
+        "params": [],
+        "ret": "bool"
+      },
+      "next": {
+        "params": [],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_design-a-food-rating-system": {
+    "class": "FoodRatings",
+    "ctor": [
+      "vector<string>",
+      "vector<string>",
+      "vector<int>"
+    ],
+    "fragment": "std::vector<std::string> c0 = valueToStrVec(argsets[0].a[0]);\nstd::vector<std::string> c1 = valueToStrVec(argsets[0].a[1]);\nstd::vector<int> c2 = valueToIntVec(argsets[0].a[2]);\nFoodRatings obj(c0, c1, c2);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"changeRating\") {\nstd::string p_changeRating_0 = (a.a[0]).s;\nobj.changeRating(p_changeRating_0, static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"highestRated\") {\nstd::string p_highestRated_0 = (a.a[0]).s;\nresults.push_back(Value(obj.highestRated(p_highestRated_0)));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "changeRating": {
+        "params": [
+          "string",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "highestRated": {
+        "params": [
+          "string"
+        ],
+        "ret": "string"
+      }
+    }
+  },
+  "prob_design-add-and-search-words-data-structure": {
+    "class": "WordDictionary",
+    "ctor": [],
+    "fragment": "WordDictionary obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"addWord\") {\nstd::string p_addWord_0 = (a.a[0]).s;\nobj.addWord(p_addWord_0);\nresults.push_back(Value());\n} else if (ops[k] == \"search\") {\nstd::string p_search_0 = (a.a[0]).s;\nresults.push_back(Value((obj.search(p_search_0)) ? true : false));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "addWord": {
+        "params": [
+          "string"
+        ],
+        "ret": "void"
+      },
+      "search": {
+        "params": [
+          "string"
+        ],
+        "ret": "bool"
+      }
+    }
+  },
+  "prob_design-browser-history": {
+    "class": "BrowserHistory",
+    "ctor": [
+      "string"
+    ],
+    "fragment": "std::string c0 = (argsets[0].a[0]).s;\nBrowserHistory obj(c0);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"visit\") {\nstd::string p_visit_0 = (a.a[0]).s;\nobj.visit(p_visit_0);\nresults.push_back(Value());\n} else if (ops[k] == \"back\") {\nresults.push_back(Value(obj.back(static_cast<int>((a.a[0]).n))));\n} else if (ops[k] == \"forward\") {\nresults.push_back(Value(obj.forward(static_cast<int>((a.a[0]).n))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "back": {
+        "params": [
+          "int"
+        ],
+        "ret": "string"
+      },
+      "forward": {
+        "params": [
+          "int"
+        ],
+        "ret": "string"
+      },
+      "visit": {
+        "params": [
+          "string"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_design-hashmap": {
+    "class": "MyHashMap",
+    "ctor": [],
+    "fragment": "MyHashMap obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"put\") {\nobj.put(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"get\") {\nresults.push_back(Value(static_cast<int>(obj.get(static_cast<int>((a.a[0]).n)))));\n} else if (ops[k] == \"remove\") {\nobj.remove(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "get": {
+        "params": [
+          "int"
+        ],
+        "ret": "int"
+      },
+      "put": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "remove": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_design-linked-list": {
+    "class": "MyLinkedList",
+    "ctor": [],
+    "fragment": "MyLinkedList obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"get\") {\nresults.push_back(Value(static_cast<int>(obj.get(static_cast<int>((a.a[0]).n)))));\n} else if (ops[k] == \"addAtHead\") {\nobj.addAtHead(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"addAtTail\") {\nobj.addAtTail(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"addAtIndex\") {\nobj.addAtIndex(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"deleteAtIndex\") {\nobj.deleteAtIndex(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "addAtHead": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      },
+      "addAtIndex": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "addAtTail": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      },
+      "deleteAtIndex": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      },
+      "get": {
+        "params": [
+          "int"
+        ],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_design-twitter": {
+    "class": "Twitter",
+    "ctor": [],
+    "fragment": "Twitter obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"postTweet\") {\nobj.postTweet(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"getNewsFeed\") {\nresults.push_back(intVecToValue(obj.getNewsFeed(static_cast<int>((a.a[0]).n))));\n} else if (ops[k] == \"follow\") {\nobj.follow(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"unfollow\") {\nobj.unfollow(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "follow": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "getNewsFeed": {
+        "params": [
+          "int"
+        ],
+        "ret": "vector<int>"
+      },
+      "postTweet": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "unfollow": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_encode-and-decode-tinyurl": {
+    "class": "Solution",
+    "ctor": [],
+    "fragment": "Solution obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"encode\") {\nstd::string p_encode_0 = (a.a[0]).s;\nresults.push_back(Value(obj.encode(p_encode_0)));\n} else if (ops[k] == \"decode\") {\nstd::string p_decode_0 = (a.a[0]).s;\nresults.push_back(Value(obj.decode(p_decode_0)));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "decode": {
+        "params": [
+          "string"
+        ],
+        "ret": "string"
+      },
+      "encode": {
+        "params": [
+          "string"
+        ],
+        "ret": "string"
+      }
+    }
+  },
+  "prob_find-median-from-data-stream": {
+    "class": "MedianFinder",
+    "ctor": [],
+    "fragment": "MedianFinder obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"addNum\") {\nobj.addNum(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"findMedian\") {\nresults.push_back(Value(static_cast<double>(obj.findMedian())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "addNum": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      },
+      "findMedian": {
+        "params": [],
+        "ret": "double"
+      }
+    }
+  },
+  "prob_implement-trie-prefix-tree": {
+    "class": "Trie",
+    "ctor": [],
+    "fragment": "Trie obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"insert\") {\nstd::string p_insert_0 = (a.a[0]).s;\nobj.insert(p_insert_0);\nresults.push_back(Value());\n} else if (ops[k] == \"search\") {\nstd::string p_search_0 = (a.a[0]).s;\nresults.push_back(Value((obj.search(p_search_0)) ? true : false));\n} else if (ops[k] == \"startsWith\") {\nstd::string p_startsWith_0 = (a.a[0]).s;\nresults.push_back(Value((obj.startsWith(p_startsWith_0)) ? true : false));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "insert": {
+        "params": [
+          "string"
+        ],
+        "ret": "void"
+      },
+      "search": {
+        "params": [
+          "string"
+        ],
+        "ret": "bool"
+      },
+      "startsWith": {
+        "params": [
+          "string"
+        ],
+        "ret": "bool"
+      }
+    }
+  },
+  "prob_insert-delete-getrandom-o-1": {
+    "class": "RandomizedSet",
+    "ctor": [],
+    "fragment": "RandomizedSet obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"insert\") {\nresults.push_back(Value((obj.insert(static_cast<int>((a.a[0]).n))) ? true : false));\n} else if (ops[k] == \"remove\") {\nresults.push_back(Value((obj.remove(static_cast<int>((a.a[0]).n))) ? true : false));\n} else if (ops[k] == \"getRandom\") {\nresults.push_back(Value(static_cast<int>(obj.getRandom())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "getRandom": {
+        "params": [],
+        "ret": "int"
+      },
+      "insert": {
+        "params": [
+          "int"
+        ],
+        "ret": "bool"
+      },
+      "remove": {
+        "params": [
+          "int"
+        ],
+        "ret": "bool"
+      }
+    }
+  },
+  "prob_kth-largest-element-in-a-stream": {
+    "class": "KthLargest",
+    "ctor": [
+      "int",
+      "vector<int>"
+    ],
+    "fragment": "std::vector<int> c1 = valueToIntVec(argsets[0].a[1]);\nKthLargest obj(static_cast<int>((argsets[0].a[0]).n), c1);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"add\") {\nresults.push_back(Value(static_cast<int>(obj.add(static_cast<int>((a.a[0]).n)))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "add": {
+        "params": [
+          "int"
+        ],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_lru-cache": {
+    "class": "LRUCache",
+    "ctor": [
+      "int"
+    ],
+    "fragment": "LRUCache obj(static_cast<int>((argsets[0].a[0]).n));\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"get\") {\nresults.push_back(Value(static_cast<int>(obj.get(static_cast<int>((a.a[0]).n)))));\n} else if (ops[k] == \"put\") {\nobj.put(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "get": {
+        "params": [
+          "int"
+        ],
+        "ret": "int"
+      },
+      "put": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_maximum-frequency-stack": {
+    "class": "FreqStack",
+    "ctor": [],
+    "fragment": "FreqStack obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"push\") {\nobj.push(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"pop\") {\nresults.push_back(Value(static_cast<int>(obj.pop())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "pop": {
+        "params": [],
+        "ret": "int"
+      },
+      "push": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_min-stack": {
+    "class": "MinStack",
+    "ctor": [],
+    "fragment": "MinStack obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"push\") {\nobj.push(static_cast<int>((a.a[0]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"pop\") {\nobj.pop();\nresults.push_back(Value());\n} else if (ops[k] == \"top\") {\nresults.push_back(Value(static_cast<int>(obj.top())));\n} else if (ops[k] == \"getMin\") {\nresults.push_back(Value(static_cast<int>(obj.getMin())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "getMin": {
+        "params": [],
+        "ret": "int"
+      },
+      "pop": {
+        "params": [],
+        "ret": "void"
+      },
+      "push": {
+        "params": [
+          "int"
+        ],
+        "ret": "void"
+      },
+      "top": {
+        "params": [],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_random-pick-with-weight": {
+    "class": "Solution",
+    "ctor": [
+      "vector<int>"
+    ],
+    "fragment": "std::vector<int> c0 = valueToIntVec(argsets[0].a[0]);\nSolution obj(c0);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"pickIndex\") {\nresults.push_back(Value(static_cast<int>(obj.pickIndex())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "pickIndex": {
+        "params": [],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_range-sum-query-immutable": {
+    "class": "NumArray",
+    "ctor": [
+      "vector<int>"
+    ],
+    "fragment": "std::vector<int> c0 = valueToIntVec(argsets[0].a[0]);\nNumArray obj(c0);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"sumRange\") {\nresults.push_back(Value(static_cast<int>(obj.sumRange(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n)))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "sumRange": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_range-sum-query-mutable": {
+    "class": "NumArray",
+    "ctor": [
+      "vector<int>"
+    ],
+    "fragment": "std::vector<int> c0 = valueToIntVec(argsets[0].a[0]);\nNumArray obj(c0);\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"update\") {\nobj.update(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"sumRange\") {\nresults.push_back(Value(static_cast<int>(obj.sumRange(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n)))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "sumRange": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "int"
+      },
+      "update": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_serialize-and-deserialize-binary-tree": {
+    "class": "Codec",
+    "ctor": [],
+    "fragment": "Codec obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"serialize\") {\nTreeNode* p_serialize_0 = arrayToTree(a.a[0]);\nresults.push_back(Value(obj.serialize(p_serialize_0)));\n} else if (ops[k] == \"deserialize\") {\nstd::string p_deserialize_0 = (a.a[0]).s;\nresults.push_back(treeToArray(obj.deserialize(p_deserialize_0)));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "deserialize": {
+        "params": [
+          "string"
+        ],
+        "ret": "TreeNode*"
+      },
+      "serialize": {
+        "params": [
+          "TreeNode*"
+        ],
+        "ret": "string"
+      }
+    }
+  },
+  "prob_snapshot-array": {
+    "class": "SnapshotArray",
+    "ctor": [
+      "int"
+    ],
+    "fragment": "SnapshotArray obj(static_cast<int>((argsets[0].a[0]).n));\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"set\") {\nobj.set(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"snap\") {\nresults.push_back(Value(static_cast<int>(obj.snap())));\n} else if (ops[k] == \"get\") {\nresults.push_back(Value(static_cast<int>(obj.get(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n)))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "get": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "int"
+      },
+      "set": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      },
+      "snap": {
+        "params": [],
+        "ret": "int"
+      }
+    }
+  },
+  "prob_stock-price-fluctuation": {
+    "class": "StockPrice",
+    "ctor": [],
+    "fragment": "StockPrice obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"update\") {\nobj.update(static_cast<int>((a.a[0]).n), static_cast<int>((a.a[1]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"current\") {\nresults.push_back(Value(static_cast<int>(obj.current())));\n} else if (ops[k] == \"maximum\") {\nresults.push_back(Value(static_cast<int>(obj.maximum())));\n} else if (ops[k] == \"minimum\") {\nresults.push_back(Value(static_cast<int>(obj.minimum())));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "current": {
+        "params": [],
+        "ret": "int"
+      },
+      "maximum": {
+        "params": [],
+        "ret": "int"
+      },
+      "minimum": {
+        "params": [],
+        "ret": "int"
+      },
+      "update": {
+        "params": [
+          "int",
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  },
+  "prob_time-based-key-value-store": {
+    "class": "TimeMap",
+    "ctor": [],
+    "fragment": "TimeMap obj();\nstd::vector<Value> results;\nresults.push_back(Value());\nfor (size_t k = 1; k < ops.size(); k++) {\nif (k >= argsets.size()) throw std::runtime_error(\"argset missing\");\nconst Value& a = argsets[k];\nif (ops[k] == \"set\") {\nstd::string p_set_0 = (a.a[0]).s;\nstd::string p_set_1 = (a.a[1]).s;\nobj.set(p_set_0, p_set_1, static_cast<int>((a.a[2]).n));\nresults.push_back(Value());\n} else if (ops[k] == \"get\") {\nstd::string p_get_0 = (a.a[0]).s;\nresults.push_back(Value(obj.get(p_get_0, static_cast<int>((a.a[1]).n))));\n} else { throw std::runtime_error(std::string(\"unknown op: \") + ops[k]); }\n}",
+    "methods": {
+      "get": {
+        "params": [
+          "string",
+          "int"
+        ],
+        "ret": "string"
+      },
+      "set": {
+        "params": [
+          "string",
+          "string",
+          "int"
+        ],
+        "ret": "void"
+      }
+    }
+  }
+}

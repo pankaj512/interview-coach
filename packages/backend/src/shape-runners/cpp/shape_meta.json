@@ -1,0 +1,257 @@
+{
+  "shape-001": {
+    "params": [
+      "ListNode*"
+    ],
+    "ret": "ListNode*"
+  },
+  "shape-004": {
+    "params": [
+      "ListNode*",
+      "ListNode*"
+    ],
+    "ret": "ListNode*"
+  },
+  "shape-005": {
+    "params": [
+      "ListNode*",
+      "int"
+    ],
+    "ret": "ListNode*"
+  },
+  "shape-009": {
+    "params": [
+      "TreeNode*"
+    ],
+    "ret": "bool"
+  },
+  "shape-010": {
+    "params": [
+      "TreeNode*"
+    ],
+    "ret": "int"
+  },
+  "shape-012": {
+    "params": [
+      "TreeNode*"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-014": {
+    "params": [
+      "TreeNode*"
+    ],
+    "ret": "vector<vector<int>>"
+  },
+  "shape-019": {
+    "params": [
+      "TreeNode*",
+      "int"
+    ],
+    "ret": "int"
+  },
+  "shape-023": {
+    "params": [
+      "int"
+    ],
+    "ret": "bool"
+  },
+  "shape-025": {
+    "params": [
+      "int"
+    ],
+    "ret": "int"
+  },
+  "shape-031": {
+    "params": [
+      "int",
+      "int"
+    ],
+    "ret": "bool"
+  },
+  "shape-032": {
+    "params": [
+      "int",
+      "int"
+    ],
+    "ret": "int"
+  },
+  "shape-036": {
+    "params": [
+      "int",
+      "int",
+      "vector<int>",
+      "vector<int>"
+    ],
+    "ret": "int"
+  },
+  "shape-039": {
+    "params": [
+      "int",
+      "vector<int>"
+    ],
+    "ret": "int"
+  },
+  "shape-041": {
+    "params": [
+      "int",
+      "vector<vector<int>>"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-044": {
+    "params": [
+      "string"
+    ],
+    "ret": "bool"
+  },
+  "shape-045": {
+    "params": [
+      "string"
+    ],
+    "ret": "int"
+  },
+  "shape-046": {
+    "params": [
+      "string"
+    ],
+    "ret": "string"
+  },
+  "shape-051": {
+    "params": [
+      "string",
+      "string"
+    ],
+    "ret": "bool"
+  },
+  "shape-052": {
+    "params": [
+      "string",
+      "string"
+    ],
+    "ret": "int"
+  },
+  "shape-063": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "TreeNode*"
+  },
+  "shape-064": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "bool"
+  },
+  "shape-065": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "int"
+  },
+  "shape-067": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-068": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "vector<vector<int>>"
+  },
+  "shape-069": {
+    "params": [
+      "vector<int>"
+    ],
+    "ret": "void"
+  },
+  "shape-070": {
+    "params": [
+      "vector<int>",
+      "int"
+    ],
+    "ret": "bool"
+  },
+  "shape-072": {
+    "params": [
+      "vector<int>",
+      "int"
+    ],
+    "ret": "int"
+  },
+  "shape-075": {
+    "params": [
+      "vector<int>",
+      "int"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-076": {
+    "params": [
+      "vector<int>",
+      "int"
+    ],
+    "ret": "vector<vector<int>>"
+  },
+  "shape-080": {
+    "params": [
+      "vector<int>",
+      "vector<int>"
+    ],
+    "ret": "TreeNode*"
+  },
+  "shape-083": {
+    "params": [
+      "vector<int>",
+      "vector<int>"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-089": {
+    "params": [
+      "vector<string>"
+    ],
+    "ret": "string"
+  },
+  "shape-103": {
+    "params": [
+      "vector<vector<int>>"
+    ],
+    "ret": "int"
+  },
+  "shape-105": {
+    "params": [
+      "vector<vector<int>>"
+    ],
+    "ret": "vector<int>"
+  },
+  "shape-106": {
+    "params": [
+      "vector<vector<int>>"
+    ],
+    "ret": "vector<vector<int>>"
+  },
+  "shape-107": {
+    "params": [
+      "vector<vector<int>>"
+    ],
+    "ret": "void"
+  },
+  "shape-109": {
+    "params": [
+      "vector<vector<int>>",
+      "int"
+    ],
+    "ret": "int"
+  },
+  "shape-111": {
+    "params": [
+      "vector<vector<int>>",
+      "int",
+      "int"
+    ],
+    "ret": "int"
+  }
+}

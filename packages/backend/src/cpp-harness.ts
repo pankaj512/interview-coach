@@ -60,7 +60,9 @@ export function cEscape(text: string): string {
 
 // Fixed prelude: the Value variant, JSON printing, and string quoting.
 // The submission is compiled after this prelude, then the generated main.
-const VALUE_PRELUDE = `#include <cmath>
+// Exported for the 18a.3 shape runners, which reuse Value instead of
+// duplicating the variant.
+export const VALUE_PRELUDE = `#include <cmath>
 #include <iomanip>
 #include <iostream>
 #include <map>

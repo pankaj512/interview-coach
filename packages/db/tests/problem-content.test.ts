@@ -1,10 +1,10 @@
-// Feature 18a.1/18a.2 gate (dataset shape): the committed problem-content
-// dataset must exactly cover the catalog with cleaned copy, verbatim
-// starters, and resolvable Python/JavaScript runner links. Reads
+// Feature 18a.1/18a.2/18a.3 gate (dataset shape): the committed
+// problem-content dataset must exactly cover the catalog with cleaned copy,
+// verbatim starters, and resolvable Python/JavaScript/C++ runner links. Reads
 // PROBLEM_CONTENT_PATH when set (used to prove the gate rejects a broken
 // dataset), otherwise the repo-root dataset this feature generates.
 import { describe, expect, it } from "vitest";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
@@ -29,6 +29,20 @@ const jsRunnersDir = resolve(
 const jsMethodSequenceRunner = resolve(
   here,
   "../../../packages/backend/src/shape-runners/javascript/method_sequence.js",
+);
+const cppMainTemplate = resolve(
+  here,
+  "../../../packages/backend/src/shape-runners/cpp/main.cpp",
+);
+const cppShapeMeta = JSON.parse(
+  readFileSync(
+    resolve(here, "../../../packages/backend/src/shape-runners/cpp/shape_meta.json"),
+    "utf8",
+  ),
+) as Record<string, unknown>;
+const cppMethodSequenceRunner = resolve(
+  here,
+  "../../../packages/backend/src/shape-runners/cpp/method_sequence.cpp",
 );
 
 interface DatasetExample {
@@ -55,6 +69,12 @@ interface DatasetRecord {
     readonly actualRule?: unknown;
   };
   readonly javascript?: {
+    readonly runnerId?: unknown;
+    readonly entry?: unknown;
+    readonly className?: unknown;
+    readonly actualRule?: unknown;
+  };
+  readonly cpp?: {
     readonly runnerId?: unknown;
     readonly entry?: unknown;
     readonly className?: unknown;
@@ -192,6 +212,43 @@ describe("problem-content dataset (feature 18a.1)", () => {
         expect(
           new RegExp(`\\b${entry as string}\\s*=\\s*function\\b`).test(starter),
           `${p.id} starter defines entry function`,
+        ).toBe(true);
+      }
+    }
+    expect(linked, "linked problems").toBeGreaterThan(0);
+  });
+
+  it("every cpp link resolves to an existing runner and names its entry", () => {
+    let linked = 0;
+    for (const p of dataset.problems) {
+      if (p.cpp === undefined) continue;
+      linked += 1;
+      const { runnerId, entry, className, actualRule } = p.cpp;
+      expect(typeof runnerId, `${p.id} runnerId`).toBe("string");
+      if (runnerId === "method-sequence") {
+        expect(existsSync(cppMethodSequenceRunner), `${p.id} method-sequence runner`).toBe(true);
+      } else {
+        // One shared main.cpp template serves every shape; runnerIds address
+        // shapes in shape_meta.json, whose entries drive case-body emission.
+        expect(existsSync(cppMainTemplate), `${p.id} shared main template`).toBe(true);
+        expect(Object.hasOwn(cppShapeMeta, runnerId as string), `${p.id} shape in meta`).toBe(
+          true,
+        );
+      }
+      expect(["pure", "in-place", "method-sequence"], `${p.id} actualRule`).toContain(actualRule);
+      expect(typeof className, `${p.id} className`).toBe("string");
+      expect((className as string).trim().length, `${p.id} className`).toBeGreaterThan(0);
+      const starter = p.starters?.cpp as string;
+      expect(
+        starter.includes(`class ${className as string}`),
+        `${p.id} starter defines linked class`,
+      ).toBe(true);
+      if (actualRule !== "method-sequence") {
+        expect(typeof entry, `${p.id} entry`).toBe("string");
+        expect((entry as string).trim().length, `${p.id} entry`).toBeGreaterThan(0);
+        expect(
+          new RegExp(`\\b${entry as string}\\s*\\(`).test(starter),
+          `${p.id} starter defines entry method`,
         ).toBe(true);
       }
     }
