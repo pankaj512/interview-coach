@@ -11,10 +11,14 @@ import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {
+  createProblem,
   importCatalogTopics,
   importCurriculum,
   type CatalogTopicRaw,
   type CurriculumRaw,
+  type Problem,
+  type ProblemRunnerLinks,
+  type ProblemStarters,
 } from "@interview-coach/domain";
 import { createDatabase } from "./client.js";
 import { DrizzleCurriculumRepository, DrizzleProblemRepository } from "./repositories.js";
@@ -22,11 +26,137 @@ import { DrizzleCurriculumRepository, DrizzleProblemRepository } from "./reposit
 const here = dirname(fileURLToPath(import.meta.url));
 const catalogPath = resolve(here, "../../../dsa-problem-catalog.json");
 const curriculumPath = resolve(here, "../../../dsa-interview-curriculum.json");
+// Feature 18b: cleaned 18a dataset (verbatim starters + runner links).
+const datasetPath = resolve(here, "../../../problem-content-enrichment.json");
 
 const catalog = JSON.parse(await readFile(catalogPath, "utf8")) as {
   topics: readonly CatalogTopicRaw[];
 };
 const curriculumRaw = JSON.parse(await readFile(curriculumPath, "utf8")) as CurriculumRaw;
+
+interface DatasetRunnerLink {
+  readonly runnerId?: unknown;
+  readonly entry?: unknown;
+  readonly className?: unknown;
+  readonly actualRule?: unknown;
+}
+
+interface DatasetProblem {
+  readonly id?: unknown;
+  readonly starters?: {
+    readonly cpp?: unknown;
+    readonly javascript?: unknown;
+    readonly python?: unknown;
+  };
+  readonly python?: DatasetRunnerLink;
+  readonly javascript?: DatasetRunnerLink;
+  readonly cpp?: DatasetRunnerLink;
+}
+
+const ACTUAL_RULES = new Set(["pure", "in-place", "method-sequence"]);
+
+function toRunnerLink(raw: DatasetRunnerLink | undefined): ProblemRunnerLinks[keyof ProblemRunnerLinks] | undefined {
+  if (raw === undefined) return undefined;
+  if (
+    typeof raw.runnerId !== "string" ||
+    typeof raw.entry !== "string" ||
+    typeof raw.className !== "string" ||
+    typeof raw.actualRule !== "string" ||
+    !ACTUAL_RULES.has(raw.actualRule)
+  ) {
+    return undefined;
+  }
+  return {
+    runnerId: raw.runnerId,
+    entry: raw.entry,
+    className: raw.className,
+    actualRule: raw.actualRule as "pure" | "in-place" | "method-sequence",
+  };
+}
+
+// Merge the cleaned dataset onto the imported catalog problems. Problems
+// without a usable dataset record seed title-only (gap); dataset content is
+// carried verbatim, never invented.
+async function mergeDataset(problems: readonly Problem[]): Promise<{
+  merged: Problem[];
+  enriched: number;
+  gaps: string[];
+}> {
+  let records: readonly DatasetProblem[];
+  try {
+    const raw = JSON.parse(await readFile(datasetPath, "utf8")) as {
+      problems?: readonly DatasetProblem[];
+    };
+    records = raw.problems ?? [];
+  } catch {
+    return {
+      merged: [...problems],
+      enriched: 0,
+      gaps: problems.map((p) => `${p.id} (no dataset file)`),
+    };
+  }
+  const byId = new Map<string, DatasetProblem>();
+  for (const r of records) {
+    if (typeof r.id === "string") byId.set(r.id, r);
+  }
+  const merged: Problem[] = [];
+  const gaps: string[] = [];
+  let enriched = 0;
+  for (const problem of problems) {
+    const record = byId.get(problem.id);
+    const starters =
+      record !== undefined &&
+      typeof record.starters?.cpp === "string" &&
+      typeof record.starters?.javascript === "string" &&
+      typeof record.starters?.python === "string"
+        ? ({
+            cpp: record.starters.cpp,
+            javascript: record.starters.javascript,
+            python: record.starters.python,
+          } satisfies ProblemStarters)
+        : undefined;
+    const pythonLink = toRunnerLink(record?.python);
+    const javascriptLink = toRunnerLink(record?.javascript);
+    const cppLink = toRunnerLink(record?.cpp);
+    const runnerLinks: ProblemRunnerLinks = {
+      ...(pythonLink === undefined ? {} : { python: pythonLink }),
+      ...(javascriptLink === undefined ? {} : { javascript: javascriptLink }),
+      ...(cppLink === undefined ? {} : { cpp: cppLink }),
+    };
+    if (starters === undefined && Object.keys(runnerLinks).length === 0) {
+      gaps.push(`${problem.id} (no usable dataset record)`);
+      merged.push(problem);
+      continue;
+    }
+    const rebuilt = createProblem({
+      id: problem.id,
+      title: problem.title,
+      difficulty: problem.difficulty,
+      ...(problem.topicId === undefined ? {} : { topicId: problem.topicId }),
+      ...(problem.description === undefined ? {} : { description: problem.description }),
+      ...(problem.constraints === undefined ? {} : { constraints: problem.constraints }),
+      ...(problem.examples === undefined ? {} : { examples: problem.examples }),
+      ...(problem.expectedConcepts === undefined
+        ? {}
+        : { expectedConcepts: problem.expectedConcepts }),
+      ...(problem.sourceLinks === undefined ? {} : { sourceLinks: problem.sourceLinks }),
+      ...(problem.evaluationCriteria === undefined
+        ? {}
+        : { evaluationCriteria: problem.evaluationCriteria }),
+      ...(starters === undefined ? {} : { starters }),
+      ...(Object.keys(runnerLinks).length === 0 ? {} : { runnerLinks }),
+    });
+    if (!rebuilt.ok) {
+      gaps.push(`${problem.id} (rebuild failed: ${rebuilt.error.message})`);
+      merged.push(problem);
+      continue;
+    }
+    if (starters !== undefined) enriched += 1;
+    else gaps.push(`${problem.id} (links only, no starters)`);
+    merged.push(rebuilt.value);
+  }
+  return { merged, enriched, gaps };
+}
 
 const { problems, errors } = importCatalogTopics(catalog.topics);
 for (const e of errors) {
@@ -43,14 +173,22 @@ for (const e of curriculumErrors) {
 
 const handle = createDatabase();
 // Problems first: curriculum_topic_problems references problems(id).
+// Enrich with the cleaned 18a dataset; gaps seed title-only.
+const {
+  merged: seedProblems,
+  enriched,
+  gaps,
+} = await mergeDataset(problems);
 const problemRepo = new DrizzleProblemRepository(handle.db);
-for (const problem of problems) await problemRepo.save(problem);
+for (const problem of seedProblems) await problemRepo.save(problem);
 const curriculumRepo = new DrizzleCurriculumRepository(handle.db);
 await curriculumRepo.save(curriculum);
 console.log(
-  `seeded ${problems.length} problems (${errors.length} skipped), ` +
+  `seeded ${seedProblems.length} problems (${errors.length} skipped), ` +
     `curriculum ${curriculum.id} v${curriculum.version} ` +
     `(${curriculum.modules.length} modules / ${curriculum.topics.length} topics, ` +
     `${curriculumErrors.length} skipped)`,
 );
+console.log(`enriched ${enriched} problems with starters, ${gaps.length} title-only gaps`);
+for (const gapLine of gaps) console.log(`gap ${gapLine}`);
 await handle.close();

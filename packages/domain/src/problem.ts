@@ -20,6 +20,31 @@ export interface ProblemSourceLinks {
   readonly leetcode?: string;
 }
 
+// Verbatim LeetCode starter skeletons per language, carried from the frozen
+// problem-content dataset (feature 18b). Shown to the user as-is.
+export interface ProblemStarters {
+  readonly cpp: string;
+  readonly javascript: string;
+  readonly python: string;
+}
+
+export type ProblemActualRule = "pure" | "in-place" | "method-sequence";
+
+// Shared shape-runner link per language, carried from the frozen dataset.
+// Method-sequence links store entry verbatim as "" (dispatch is per-op).
+export interface ProblemRunnerLink {
+  readonly runnerId: string;
+  readonly entry: string;
+  readonly className: string;
+  readonly actualRule: ProblemActualRule;
+}
+
+export interface ProblemRunnerLinks {
+  readonly python?: ProblemRunnerLink;
+  readonly javascript?: ProblemRunnerLink;
+  readonly cpp?: ProblemRunnerLink;
+}
+
 export interface Problem {
   readonly id: ProblemId;
   readonly title: string;
@@ -32,6 +57,8 @@ export interface Problem {
   readonly expectedConcepts?: readonly string[];
   readonly sourceLinks?: ProblemSourceLinks;
   readonly evaluationCriteria?: readonly string[];
+  readonly starters?: ProblemStarters;
+  readonly runnerLinks?: ProblemRunnerLinks;
 }
 
 export interface CreateProblemInput {
@@ -45,6 +72,8 @@ export interface CreateProblemInput {
   readonly expectedConcepts?: readonly string[];
   readonly sourceLinks?: ProblemSourceLinks;
   readonly evaluationCriteria?: readonly string[];
+  readonly starters?: ProblemStarters;
+  readonly runnerLinks?: ProblemRunnerLinks;
 }
 
 export function parseDifficulty(raw: string): Result<ProblemDifficulty> {
@@ -86,6 +115,8 @@ export function createProblem(input: CreateProblemInput): Result<Problem> {
     ...(input.evaluationCriteria === undefined
       ? {}
       : { evaluationCriteria: input.evaluationCriteria }),
+    ...(input.starters === undefined ? {} : { starters: input.starters }),
+    ...(input.runnerLinks === undefined ? {} : { runnerLinks: input.runnerLinks }),
   };
   return ok(problem);
 }

@@ -41,7 +41,7 @@ per-interview ownership, audit remediation P1-P8.
   - [x] 18a.1. **Python: cleaned data + shared runners** - cleaned statements, constraints, array-encoded sample cases for all 300; Python starter-signature census; shared Python node-type prelude + shape runners; `{runnerId, entry, codecs}` link metadata per problem ready for import; no hidden tests, AI judges correctness
   - [x] 18a.2. **JavaScript: shared runners** - JS starter-signature census; shared JS node-type prelude + shape runners; link metadata per problem; same gate shape as 18a.1
   - [x] 18a.3. **C++: shared runners** - C++ starter-signature census; shared C++ node-type prelude + shape runners; link metadata per problem; same gate shape as 18a.1
-  - [ ] 18b. **Full problem reseed** - all 300 problems reseeded from the cleaned data in one pass
+  - [x] 18b. **Full problem reseed** - all 300 problems reseeded from the cleaned data in one pass
   - [ ] 18c. **Problem-content API and client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched, retirements deferred
   - [ ] 18d. **AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only
 - [ ] 19. **Loop verification** - end-to-end dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB, no new product functionality

@@ -67,6 +67,30 @@ describe("postgres persistence", () => {
     expect(many.map((p) => p.id)).toEqual([b.id, a.id]);
   }));
 
+  it("round-trips problem starters + runner links, null-safe both ways (feature 18b)", withDb(ctx, async (t) => {
+    const enriched = createProblem({
+      title: "Move Zeroes Persisted",
+      difficulty: "Easy",
+      starters: { cpp: "cpp-stub", javascript: "js-stub", python: "py-stub" },
+      runnerLinks: {
+        python: {
+          runnerId: "shape-048",
+          entry: "moveZeroes",
+          className: "Solution",
+          actualRule: "in-place",
+        },
+      },
+    });
+    if (!enriched.ok) throw new Error("fixture problem invalid");
+    const plain = mustProblem("Plain Persisted");
+    await t.repos.problems.save(enriched.value);
+    await t.repos.problems.save(plain);
+
+    expect(await t.repos.problems.findById(enriched.value.id)).toEqual(enriched.value);
+    // Gap problems stay title-only: absent fields read back as undefined.
+    expect(await t.repos.problems.findById(plain.id)).toEqual(plain);
+  }));
+
   it("runs the full interview lifecycle on Postgres repos", withDb(ctx, async (t) => {
     const service = new InterviewService({ ...t.repos });
     const p1 = mustProblem("Lifecycle P1");

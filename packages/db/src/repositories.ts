@@ -382,6 +382,21 @@ function toProblemRow(problem: Problem) {
       problem.evaluationCriteria === undefined
         ? null
         : [...problem.evaluationCriteria],
+    starters: problem.starters === undefined ? null : { ...problem.starters },
+    runnerLinks:
+      problem.runnerLinks === undefined
+        ? null
+        : {
+            ...(problem.runnerLinks.python === undefined
+              ? {}
+              : { python: { ...problem.runnerLinks.python } }),
+            ...(problem.runnerLinks.javascript === undefined
+              ? {}
+              : { javascript: { ...problem.runnerLinks.javascript } }),
+            ...(problem.runnerLinks.cpp === undefined
+              ? {}
+              : { cpp: { ...problem.runnerLinks.cpp } }),
+          },
   };
 }
 
@@ -401,6 +416,8 @@ function toProblem(row: ProblemRow): Problem {
     ...(row.evaluationCriteria === null
       ? {}
       : { evaluationCriteria: row.evaluationCriteria }),
+    ...(row.starters === null ? {} : { starters: row.starters }),
+    ...(row.runnerLinks === null ? {} : { runnerLinks: row.runnerLinks }),
   };
 }
 

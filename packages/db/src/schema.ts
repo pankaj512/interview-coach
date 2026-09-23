@@ -82,6 +82,33 @@ export const problems = pgTable(
     expectedConcepts: jsonb("expected_concepts").$type<readonly string[]>(),
     sourceLinks: jsonb("source_links").$type<{ DSA?: string; leetcode?: string }>(),
     evaluationCriteria: jsonb("evaluation_criteria").$type<readonly string[]>(),
+    // Feature 18b: verbatim per-language starters and shared-runner links
+    // from the cleaned 18a dataset. Nullable: gap problems seed title-only.
+    starters: jsonb("starters").$type<{
+      cpp: string;
+      javascript: string;
+      python: string;
+    }>(),
+    runnerLinks: jsonb("runner_links").$type<{
+      python?: {
+        runnerId: string;
+        entry: string;
+        className: string;
+        actualRule: "pure" | "in-place" | "method-sequence";
+      };
+      javascript?: {
+        runnerId: string;
+        entry: string;
+        className: string;
+        actualRule: "pure" | "in-place" | "method-sequence";
+      };
+      cpp?: {
+        runnerId: string;
+        entry: string;
+        className: string;
+        actualRule: "pure" | "in-place" | "method-sequence";
+      };
+    }>(),
   },
   (t) => [index("problems_topic_id_idx").on(t.topicId)],
 );

@@ -38,3 +38,27 @@
 **Why it matters:** Defense in depth on the new security boundary. The flags already drop all capabilities, use a read-only rootfs, `--user 65534:65534`, and `--network=none`, so the residual risk is low; `no-new-privileges` would additionally block setuid/setgid privilege escalation inside the container at zero functional cost.
 **Suggested fix:** Add `"--security-opt", "no-new-privileges"` in `buildRunArgs` and extend the `buildRunArgs` unit assertion.
 **Resolution:**
+
+### F-05 [P2] open - Missing/corrupt dataset file triggers destructive title-only reseed
+
+**File:** packages/db/src/seed.ts:91-97
+**Found:** 2026-09-23 by independent review of 18b (target 85e673e)
+**Why it matters:** A dataset read/parse failure falls through to upserting all 300 catalog rows title-only (`null` starters/runner_links), and `save` is `onConflictDoUpdate`, so a missing or corrupt `problem-content-enrichment.json` actively wipes existing enrichment. Recoverable by re-running seed once the file is restored, and the gap report makes it visible, but aborting when zero records load would be safer.
+**Suggested fix:** Abort the seed (non-zero exit, no upserts) when the dataset file is missing/unparseable or yields zero records, instead of reseeding title-only.
+**Resolution:**
+
+### F-06 [P3] open - Malformed runner link is silent in the gap report
+
+**File:** packages/db/src/seed.ts:58-75
+**Found:** 2026-09-23 by independent review of 18b (target 85e673e)
+**Why it matters:** A malformed link returns `undefined` with no warning and no distinct gap reason, so a dataset regression is indistinguishable from a legitimate gap in the report.
+**Suggested fix:** `console.warn` each malformed link with its problem id and reason, per the existing `seed skip` stdout precedent.
+**Resolution:**
+
+### F-07 [P3] open - Round-trip test covers only the python link
+
+**File:** packages/db/tests/persistence.test.ts:70-92
+**Found:** 2026-09-23 by independent review of 18b (target 85e673e)
+**Why it matters:** The test never exercises the spec-noted method-sequence `entry: ""` verbatim path nor the `javascript`/`cpp` keys, and there is no domain-level `createProblem` passthrough test. Low risk (`toRunnerLink` accepts `""`, mapping is a shallow spread) but unproven.
+**Suggested fix:** Extend the round-trip test with a method-sequence-link problem and all three language keys, plus a domain unit test for the starters/runnerLinks passthrough.
+**Resolution:**
