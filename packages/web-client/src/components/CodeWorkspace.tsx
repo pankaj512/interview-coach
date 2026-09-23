@@ -4,9 +4,9 @@
 // code against the problem's sample test case. No submit button and no
 // test-case editor — the sample case comes from the problem.
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
-import type { CodeLanguage, Problem, SerializedRun, TestCaseInput } from "../api/types.js";
+import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../api/types.js";
 import { PrimaryButton } from "../ds/buttons.js";
 import { formatApiError } from "../state/use-interview.js";
 
@@ -30,15 +30,29 @@ export function sampleCaseFor(problem: Problem | null): TestCaseInput | null {
   };
 }
 
+/** Verbatim starter for the active language, or null when the problem is a
+ *  title-only gap (or content has not loaded yet). */
+export function starterForLanguage(
+  starters: ProblemStarterSet | null | undefined,
+  language: CodeLanguage,
+): string | null {
+  if (starters === null || starters === undefined) return null;
+  return starters[language];
+}
+
 export function CodeWorkspace({
   backend,
   interviewId,
   problem,
+  starters = null,
   onActivity,
 }: {
   readonly backend: BackendClient;
   readonly interviewId: string;
   readonly problem: Problem | null;
+  /** 18c verbatim starters from the content endpoint. Prefills the editor
+   *  while the candidate has not typed anything; never clobbers edits. */
+  readonly starters?: ProblemStarterSet | null;
   readonly onActivity: (detail: string) => void;
 }) {
   const [language, setLanguage] = useState<CodeLanguage>("python");
@@ -46,6 +60,13 @@ export function CodeWorkspace({
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<SerializedRun | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const dirtyRef = useRef(false);
+
+  useEffect(() => {
+    if (dirtyRef.current) return;
+    const starter = starterForLanguage(starters, language);
+    if (starter !== null) setCode(starter);
+  }, [starters, language, problem?.id]);
 
   const sample = sampleCaseFor(problem);
   const placeholder =
@@ -99,7 +120,10 @@ export function CodeWorkspace({
       <textarea
         className="code"
         value={code}
-        onChange={(e) => setCode(e.target.value)}
+        onChange={(e) => {
+          dirtyRef.current = true;
+          setCode(e.target.value);
+        }}
         placeholder={placeholder}
         spellCheck={false}
         aria-label="Candidate code"

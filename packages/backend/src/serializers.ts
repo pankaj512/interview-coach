@@ -11,6 +11,9 @@ import type {
   InterviewProblem,
   InterviewStateSnapshot,
   Problem,
+  ProblemExample,
+  ProblemRunnerLinks,
+  ProblemStarters,
   Recommendation,
   UserCurriculumProgress,
   UserProfile,
@@ -395,5 +398,32 @@ export function serializeRun(run: CodeRun): SerializedRun {
     totalCount: run.totalCount,
     durationMs: run.durationMs,
     createdAt: run.createdAt.toISOString(),
+  };
+}
+
+// Feature 18c: the problem-content slice served by
+// GET /api/problems/:id/content. Nullable fields use explicit nulls (not
+// omission) so title-only gap problems have a stable shape.
+export interface SerializedProblemContent {
+  readonly id: string;
+  readonly title: string;
+  readonly difficulty: string;
+  readonly description: string | null;
+  readonly constraints: readonly string[] | null;
+  readonly examples: readonly ProblemExample[] | null;
+  readonly starters: ProblemStarters | null;
+  readonly runnerLinks: ProblemRunnerLinks | null;
+}
+
+export function serializeProblemContent(problem: Problem): SerializedProblemContent {
+  return {
+    id: problem.id,
+    title: problem.title,
+    difficulty: problem.difficulty,
+    description: problem.description ?? null,
+    constraints: problem.constraints ?? null,
+    examples: problem.examples ?? null,
+    starters: problem.starters ?? null,
+    runnerLinks: problem.runnerLinks ?? null,
   };
 }

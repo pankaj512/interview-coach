@@ -11,6 +11,7 @@ import type {
   InterviewConfiguration,
   InterviewStatus,
   Problem,
+  ProblemContent,
   ProblemList,
   ProblemListQuery,
   ProblemSelectInput,
@@ -379,6 +380,14 @@ export class BackendClient {
       `/api/problems/${encodeURIComponent(id)}`,
     );
     return body.problem;
+  }
+
+  async getProblemContent(id: string): Promise<ProblemContent> {
+    const body = await this.request<{ ok: true; content: ProblemContent }>(
+      "GET",
+      `/api/problems/${encodeURIComponent(id)}/content`,
+    );
+    return body.content;
   }
 
   // Tool path (frozen section 5). Returns permanent 4xx failures as data;

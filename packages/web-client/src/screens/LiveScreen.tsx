@@ -7,7 +7,7 @@
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
-import type { Problem, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
+import type { Problem, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
@@ -63,6 +63,29 @@ export function LiveScreen({
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
   const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
   const problem = live.snapshot?.currentProblem ?? fallbackProblem ?? null;
+  // 18c content slice for the pane + editor prefill. `undefined` = loading,
+  // `null` = no problem or fetch failed (panels fall back to snapshot fields),
+  // object = ready (null fields inside mark a title-only gap problem).
+  const [content, setContent] = useState<ProblemContent | null | undefined>(undefined);
+  useEffect(() => {
+    if (problem === null) {
+      setContent(undefined);
+      return;
+    }
+    let cancelled = false;
+    setContent(undefined);
+    void backend
+      .getProblemContent(problem.id)
+      .then((loaded) => {
+        if (!cancelled) setContent(loaded);
+      })
+      .catch(() => {
+        if (!cancelled) setContent(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backend, problem?.id]);
   const interviewKind = interview.configuration.interviewType === "dsa" ? "DSA" : interview.configuration.interviewType;
 
   async function handleJoin() {
@@ -152,7 +175,7 @@ export function LiveScreen({
 
           <div className="live-grid">
             <div className="live-column">
-              <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} />
+              <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} content={content} />
               {transcriptTurns.length > 0 && (
                 <Card>
                   <h3 className="section-title">Conversation</h3>
@@ -173,6 +196,7 @@ export function LiveScreen({
               backend={backend}
               interviewId={interview.id}
               problem={problem}
+              starters={content?.starters ?? null}
               onActivity={(detail) => {
                 live.log("code", detail);
                 void live.refresh();

@@ -224,6 +224,43 @@ describe("screen render smoke", () => {
     expect(html).toContain("Move Zeroes");
     expect(html).not.toContain("Loading interview state");
   });
+  it("ProblemPanel prefers the 18c content slice and lists every example", () => {
+    const html = renderToString(
+      <ProblemPanel
+        snapshot={null}
+        fallbackProblem={dashboardProblem}
+        content={{
+          description: "Move all zeroes to the end.",
+          constraints: ["1 <= n <= 10^4"],
+          examples: [
+            { input: "nums = [0,1]", output: "[1,0]" },
+            { input: "nums = [0]", output: "[0]" },
+          ],
+          starters: null,
+          runnerLinks: null,
+        }}
+      />,
+    );
+    expect(html).toContain("Move all zeroes to the end.");
+    expect(html).toContain("1 &lt;= n");
+    expect(html).toContain("sample 1");
+    expect(html).toContain("sample 2");
+  });
+  it("ProblemPanel falls back to title-only for gap content and while loading", () => {
+    const gap = renderToString(
+      <ProblemPanel
+        snapshot={null}
+        fallbackProblem={dashboardProblem}
+        content={{ description: null, constraints: null, examples: null, starters: null, runnerLinks: null }}
+      />,
+    );
+    expect(gap).toContain("Move Zeroes");
+    expect(gap).toContain("No description available for this problem yet.");
+    const loading = renderToString(
+      <ProblemPanel snapshot={null} fallbackProblem={dashboardProblem} content={undefined} />,
+    );
+    expect(loading).toContain("Loading full statement…");
+  });
   it("EvaluatingScreen renders", () => {
     const html = renderToString(<EvaluatingScreen />);
     expect(html).toContain("Analyzing your interview");

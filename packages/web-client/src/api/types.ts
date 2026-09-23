@@ -100,6 +100,35 @@ export interface Problem {
   readonly examples?: readonly ProblemExample[];
 }
 
+export interface ProblemStarterSet {
+  readonly cpp: string;
+  readonly javascript: string;
+  readonly python: string;
+}
+
+export interface ProblemRunnerLink {
+  readonly runnerId: string;
+  readonly entry: string;
+  readonly className: string;
+  readonly actualRule: "pure" | "in-place" | "method-sequence";
+}
+
+export interface ProblemRunnerLinks {
+  readonly python?: ProblemRunnerLink;
+  readonly javascript?: ProblemRunnerLink;
+  readonly cpp?: ProblemRunnerLink;
+}
+
+// 18c: dedicated content view (GET /api/problems/:id/content). Nullable
+// fields mark title-only gap problems; the pane falls back to title-only.
+export interface ProblemContent {
+  readonly description: string | null;
+  readonly constraints: readonly string[] | null;
+  readonly examples: readonly ProblemExample[] | null;
+  readonly starters: ProblemStarterSet | null;
+  readonly runnerLinks: ProblemRunnerLinks | null;
+}
+
 export interface SerializedEvaluation {
   readonly id: string;
   readonly interviewId: string;

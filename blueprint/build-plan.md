@@ -42,7 +42,7 @@ per-interview ownership, audit remediation P1-P8.
   - [x] 18a.2. **JavaScript: shared runners** - JS starter-signature census; shared JS node-type prelude + shape runners; link metadata per problem; same gate shape as 18a.1
   - [x] 18a.3. **C++: shared runners** - C++ starter-signature census; shared C++ node-type prelude + shape runners; link metadata per problem; same gate shape as 18a.1
   - [x] 18b. **Full problem reseed** - all 300 problems reseeded from the cleaned data in one pass
-  - [ ] 18c. **Problem-content API and client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched, retirements deferred
+  - [x] 18c. **Problem-content API and client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched, retirements deferred
   - [ ] 18d. **AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only
 - [ ] 19. **Loop verification** - end-to-end dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB, no new product functionality
 - [x] 20. **Client URL routing** - History-API routing for the web client (no new router dependency): every nav view and auth/ritual state gets a real URL, browser back/forward works, refresh and deep links land somewhere sane; in-page `#how/#scoring/#why` anchors keep working

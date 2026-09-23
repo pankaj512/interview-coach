@@ -37,6 +37,7 @@
 //   POST   /api/interviews/:id/problems/select  (S5: deterministic auto-select)
 //   GET    /api/problems                        (S5: browser + selection)
 //   GET    /api/problems/:id
+//   GET    /api/problems/:id/content       (18c: problem content slice)
 //   POST   /api/interviews/:id/responses        (S5: persist candidate answers)
 //   GET    /api/interviews/:id/evaluation       (Phase 10: async evaluation result)
 //   GET    /api/interviews                      (Phase 9: user history list)
@@ -104,6 +105,7 @@ import {
   serializeInterview,
   serializeInterviewMessage,
   serializeInterviewSummary,
+  serializeProblemContent,
   serializeRecommendation,
   serializeRun,
   serializeStateSnapshot,
@@ -1132,6 +1134,21 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       return sendApiError(reply, 404, "NOT_FOUND", `Problem ${params.data.id} does not exist`, false);
     }
     return reply.send({ ok: true, problem });
+  });
+
+  // Feature 18c: dedicated content view over the reseeded columns. Same id
+  // validation and 404 shape as GET /api/problems/:id; gap (title-only)
+  // problems return 200 with null content fields via serializeProblemContent.
+  app.get("/api/problems/:id/content", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const problem = await deps.repos.problems.findById(asProblemId(params.data.id));
+    if (problem === null) {
+      return sendApiError(reply, 404, "NOT_FOUND", `Problem ${params.data.id} does not exist`, false);
+    }
+    return reply.send({ ok: true, content: serializeProblemContent(problem) });
   });
 
   // S5: problem browser (HLD 5.1). Filtered in memory over the 300-row
