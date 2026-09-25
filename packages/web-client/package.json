@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "monaco-editor": "^0.57.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },

@@ -2234,6 +2234,15 @@ textarea.code {
   color: var(--text);
 }
 
+.code-editor {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  background: #1e1e1e;
+  height: 320px;
+  min-height: 320px;
+}
+
 .live-grid .actions {
   display: flex;
   gap: var(--space-sm);

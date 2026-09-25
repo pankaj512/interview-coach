@@ -5,6 +5,7 @@
 // test-case editor — the sample case comes from the problem.
 
 import { useEffect, useRef, useState } from "react";
+import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
 import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../api/types.js";
 import { PrimaryButton } from "../ds/buttons.js";
@@ -60,21 +61,104 @@ export function CodeWorkspace({
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<SerializedRun | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editorReady, setEditorReady] = useState(false);
   const dirtyRef = useRef(false);
+  // True while pushing starter/prefill text into Monaco so the change
+  // listener does not mistake it for a candidate edit.
+  const suppressRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
+  const monacoRef = useRef<typeof monaco | null>(null);
+  const codeRef = useRef(code);
+  codeRef.current = code;
+  const languageRef = useRef(language);
+  languageRef.current = language;
+  const startersRef = useRef(starters);
+  startersRef.current = starters;
 
+  function pushValue(editor: monaco.editor.IStandaloneCodeEditor, value: string): void {
+    suppressRef.current = true;
+    try {
+      editor.setValue(value);
+    } finally {
+      suppressRef.current = false;
+    }
+    setCode(value);
+  }
+
+  // Create the Monaco editor once (client-only dynamic import, per the
+  // official browser-esm-vite-react sample). Disposal makes StrictMode
+  // dev double-mounts and unmounts safe.
+  useEffect(() => {
+    let cancelled = false;
+    let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+    (async () => {
+      await import("./monaco-setup.js");
+      if (cancelled || containerRef.current === null) return;
+      const created = await import("monaco-editor");
+      if (cancelled || containerRef.current === null) return;
+      monacoRef.current = created;
+      editor = created.editor.create(containerRef.current, {
+        value: codeRef.current,
+        language: languageRef.current,
+        theme: "vs-dark",
+        tabSize: 4,
+        insertSpaces: true,
+        autoClosingBrackets: "always",
+        autoIndent: "full",
+        tabCompletion: "on",
+        wordBasedSuggestions: "currentDocument",
+        minimap: { enabled: false },
+        scrollBeyondLastLine: false,
+        fontSize: 13,
+        automaticLayout: true,
+      });
+      editorRef.current = editor;
+      editor.onDidChangeModelContent(() => {
+        if (suppressRef.current || editor === null) return;
+        dirtyRef.current = true;
+        setCode(editor.getValue());
+      });
+      // Apply the starter that may have arrived before Monaco finished
+      // loading; never clobber candidate edits.
+      if (!dirtyRef.current) {
+        const starter = starterForLanguage(startersRef.current, languageRef.current);
+        if (starter !== null && starter !== editor.getValue()) pushValue(editor, starter);
+      }
+      setEditorReady(true);
+    })().catch(() => {
+      // Editor creation failed (e.g. workers blocked): the Test path below
+      // still works from `code` state, so surface nothing extra here.
+    });
+    return () => {
+      cancelled = true;
+      editorRef.current?.dispose();
+      editorRef.current = null;
+      monacoRef.current = null;
+    };
+  }, []);
+
+  // Verbatim-starter prefill while untouched; refill on problem/language
+  // change while untouched; never clobber edits.
   useEffect(() => {
     if (dirtyRef.current) return;
     const starter = starterForLanguage(starters, language);
-    if (starter !== null) setCode(starter);
+    if (starter === null) return;
+    const editor = editorRef.current;
+    if (editor !== null && editor.getValue() !== starter) pushValue(editor, starter);
+    else if (editor === null && codeRef.current !== starter) setCode(starter);
   }, [starters, language, problem?.id]);
 
+  // Keep the model language in sync with the selector.
+  useEffect(() => {
+    const editor = editorRef.current;
+    const monacoNs = monacoRef.current;
+    if (editor === null || monacoNs === null) return;
+    const model = editor.getModel();
+    if (model !== null) monacoNs.editor.setModelLanguage(model, language);
+  }, [language]);
+
   const sample = sampleCaseFor(problem);
-  const placeholder =
-    language === "python"
-      ? "def solve(nums, target):\n    return []"
-      : language === "cpp"
-        ? "Value solve(Value a, Value b) {\n  return a;\n}"
-        : "function solve(nums, target) {\n  return [];\n}";
 
   async function testCode() {
     if (sample === null) return;
@@ -117,17 +201,9 @@ export function CodeWorkspace({
         </select>
         <span className="note">boilerplate provided per problem</span>
       </div>
-      <textarea
-        className="code"
-        value={code}
-        onChange={(e) => {
-          dirtyRef.current = true;
-          setCode(e.target.value);
-        }}
-        placeholder={placeholder}
-        spellCheck={false}
-        aria-label="Candidate code"
-      />
+      <div className="code-editor" aria-label="Candidate code" ref={containerRef}>
+        {!editorReady && <div className="note">Loading editor…</div>}
+      </div>
       <div className="actions">
         <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
           {busy ? "Testing…" : "Test sample cases"}
