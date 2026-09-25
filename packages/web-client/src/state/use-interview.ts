@@ -78,6 +78,12 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   // Deliberate pause-suspend in progress: the voice client's "closed" state
   // must not drop the client reference, resume reconnects the same client.
   const suspendingRef = useRef(false);
+  // First successful join: a pre-join "closed" (StrictMode remount cleanup,
+  // or any remount before the first connect) must render the join card, not
+  // the room. Set once on the first "connected"; never reset for the life
+  // of this screen instance (pause-suspend reports "closed" post-join and
+  // must keep the room).
+  const joinedRef = useRef(false);
   // Wall-clock instant the explicit pause began; resume shifts the timer base
   // forward so the elapsed clock freezes while paused.
   const pausedAtRef = useRef<number | null>(null);
@@ -126,6 +132,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
           onConnectionState: (state) => {
             setConnection(state);
             if (state === "connected") {
+              joinedRef.current = true;
               if (startedAtRef.current === null) startedAtRef.current = Date.now();
               setLiveStarted(true);
             }
@@ -376,6 +383,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
 
   return {
     connection,
+    hasJoined: joinedRef.current,
     assistantSpeaking,
     candidateSpeaking,
     muted,

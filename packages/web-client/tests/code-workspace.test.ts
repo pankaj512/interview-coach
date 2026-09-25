@@ -8,7 +8,7 @@ import {
   sampleCaseFor,
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
-import { SPLIT_PANE_MIN, clampSplitPct, pauseAvailability } from "../src/screens/LiveScreen.js";
+import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability } from "../src/screens/LiveScreen.js";
 import type { Problem, ProblemStarterSet } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
@@ -104,5 +104,23 @@ describe("pauseAvailability", () => {
     expect(pauseAvailability("failed")).toBe("unavailable");
     expect(pauseAvailability("created")).toBe("unavailable");
     expect(pauseAvailability("ready")).toBe("unavailable");
+  });
+});
+
+describe("isRoomVisible", () => {
+  it("keeps the join card on pre-join closed (StrictMode remount cleanup)", () => {
+    expect(isRoomVisible("idle", false)).toBe(false);
+    expect(isRoomVisible("connecting", false)).toBe(false);
+    expect(isRoomVisible("closed", false)).toBe(false);
+  });
+
+  it("keeps the room on post-join closed (pause suspend, unexpected close)", () => {
+    expect(isRoomVisible("closed", true)).toBe(true);
+  });
+
+  it("leaves connected, reconnecting, and failed unchanged", () => {
+    expect(isRoomVisible("connected", false)).toBe(true);
+    expect(isRoomVisible("reconnecting", false)).toBe(true);
+    expect(isRoomVisible("failed", true)).toBe(false);
   });
 });

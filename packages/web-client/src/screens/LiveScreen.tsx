@@ -15,6 +15,7 @@ import { Card, Dialog, VoiceRail, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
+import type { VoiceConnectionState } from "../voice/voice-client.js";
 import type { Interaction, InterviewMode } from "../flow.js";
 
 /** Minimum width in px of each room pane while dragging the split. Below
@@ -38,6 +39,16 @@ export function pauseAvailability(status: InterviewStatus | null | undefined): P
   if (status === "in_progress") return "pausable";
   if (status === "paused") return "resumable";
   return "unavailable";
+}
+
+/** Derive room visibility from the voice connection plus join history:
+ *  `closed` keeps the room only after the first successful join (pause
+ *  suspend, unexpected post-join close). A pre-join `closed` (StrictMode
+ *  remount cleanup, remount before first connect) renders the join card. */
+export function isRoomVisible(connection: VoiceConnectionState, hasJoined: boolean): boolean {
+  if (connection === "connected" || connection === "reconnecting") return true;
+  if (connection === "closed") return hasJoined;
+  return false;
 }
 
 export function LiveScreen({
@@ -84,7 +95,7 @@ export function LiveScreen({
 
   const micBlocked = tabHidden;
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
-  const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
+  const inRoom = isRoomVisible(live.connection, live.hasJoined);
   // Pause is legal only from in_progress (resume only from paused): gate the
   // button on the snapshot instead of firing requests that must fail. While
   // the snapshot is still loading the attempt is allowed; the backend stays
