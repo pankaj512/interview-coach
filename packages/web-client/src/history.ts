@@ -6,6 +6,7 @@
 // re-fetch canonical state from the backend.
 
 import type { EvaluationStatus, InterviewStatus, SerializedEvaluation, SerializedInterviewSummary } from "./api/types.js";
+import type { BackendClient } from "./api/backend-client.js";
 
 export interface HistoryEntry {
   readonly id: string;
@@ -78,4 +79,42 @@ export function historyEntriesFromSummaries(
   summaries: readonly SerializedInterviewSummary[],
 ): readonly HistoryEntry[] {
   return summaries.map(historyEntryFromSummary);
+}
+
+/** Hard-delete every interview page by page (history lists are capped, so
+ *  one page is rarely all of it). Deletes everything deletable: entries that
+ *  fail are skipped on later pages so one stuck row cannot block the rest or
+ *  loop forever. Never throws for delete failures; a list failure rejects. */
+export async function deleteAllInterviews(
+  client: Pick<BackendClient, "listInterviews" | "deleteInterview" | "cancelInterview">,
+  limit: number,
+): Promise<{ deleted: number; failed: boolean }> {
+  let deleted = 0;
+  const skipped = new Set<string>();
+  for (;;) {
+    const page = (await client.listInterviews(limit)).filter((s) => !skipped.has(s.interview.id));
+    if (page.length === 0) return { deleted, failed: skipped.size > 0 };
+    for (const summary of page) {
+      try {
+        await deleteHistoryEntry(client, summary.interview.id, summary.interview.status);
+        deleted += 1;
+      } catch {
+        skipped.add(summary.interview.id);
+      }
+    }
+  }
+}
+
+/** Delete one interview, cancelling it first when it is still live. The
+ *  domain guard refuses `in_progress`/`paused` rows, and no screen offers a
+ *  standalone cancel, so Delete on a live row means cancel-then-delete. */
+export async function deleteHistoryEntry(
+  client: Pick<BackendClient, "deleteInterview" | "cancelInterview">,
+  id: string,
+  status: InterviewStatus,
+): Promise<void> {
+  if (status === "in_progress" || status === "paused") {
+    await client.cancelInterview(id, "Deleted from history");
+  }
+  await client.deleteInterview(id);
 }

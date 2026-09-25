@@ -6,25 +6,28 @@
 
 import { useEffect, useState } from "react";
 import { AccountSection } from "../components/AccountSection.js";
-import { GhostButton } from "../ds/buttons.js";
-import { Card } from "../ds/primitives.js";
+import { DangerButton, GhostButton } from "../ds/buttons.js";
+import { Card, Dialog } from "../ds/primitives.js";
 import { DEFAULT_VOICE, loadVoicePreference, REALTIME_VOICES, saveVoicePreference } from "../voice/voice-prefs.js";
 import type { HistoryEntry } from "../history.js";
 
 export function SettingsScreen({
   entries,
-  onHistoryCleared,
+  deletingAll,
+  onDeleteAll,
   onSignIn,
   onCreateAccount,
   onSignOut,
 }: {
   readonly entries: readonly HistoryEntry[];
-  readonly onHistoryCleared: () => void;
+  readonly deletingAll: boolean;
+  readonly onDeleteAll: () => void;
   readonly onSignIn: () => void;
   readonly onCreateAccount: () => void;
   readonly onSignOut: () => void;
 }) {
   const [exportError, setExportError] = useState<string | null>(null);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
   // Unset preference shows the service default voice, not a placeholder:
   // the dropdown always reflects the voice interviews will actually use.
   const [voice, setVoice] = useState<string>(() => loadVoicePreference() ?? DEFAULT_VOICE);
@@ -86,8 +89,13 @@ export function SettingsScreen({
           <GhostButton onClick={exportJson}>Export JSON</GhostButton>
         </div>
         <div className="setting-row">
-          <span>Interview history</span>
-          <GhostButton onClick={onHistoryCleared}>Reload interviews</GhostButton>
+          <span>
+            Interview history{" "}
+            <span className="hint">Delete interviews clears all history permanently.</span>
+          </span>
+          <DangerButton onClick={() => setConfirmingDelete(true)} disabled={entries.length === 0 || deletingAll}>
+            {deletingAll ? "Deleting…" : "Delete interviews"}
+          </DangerButton>
         </div>
         {exportError !== null && (
           <p className="error" role="alert">
@@ -95,6 +103,30 @@ export function SettingsScreen({
           </p>
         )}
       </Card>
+      {confirmingDelete && (
+        <Dialog
+          title="Delete all interviews?"
+          onClose={() => setConfirmingDelete(false)}
+          actions={
+            <>
+              <GhostButton onClick={() => setConfirmingDelete(false)}>Keep interviews</GhostButton>
+              <DangerButton
+                onClick={() => {
+                  setConfirmingDelete(false);
+                  onDeleteAll();
+                }}
+              >
+                Delete interviews
+              </DangerButton>
+            </>
+          }
+        >
+          <p>
+            This permanently clears your interview history, including scores, feedback, and progress. This
+            cannot be undone.
+          </p>
+        </Dialog>
+      )}
     </>
   );
 }

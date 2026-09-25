@@ -18,7 +18,7 @@ import { AppShell, type NavKey } from "./components/AppShell.js";
 import { GhostButton } from "./ds/buttons.js";
 import { Card } from "./ds/primitives.js";
 import type { Difficulty, Interaction, InterviewMode, SessionPlan } from "./flow.js";
-import { historyEntriesFromSummaries, type HistoryEntry } from "./history.js";
+import { deleteAllInterviews, deleteHistoryEntry, historyEntriesFromSummaries, type HistoryEntry } from "./history.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
 import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
@@ -370,17 +370,46 @@ export function App() {
     async (entry: HistoryEntry) => {
       setDeletingId(entry.id);
       setHistoryError(null);
+      let failed = false;
       try {
-        await backend.deleteInterview(entry.id);
-        await refreshHistory();
-      } catch (e) {
-        setHistoryError(`Could not delete ${entry.id}: ${formatApiError(e)}`);
-      } finally {
-        setDeletingId(null);
+        await deleteHistoryEntry(backend, entry.id, entry.status);
+      } catch {
+        failed = true;
       }
+      await refreshHistory();
+      // Curated copy on purpose: the raw backend error names the interview
+      // id and a transition code, which is meaningless to candidates.
+      if (failed) setHistoryError("Could not delete this interview. Your history was refreshed.");
+      setDeletingId(null);
     },
     [backend, refreshHistory],
   );
+
+  // Settings "Delete interviews": hard-delete every interview (paged, since
+  // the list is capped), then refresh. The refresh clears a stale error
+  // first, so a failure is recorded after it to show the true list state.
+  // Copy is curated: raw backend errors name interview ids and codes.
+  const [deletingAll, setDeletingAll] = useState(false);
+  const deleteAllHistory = useCallback(async () => {
+    setDeletingAll(true);
+    setHistoryError(null);
+    let deleted = 0;
+    let failed = false;
+    try {
+      ({ deleted, failed } = await deleteAllInterviews(backend, historyLimit));
+    } catch {
+      failed = true;
+    }
+    await refreshHistory();
+    if (failed) {
+      setHistoryError(
+        deleted > 0
+          ? `Could not delete all interviews. ${deleted} deleted; your history was refreshed.`
+          : "Could not delete all interviews. Your history was refreshed.",
+      );
+    }
+    setDeletingAll(false);
+  }, [backend, historyLimit, refreshHistory]);
 
   // "New practice" now routes to the Dashboard, whose recommendation CTA is the
   // only entry into a session (roadmap Phase 6: Setup retired).
@@ -571,7 +600,8 @@ export function App() {
         {nav === "settings" && (
           <SettingsScreen
             entries={entries}
-            onHistoryCleared={() => void refreshHistory()}
+            deletingAll={deletingAll}
+            onDeleteAll={() => void deleteAllHistory()}
             onSignIn={() => goAuth("signin")}
             onCreateAccount={() => goAuth("signup")}
             onSignOut={handleSignOut}
