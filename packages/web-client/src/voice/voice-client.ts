@@ -201,7 +201,11 @@ export class VoiceInterviewClient {
     return this.interviewId;
   }
 
-  async connect(interviewId: string, session: VoiceSessionPayload): Promise<void> {
+  async connect(
+    interviewId: string,
+    session: VoiceSessionPayload,
+    options?: { resumeHistory?: readonly Record<string, unknown>[] },
+  ): Promise<void> {
     if (this.connectionState === "connected" || this.connectionState === "connecting") {
       throw new Error("Voice client is already connected or connecting");
     }
@@ -272,6 +276,11 @@ export class VoiceInterviewClient {
     this.setState("connected");
     this.metric("voice.connected", { interviewId });
 
+    // Resume continuity: replay the pre-pause turns before asking the model
+    // to speak so it continues the thread. Without history this stays the
+    // fresh-join greeting (CLI parity).
+    for (const item of options?.resumeHistory ?? []) this.sendJson(item);
+
     // Interviewer speaks first (CLI parity).
     this.sendJson({ type: "response.create" });
     this.metric("voice.initial_greeting_requested", { interviewId });
@@ -280,13 +289,13 @@ export class VoiceInterviewClient {
   // Reconnect with the same mint when it is still valid; queued unacked
   // outputs flush after session ack. Returns false when there is nothing to
   // reconnect (no prior interview/session).
-  async reconnect(): Promise<boolean> {
+  async reconnect(resumeHistory?: readonly Record<string, unknown>[]): Promise<boolean> {
     const interviewId = this.interviewId;
     const session = this.session;
     if (interviewId === null || session === null) return false;
     this.closeSocket();
     this.setState("reconnecting");
-    await this.connect(interviewId, session);
+    await this.connect(interviewId, session, resumeHistory === undefined ? undefined : { resumeHistory });
     return true;
   }
 

@@ -5,8 +5,10 @@ import type { VoiceSessionPayload } from "../src/api/types.js";
 import {
   buildAuthenticatedVoiceUrl,
   buildFunctionCallOutput,
+  buildResumeHistory,
   buildSessionUpdate,
   REALTIME_TOOL_DEFINITIONS,
+  type ResumeTurn,
 } from "../src/voice/session.js";
 
 function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload {
@@ -110,5 +112,67 @@ describe("session wire format", () => {
     });
     const withPrev = buildFunctionCallOutput("c1", "{}", "item_9");
     expect(withPrev["previous_item_id"]).toBe("item_9");
+  });
+});
+
+describe("resume history", () => {
+  const turn = (kind: string, detail: string): ResumeTurn => ({ kind, detail });
+
+  function itemAt(history: Record<string, unknown>[], index: number): Record<string, unknown> {
+    return history[index]?.["item"] as Record<string, unknown>;
+  }
+
+  it("maps candidate turns to user messages and assistant turns to assistant messages in order", () => {
+    const history = buildResumeHistory([
+      turn("assistant", "How would you approach this?"),
+      turn("candidate", "I would use a hash map."),
+    ]);
+    expect(history.length).toBe(3);
+    expect(itemAt(history, 0)).toMatchObject({
+      type: "message",
+      role: "assistant",
+      content: [{ type: "output_text", text: "How would you approach this?" }],
+    });
+    expect(itemAt(history, 1)).toMatchObject({
+      type: "message",
+      role: "user",
+      content: [{ type: "input_text", text: "I would use a hash map." }],
+    });
+  });
+
+  it("ends with a continue nudge instead of a greeting", () => {
+    const history = buildResumeHistory([turn("candidate", "Hello")]);
+    const nudge = itemAt(history, history.length - 1);
+    expect(nudge?.["role"]).toBe("user");
+    const content = nudge?.["content"] as { type: string; text: string }[];
+    expect(content[0]?.text).toMatch(/Continue exactly where you left off/);
+    expect(content[0]?.text).toMatch(/Do not greet again/);
+  });
+
+  it("ignores non-spoken and empty turns, and returns [] when nothing remains", () => {
+    expect(buildResumeHistory([])).toEqual([]);
+    expect(
+      buildResumeHistory([turn("tool", "get_current_problem complete"), turn("connection", "closed"), turn("candidate", "   ")]),
+    ).toEqual([]);
+  });
+
+  it("caps replay at the most recent 30 turns", () => {
+    const events = Array.from({ length: 35 }, (_, i) =>
+      turn(i % 2 === 0 ? "assistant" : "candidate", `turn ${i}`),
+    );
+    const history = buildResumeHistory(events);
+    expect(history.length).toBe(31);
+    expect(itemAt(history, 0)).toMatchObject({ content: [{ text: "turn 5" }] });
+  });
+
+  it("drops the oldest turns past the character budget and truncates a lone oversized turn", () => {
+    const big = "x".repeat(5000);
+    const history = buildResumeHistory([turn("candidate", big), turn("assistant", big)]);
+    expect(history.length).toBe(2);
+    const first = itemAt(history, 0);
+    expect(first?.["role"]).toBe("assistant");
+    const lone = buildResumeHistory([turn("candidate", "y".repeat(9000))]);
+    const content = (itemAt(lone, 0)?.["content"] as { text: string }[])[0];
+    expect(content?.text.length).toBe(8000);
   });
 });

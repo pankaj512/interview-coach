@@ -133,3 +133,61 @@ export function buildFunctionCallOutput(
     ...(previousItemId === undefined || previousItemId === "" ? {} : { previous_item_id: previousItemId }),
   };
 }
+
+// Resume continuity: the realtime API has no session resumption, so a resumed
+// interview replays its pre-pause transcript turns as conversation items and
+// the model continues instead of re-greeting. Only spoken turns travel;
+// tool, connection, and empty entries never become model context.
+export interface ResumeTurn {
+  readonly kind: string;
+  readonly detail: string;
+}
+
+const RESUME_MAX_TURNS = 30;
+const RESUME_MAX_CHARS = 8000;
+
+export function buildResumeHistory(events: readonly ResumeTurn[]): Record<string, unknown>[] {
+  const turns: { role: string; text: string }[] = [];
+  for (const event of events) {
+    const text = event.detail.trim();
+    if (text === "") continue;
+    if (event.kind === "candidate") turns.push({ role: "user", text });
+    else if (event.kind === "assistant") turns.push({ role: "assistant", text });
+  }
+  const recent = turns.slice(-RESUME_MAX_TURNS);
+  let chars = recent.reduce((sum, turn) => sum + turn.text.length, 0);
+  let start = 0;
+  while (start < recent.length - 1 && chars > RESUME_MAX_CHARS) {
+    chars -= recent[start]?.text.length ?? 0;
+    start += 1;
+  }
+  let kept = recent.slice(start);
+  if (kept.length === 1 && chars > RESUME_MAX_CHARS) {
+    const only = kept[0];
+    if (only !== undefined) kept = [{ role: only.role, text: only.text.slice(-RESUME_MAX_CHARS) }];
+  }
+  if (kept.length === 0) return [];
+  return [
+    ...kept.map((turn) => ({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: turn.role,
+        content: [{ type: turn.role === "assistant" ? "output_text" : "input_text", text: turn.text }],
+      },
+    })),
+    {
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "user",
+        content: [
+          {
+            type: "input_text",
+            text: "The interview was paused and has now resumed. Continue exactly where you left off. Do not greet again or restate the problem.",
+          },
+        ],
+      },
+    },
+  ];
+}

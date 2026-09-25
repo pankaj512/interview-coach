@@ -16,6 +16,7 @@ import type {
 import { loadWebConfig } from "../config.js";
 import { useAuthSession } from "./auth-store.js";
 import { createBrowserMicCapture, createBrowserPlayback } from "../voice/browser-audio.js";
+import { buildResumeHistory } from "../voice/session.js";
 import { VoiceInterviewClient, type VoiceConnectionState, type VoiceWebSocket } from "../voice/voice-client.js";
 
 export function useBackendClient(): BackendClient {
@@ -58,6 +59,9 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const [paused, setPaused] = useState(false);
   const [snapshot, setSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
+  // Ref mirror of the transcript feed: resumeVoice reads the pre-pause turns
+  // at click time, outside the render that captured its callback.
+  const eventsRef = useRef<readonly LiveEvent[]>([]);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [liveStarted, setLiveStarted] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,6 +86,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const log = useCallback((kind: string, detail: string) => {
     const entry: LiveEvent = { at: new Date().toISOString(), kind, detail };
     setEvents((prev) => [...prev.slice(-199), entry]);
+    eventsRef.current = [...eventsRef.current.slice(-199), entry];
   }, []);
 
   const refreshSnapshot = useCallback(async (): Promise<SerializedStateSnapshot | null> => {
@@ -220,12 +225,14 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
 
   // Reconnect a pause-suspended client. Drops the client when the session is
   // dead so the join card's Retry can mint a fresh one instead of trapping
-  // the room on a failed voice state.
+  // the room on a failed voice state. Replays the pre-pause turns so the
+  // interviewer continues the thread; empty history keeps the plain greeting.
   const resumeVoice = useCallback(async () => {
     const client = clientRef.current;
     if (client === null) return;
+    const history = buildResumeHistory(eventsRef.current);
     try {
-      if (!(await client.reconnect())) {
+      if (!(await client.reconnect(history.length > 0 ? history : undefined))) {
         clientRef.current = null;
         setError("Voice session expired. Rejoin to continue speaking.");
       }

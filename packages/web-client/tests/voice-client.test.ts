@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { BackendClient, type FetchFn } from "../src/api/backend-client.js";
 import type { ToolExecOutcome, ToolName, VoiceSessionPayload } from "../src/api/types.js";
 import { pcm16ToBase64 } from "../src/voice/audio.js";
+import { buildResumeHistory } from "../src/voice/session.js";
 import {
   addPendingCallId,
   createMemoryStorage,
@@ -212,8 +213,28 @@ describe("VoiceInterviewClient", () => {
     expect(h.mic.started).toBe(true);
   });
 
-  it("drops mic audio once the socket leaves OPEN (no CLOSING/CLOSED send spam)", async () => {
+  it("replays resume history before the greeting, and greets plainly without it", async () => {
     const h = harness();
+    const history = buildResumeHistory([
+      { kind: "assistant", detail: "How would you approach this?" },
+      { kind: "candidate", detail: "With a hash map." },
+    ]);
+    const pending = h.client.connect("int_1", mint(), { resumeHistory: history });
+    h.socket().open();
+    await pending;
+    const types = h.socket().sentTypes();
+    expect(types[0]).toBe("session.update");
+    expect(types.filter((type) => type === "conversation.item.create").length).toBe(3);
+    expect(types[types.length - 1]).toBe("response.create");
+
+    const plain = harness();
+    const pendingPlain = plain.client.connect("int_1", mint());
+    plain.socket().open();
+    await pendingPlain;
+    expect(plain.socket().sentTypes()).not.toContain("conversation.item.create");
+  });
+
+  it("drops mic audio once the socket leaves OPEN (no CLOSING/CLOSED send spam)", async () => {    const h = harness();
     const pending = h.client.connect("int_1", mint());
     h.socket().open();
     await pending;
