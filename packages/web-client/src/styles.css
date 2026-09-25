@@ -2094,6 +2094,7 @@ button:focus-visible {
 }
 
 .state-micblocked,
+.state-error,
 .state-paused {
   border-color: var(--danger);
 }

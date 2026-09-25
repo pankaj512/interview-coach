@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { BackendClient } from "../api/backend-client.js";
-import type { Problem, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
+import type { InterviewStatus, Problem, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
@@ -25,6 +25,19 @@ export const SPLIT_PANE_MIN = 300;
 export function clampSplitPct(rawPct: number, width: number, paneMin: number = SPLIT_PANE_MIN): number {
   const minPct = Math.min(50, (paneMin / Math.max(width, 1)) * 100);
   return Math.min(Math.max(rawPct, minPct), 100 - minPct);
+}
+
+export type PauseAvailability = "pausable" | "resumable" | "unavailable";
+
+/** Derive Pause/Resume availability from the backend snapshot status: pause
+ *  is legal only from in_progress, resume only from paused (lifecycle map).
+ *  Unknown (no snapshot yet) allows the attempt; the backend stays
+ *  authoritative and failures now surface in the room. */
+export function pauseAvailability(status: InterviewStatus | null | undefined): PauseAvailability {
+  if (status === null || status === undefined) return "pausable";
+  if (status === "in_progress") return "pausable";
+  if (status === "paused") return "resumable";
+  return "unavailable";
 }
 
 export function LiveScreen({
@@ -72,6 +85,12 @@ export function LiveScreen({
   const micBlocked = tabHidden;
   const secondsLeft = secondsLeftFor(interview.configuration.durationMinutes, live.elapsedSec);
   const inRoom = live.connection === "connected" || live.connection === "reconnecting" || live.connection === "closed";
+  // Pause is legal only from in_progress (resume only from paused): gate the
+  // button on the snapshot instead of firing requests that must fail. While
+  // the snapshot is still loading the attempt is allowed; the backend stays
+  // authoritative and failures surface in the room below.
+  const availability = pauseAvailability(live.snapshot?.interview.status);
+  const pauseDisabled = live.busy || (live.snapshot !== null && availability === "unavailable");
   const problem = live.snapshot?.currentProblem ?? fallbackProblem ?? null;
   // 18c content slice for the pane + editor prefill. `undefined` = loading,
   // `null` = no problem or fetch failed (panels fall back to snapshot fields),
@@ -194,7 +213,7 @@ export function LiveScreen({
 
       {inRoom && (
         <>
-          {(live.connection === "reconnecting" || micBlocked) && (
+          {(live.connection === "reconnecting" || micBlocked || live.error !== null) && (
             <div className="state-strip">
               {live.connection === "reconnecting" && (
                 <Card className="state-card state-reconnecting" role="alert">
@@ -206,6 +225,15 @@ export function LiveScreen({
                 <Card className="state-card state-micblocked" role="alert">
                   <strong>⌀ Mic blocked — room waiting</strong>
                   <span className="hint">This tab is hidden. Return to this tab to resume speaking.</span>
+                </Card>
+              )}
+              {live.error !== null && (
+                <Card className="state-card state-error" role="alert">
+                  <strong>Attention needed</strong>
+                  <span className="hint">{live.error}</span>
+                  <div className="row actions">
+                    <GhostButton onClick={live.clearError}>Dismiss</GhostButton>
+                  </div>
                 </Card>
               )}
             </div>
@@ -229,9 +257,14 @@ export function LiveScreen({
                   <GhostButton onClick={live.toggleMute} disabled={live.paused}>
                     {live.muted ? "Unmute" : "Mute"}
                   </GhostButton>
-                  <GhostButton onClick={() => void live.togglePause()} disabled={live.busy}>
+                  <GhostButton onClick={() => void live.togglePause()} disabled={pauseDisabled}>
                     {live.paused ? "Resume" : "Pause"}
                   </GhostButton>
+                  {pauseDisabled && !live.busy && (
+                    <span className="hint" role="note">
+                      Pause is unavailable in the current interview state.
+                    </span>
+                  )}
                   <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
                     End interview
                   </DangerButton>

@@ -8,7 +8,7 @@ import {
   sampleCaseFor,
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
-import { SPLIT_PANE_MIN, clampSplitPct } from "../src/screens/LiveScreen.js";
+import { SPLIT_PANE_MIN, clampSplitPct, pauseAvailability } from "../src/screens/LiveScreen.js";
 import type { Problem, ProblemStarterSet } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
@@ -83,5 +83,26 @@ describe("clampSplitPct", () => {
 
   it("settles at the middle when the room is narrower than both floors", () => {
     expect(clampSplitPct(55, 400)).toBe(50);
+  });
+});
+
+describe("pauseAvailability", () => {
+  it("allows the attempt while the snapshot is still loading", () => {
+    expect(pauseAvailability(null)).toBe("pausable");
+    expect(pauseAvailability(undefined)).toBe("pausable");
+  });
+
+  it("pauses from in_progress and resumes from paused", () => {
+    expect(pauseAvailability("in_progress")).toBe("pausable");
+    expect(pauseAvailability("paused")).toBe("resumable");
+  });
+
+  it("blocks pause and resume once the interview drifts or ends", () => {
+    expect(pauseAvailability("completing")).toBe("unavailable");
+    expect(pauseAvailability("completed")).toBe("unavailable");
+    expect(pauseAvailability("cancelled")).toBe("unavailable");
+    expect(pauseAvailability("failed")).toBe("unavailable");
+    expect(pauseAvailability("created")).toBe("unavailable");
+    expect(pauseAvailability("ready")).toBe("unavailable");
   });
 });

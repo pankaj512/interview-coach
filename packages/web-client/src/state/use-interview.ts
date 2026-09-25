@@ -66,10 +66,17 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   const clientRef = useRef<VoiceInterviewClient | null>(null);
   // Wall-clock start of the interview (audit C4-5): the elapsed timer must
   // keep counting across reconnect/mic-blocked windows, not freeze when the
-  // connection state changes.
+  // connection state changes. An explicit pause is the one exception: while
+  // paused the timer holds and resume shifts this base forward.
   const startedAtRef = useRef<number | null>(null);
   const mutedRef = useRef(false);
   const pausedRef = useRef(false);
+  // Deliberate pause-suspend in progress: the voice client's "closed" state
+  // must not drop the client reference, resume reconnects the same client.
+  const suspendingRef = useRef(false);
+  // Wall-clock instant the explicit pause began; resume shifts the timer base
+  // forward so the elapsed clock freezes while paused.
+  const pausedAtRef = useRef<number | null>(null);
   const startingRef = useRef(false);
 
   const log = useCallback((kind: string, detail: string) => {
@@ -77,11 +84,14 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     setEvents((prev) => [...prev.slice(-199), entry]);
   }, []);
 
-  const refreshSnapshot = useCallback(async () => {
+  const refreshSnapshot = useCallback(async (): Promise<SerializedStateSnapshot | null> => {
     try {
-      setSnapshot(await backend.getState(interview.id));
+      const snap = await backend.getState(interview.id);
+      setSnapshot(snap);
+      return snap;
     } catch {
       // Display-only poll: keep the call alive on transient failures.
+      return null;
     }
   }, [backend, interview.id]);
 
@@ -116,8 +126,11 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
             }
             // Unexpected close: release the mic and clear the client so the
             // room's Rejoin can mint a fresh session (C4-1). The elapsed
-            // clock keeps its original start (C4-5).
+            // clock keeps its original start (C4-5). A deliberate
+            // pause-suspend reports "closed" too: keep the client so resume
+            // reconnects it (disconnect already stopped mic and playback).
             if (state === "closed") {
+              if (suspendingRef.current) return;
               const dropped = clientRef.current;
               clientRef.current = null;
               if (dropped !== null) void dropped.disconnect().catch(() => undefined);
@@ -190,17 +203,74 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     });
   }, []);
 
+  // Suspend the media plane for an explicit pause (hook-level only; the
+  // frozen media plane is untouched). Stops mic capture and playback and
+  // closes the Azure socket so a paused interview holds no live session.
+  // Keeps the client so resume reconnects it with the still-valid mint.
+  const suspendVoice = useCallback(async () => {
+    const client = clientRef.current;
+    if (client === null) return;
+    suspendingRef.current = true;
+    try {
+      await client.disconnect("paused");
+    } finally {
+      suspendingRef.current = false;
+    }
+  }, []);
+
+  // Reconnect a pause-suspended client. Drops the client when the session is
+  // dead so the join card's Retry can mint a fresh one instead of trapping
+  // the room on a failed voice state.
+  const resumeVoice = useCallback(async () => {
+    const client = clientRef.current;
+    if (client === null) return;
+    try {
+      if (!(await client.reconnect())) {
+        clientRef.current = null;
+        setError("Voice session expired. Rejoin to continue speaking.");
+      }
+    } catch (e) {
+      clientRef.current = null;
+      setError(formatApiError(e));
+    }
+  }, []);
+
   const togglePause = useCallback(async () => {
     setBusy(true);
     setError(null);
     try {
+      // Act on a fresh snapshot: the interview may have drifted (e.g. the
+      // model ended it) since the last display poll. The backend stays
+      // authoritative; this only avoids firing requests that must fail.
+      const snap = await refreshSnapshot();
+      const status = snap?.interview.status;
       if (pausedRef.current) {
-        await backend.resumeInterview(interview.id);
+        // Resume is legal only from paused; an already-resumed backend just
+        // needs the local flags and media resynced.
+        if (status !== undefined && status !== "paused" && status !== "in_progress") {
+          setError(`Cannot resume while the interview is ${status}.`);
+          return;
+        }
+        if (status === undefined || status === "paused") {
+          await backend.resumeInterview(interview.id);
+        }
+        await resumeVoice();
+        const pausedAt = pausedAtRef.current;
+        if (pausedAt !== null && startedAtRef.current !== null) {
+          startedAtRef.current += Date.now() - pausedAt;
+        }
+        pausedAtRef.current = null;
         setPaused(false);
         pausedRef.current = false;
         log("interview", "resumed");
       } else {
+        if (status !== undefined && status !== "in_progress") {
+          setError(`Cannot pause while the interview is ${status}.`);
+          return;
+        }
         await backend.pauseInterview(interview.id);
+        pausedAtRef.current = Date.now();
+        await suspendVoice();
         setPaused(true);
         pausedRef.current = true;
         log("interview", "paused");
@@ -211,7 +281,7 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
     } finally {
       setBusy(false);
     }
-  }, [backend, interview.id, log, refreshSnapshot]);
+  }, [backend, interview.id, log, refreshSnapshot, resumeVoice, suspendVoice]);
 
   // Text fallback (spec §16): send a typed turn to Voice Live as an
   // input_text user message and let the interviewer respond. Also persisted
@@ -272,9 +342,11 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
 
   // Elapsed timer: ticks while the interview is live, independent of the
   // connection state, so it does not freeze across reconnect/mic-blocked.
+  // An explicit pause holds the clock; resume shifts the base forward.
   useEffect(() => {
     if (!liveStarted) return;
     const timer = setInterval(() => {
+      if (pausedRef.current) return;
       const since = startedAtRef.current;
       setElapsedSec(since === null ? 0 : Math.floor((Date.now() - since) / 1000));
     }, 1000);
