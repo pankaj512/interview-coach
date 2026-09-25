@@ -1,6 +1,14 @@
-// CodeWorkspace sample-case parsing (H-Live right panel).
+// CodeWorkspace sample-case parsing (H-Live right panel) plus the pure
+// editor-height and pane-split clamps backing the auto-grow editor and the
+// draggable problem/editor split.
 import { describe, expect, it } from "vitest";
-import { sampleCaseFor, starterForLanguage } from "../src/components/CodeWorkspace.js";
+import {
+  EDITOR_MIN_HEIGHT,
+  clampEditorHeight,
+  sampleCaseFor,
+  starterForLanguage,
+} from "../src/components/CodeWorkspace.js";
+import { SPLIT_PANE_MIN, clampSplitPct } from "../src/screens/LiveScreen.js";
 import type { Problem, ProblemStarterSet } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
@@ -45,5 +53,35 @@ describe("starterForLanguage", () => {
   it("returns null for title-only gaps and unloaded content", () => {
     expect(starterForLanguage(null, "python")).toBeNull();
     expect(starterForLanguage(undefined, "python")).toBeNull();
+  });
+});
+
+describe("clampEditorHeight", () => {
+  it("starts at the room minimum and grows with content", () => {
+    expect(EDITOR_MIN_HEIGHT).toBe(480);
+    expect(clampEditorHeight(100, 900)).toBe(480);
+    expect(clampEditorHeight(600, 900)).toBe(600);
+  });
+
+  it("caps at the viewport budget so the Test row stays visible", () => {
+    expect(clampEditorHeight(1200, 700)).toBe(700);
+  });
+
+  it("never collapses below the minimum on short viewports", () => {
+    expect(clampEditorHeight(1200, 200)).toBe(480);
+  });
+});
+
+describe("clampSplitPct", () => {
+  it("keeps the 300px floor on both panes of a wide room", () => {
+    expect(SPLIT_PANE_MIN).toBe(300);
+    // 1200px room: 300px floor = 25% from either edge.
+    expect(clampSplitPct(55, 1200)).toBe(55);
+    expect(clampSplitPct(5, 1200)).toBe(25);
+    expect(clampSplitPct(99, 1200)).toBe(75);
+  });
+
+  it("settles at the middle when the room is narrower than both floors", () => {
+    expect(clampSplitPct(55, 400)).toBe(50);
   });
 });

@@ -5,7 +5,7 @@
 // Conversation is voice-only — no transcript panel and no text composer.
 // All session logic, hooks, and tool wiring preserved.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { Problem, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
@@ -16,6 +16,16 @@ import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
 import type { Interaction, InterviewMode } from "../flow.js";
+
+/** Minimum width in px of each room pane while dragging the split. Below
+ *  this the narrow pane would clip the editor gutter or the problem table. */
+export const SPLIT_PANE_MIN = 300;
+
+/** Clamp a dragged editor-fraction into the per-pane minimums of `width`. */
+export function clampSplitPct(rawPct: number, width: number, paneMin: number = SPLIT_PANE_MIN): number {
+  const minPct = Math.min(50, (paneMin / Math.max(width, 1)) * 100);
+  return Math.min(Math.max(rawPct, minPct), 100 - minPct);
+}
 
 export function LiveScreen({
   backend,
@@ -109,6 +119,40 @@ export function LiveScreen({
     <StatusChip connection={live.connection} />
   );
   const transcriptTurns = live.events.filter((e) => e.kind === "assistant" || e.kind === "candidate").slice(-6);
+  const transcriptRef = useRef<HTMLOListElement | null>(null);
+  useEffect(() => {
+    const list = transcriptRef.current;
+    if (list !== null) list.scrollTop = list.scrollHeight;
+  }, [live.events]);
+
+  // Draggable problem/editor split: editor width as a flex-basis percent,
+  // session-only (resets on reload). The divider supports pointer drag and
+  // arrow keys; narrow screens stack and hide it (styles.css).
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [splitPct, setSplitPct] = useState(55);
+  const dragRef = useRef<{ startX: number; startPct: number } | null>(null);
+  // Window-level move/up listeners (mounted once) read the live dragRef,
+  // so a drag started on the divider is tracked even off-element.
+  useEffect(() => {
+    const onMove = (e: PointerEvent) => {
+      const drag = dragRef.current;
+      const grid = gridRef.current;
+      if (drag === null || grid === null) return;
+      const rect = grid.getBoundingClientRect();
+      const dxPct = ((e.clientX - drag.startX) / Math.max(rect.width, 1)) * 100;
+      setSplitPct(clampSplitPct(drag.startPct - dxPct, rect.width));
+    };
+    const onUp = () => {
+      dragRef.current = null;
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, []);
+  const gridStyle = { "--editor-pct": `${splitPct}%` } as CSSProperties;
 
   return (
     <div className="room">
@@ -150,7 +194,7 @@ export function LiveScreen({
 
       {inRoom && (
         <>
-          {(live.connection === "reconnecting" || micBlocked || live.paused) && (
+          {(live.connection === "reconnecting" || micBlocked) && (
             <div className="state-strip">
               {live.connection === "reconnecting" && (
                 <Card className="state-card state-reconnecting" role="alert">
@@ -164,45 +208,8 @@ export function LiveScreen({
                   <span className="hint">This tab is hidden. Return to this tab to resume speaking.</span>
                 </Card>
               )}
-              {live.paused && (
-                <Card className="state-card state-paused" role="alert">
-                  <strong>Ⅱ Interview paused</strong>
-                  <span className="hint">Mic suspended. Resume when ready.</span>
-                </Card>
-              )}
             </div>
           )}
-
-          <div className="live-grid">
-            <div className="live-column">
-              <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} content={content} />
-              {transcriptTurns.length > 0 && (
-                <Card>
-                  <h3 className="section-title">Conversation</h3>
-                  <ol className="transcript-list" aria-live="polite">
-                    {transcriptTurns.map((turn, i) => (
-                      <li key={`${turn.at}-${i}`} className="turn">
-                        <span className="turn-role">
-                          {turn.kind === "assistant" ? "Interviewer" : "You"}
-                        </span>
-                        <p className="turn-text">{turn.detail}</p>
-                      </li>
-                    ))}
-                  </ol>
-                </Card>
-              )}
-            </div>
-            <CodeWorkspace
-              backend={backend}
-              interviewId={interview.id}
-              problem={problem}
-              starters={content?.starters ?? null}
-              onActivity={(detail) => {
-                live.log("code", detail);
-                void live.refresh();
-              }}
-            />
-          </div>
 
           <div className="rail">
             <VoiceRail
@@ -230,6 +237,61 @@ export function LiveScreen({
                   </DangerButton>
                 </>
               }
+            />
+          </div>
+
+          <div className="live-grid" ref={gridRef} style={gridStyle}>
+            <div className="live-column">
+              <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} content={content} />
+              {transcriptTurns.length > 0 && (
+                <Card>
+                  <h3 className="section-title">Conversation</h3>
+                  <ol className="transcript-list" aria-live="polite" ref={transcriptRef}>
+                    {transcriptTurns.map((turn, i) => (
+                      <li key={`${turn.at}-${i}`} className="turn">
+                        <span className="turn-role">
+                          {turn.kind === "assistant" ? "Interviewer" : "You"}
+                        </span>
+                        <p className="turn-text">{turn.detail}</p>
+                      </li>
+                    ))}
+                  </ol>
+                </Card>
+              )}
+            </div>
+            <div
+              className="split-divider"
+              role="separator"
+              aria-orientation="vertical"
+              aria-label="Resize problem and editor panes"
+              aria-valuenow={Math.round(splitPct)}
+              aria-valuemin={0}
+              aria-valuemax={100}
+              tabIndex={0}
+              onPointerDown={(e) => {
+                e.currentTarget.setPointerCapture(e.pointerId);
+                dragRef.current = { startX: e.clientX, startPct: splitPct };
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+                  e.preventDefault();
+                  const width = gridRef.current?.getBoundingClientRect().width ?? 0;
+                  if (width <= 0) return;
+                  setSplitPct((pct) =>
+                    clampSplitPct(pct + (e.key === "ArrowRight" ? -2 : 2), width),
+                  );
+                }
+              }}
+            />
+            <CodeWorkspace
+              backend={backend}
+              interviewId={interview.id}
+              problem={problem}
+              starters={content?.starters ?? null}
+              onActivity={(detail) => {
+                live.log("code", detail);
+                void live.refresh();
+              }}
             />
           </div>
         </>

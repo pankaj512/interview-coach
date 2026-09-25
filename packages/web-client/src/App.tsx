@@ -653,7 +653,14 @@ export function App() {
       )}
       {flow === "evaluating" && <EvaluatingScreen />}
       {flow === "results" && (
-        <div className="shell-content standalone">
+        <AppShell
+          active={null}
+          onNavigate={navigate}
+          onSignIn={() => goAuth("signin")}
+          onProfile={() => goAuth("profile")}
+          onSignOut={handleSignOut}
+        >
+          <div className="standalone">
           <ResultsScreen
             backend={backend}
             snapshot={finalSnapshot}
@@ -675,7 +682,8 @@ export function App() {
             }}
           />
           {historyError !== null && <p className="error">{historyError}</p>}
-        </div>
+          </div>
+        </AppShell>
       )}
       {flow === "feedback" && (
         <div className="shell-content standalone">

@@ -19,6 +19,32 @@ function tryJson(raw: string): unknown {
   }
 }
 
+/** Minimum editor height in px: the room's starting editor size. The
+ *  container grows with content from here up to the measured viewport cap. */
+export const EDITOR_MIN_HEIGHT = 480;
+
+/** Clamp a measured Monaco content height into `[minHeight, maxHeight]`.
+ *  A viewport smaller than the minimum pins the editor at the minimum (with
+ *  Monaco's own scrollbar) instead of collapsing it. */
+export function clampEditorHeight(
+  contentHeight: number,
+  maxHeight: number,
+  minHeight: number = EDITOR_MIN_HEIGHT,
+): number {
+  const cap = Math.max(maxHeight, minHeight);
+  return Math.min(Math.max(Math.ceil(contentHeight), minHeight), cap);
+}
+
+/** Size the Monaco container to its content while keeping the Test row in
+ *  view: grown from `contentHeight`, capped by the viewport space below the
+ *  editor's page offset minus the actions row. Past the cap Monaco scrolls
+ *  internally (`automaticLayout` picks up the container resize). */
+export function fitEditorHeight(container: HTMLDivElement, contentHeight: number, actionsHeight: number): void {
+  const room = 32;
+  const max = window.innerHeight - container.getBoundingClientRect().top - actionsHeight - room;
+  container.style.height = `${clampEditorHeight(contentHeight, max)}px`;
+}
+
 /** First problem example as a runner case, or null when none exists. */
 export function sampleCaseFor(problem: Problem | null): TestCaseInput | null {
   const example = problem?.examples?.[0];
@@ -67,8 +93,11 @@ export function CodeWorkspace({
   // listener does not mistake it for a candidate edit.
   const suppressRef = useRef(false);
   const containerRef = useRef<HTMLDivElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const monacoRef = useRef<typeof monaco | null>(null);
+  // Last measured Monaco content height; drives viewport-capped auto-grow.
+  const contentHeightRef = useRef(EDITOR_MIN_HEIGHT);
   const codeRef = useRef(code);
   codeRef.current = code;
   const languageRef = useRef(language);
@@ -92,6 +121,13 @@ export function CodeWorkspace({
   useEffect(() => {
     let cancelled = false;
     let editor: monaco.editor.IStandaloneCodeEditor | null = null;
+    // Auto-grow: resize the container to the content, capped so the Test
+    // row stays in view; past the cap Monaco scrolls internally.
+    const fit = () => {
+      const container = containerRef.current;
+      if (container === null || editor === null) return;
+      fitEditorHeight(container, contentHeightRef.current, actionsRef.current?.offsetHeight ?? 56);
+    };
     (async () => {
       await import("./monaco-setup.js");
       if (cancelled || containerRef.current === null) return;
@@ -119,6 +155,13 @@ export function CodeWorkspace({
         dirtyRef.current = true;
         setCode(editor.getValue());
       });
+      // Auto-grow wiring (fit is effect-scoped so cleanup can unbind it).
+      editor.onDidContentSizeChange((e) => {
+        contentHeightRef.current = e.contentHeight;
+        fit();
+      });
+      window.addEventListener("resize", fit);
+      fit();
       // Apply the starter that may have arrived before Monaco finished
       // loading; never clobber candidate edits.
       if (!dirtyRef.current) {
@@ -132,6 +175,7 @@ export function CodeWorkspace({
     });
     return () => {
       cancelled = true;
+      window.removeEventListener("resize", fit);
       editorRef.current?.dispose();
       editorRef.current = null;
       monacoRef.current = null;
@@ -204,11 +248,11 @@ export function CodeWorkspace({
       <div className="code-editor" aria-label="Candidate code" ref={containerRef}>
         {!editorReady && <div className="note">Loading editor…</div>}
       </div>
-      <div className="actions">
+      <div className="actions test-row" ref={actionsRef}>
         <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
           {busy ? "Testing…" : "Test sample cases"}
         </PrimaryButton>
-        <span className="hint">
+        <span className="hint test-hint">
           {sample === null ? "No sample test case available for this problem." : "Runs your code against the sample test case."}
         </span>
       </div>
@@ -229,7 +273,7 @@ export function CodeWorkspace({
           </ul>
         </div>
       )}
-      <p className="note">No Submit button: the interviewer reads the code and judges correctness in conversation. Runs execute in the isolated sandbox.</p>
+      <p className="note test-note">No Submit button: the interviewer reads the code and judges correctness in conversation. Runs execute in the isolated sandbox.</p>
     </section>
   );
 }

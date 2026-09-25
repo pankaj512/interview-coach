@@ -2103,15 +2103,64 @@ button:focus-visible {
   margin: 0 auto;
   padding: var(--space-lg);
   width: 100%;
-  display: grid;
-  grid-template-columns: 5fr 6fr;
-  gap: var(--space-lg);
-  align-items: start;
+  display: flex;
+  gap: var(--space-sm);
+  align-items: flex-start;
+}
+
+/* Draggable problem/editor split: the editor basis is the session-only
+ * --editor-pct (default 55%, ≈ the old 5fr/6fr ratio); both panes keep a
+ * 300px floor while dragging (clamped in LiveScreen). */
+.live-grid > .live-column {
+  flex: 1 1 0;
+  min-width: min(300px, 100%);
+}
+
+.live-grid > .card {
+  flex: 0 1 var(--editor-pct, 55%);
+  min-width: min(300px, 100%);
+}
+
+.split-divider {
+  flex: 0 0 auto;
+  width: 12px;
+  align-self: stretch;
+  cursor: col-resize;
+  border-radius: var(--radius-full);
+  position: relative;
+  touch-action: none;
+}
+
+.split-divider::after {
+  content: "";
+  position: absolute;
+  inset: 8px 4px;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+}
+
+.split-divider:hover::after,
+.split-divider:focus-visible::after {
+  background: var(--primary);
+}
+
+.split-divider:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
 }
 
 @media (max-width: 900px) {
   .live-grid {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .live-grid > .live-column,
+  .live-grid > .card {
+    flex: 0 1 auto;
+    width: 100%;
+  }
+  .split-divider {
+    display: none;
   }
 }
 
@@ -2239,8 +2288,9 @@ textarea.code {
   border-radius: var(--radius-md);
   overflow: hidden;
   background: #1e1e1e;
-  height: 320px;
-  min-height: 320px;
+  /* Starting height; CodeWorkspace auto-grows this with content up to the
+   * viewport cap, then Monaco scrolls internally. */
+  min-height: 480px;
 }
 
 .live-grid .actions {
@@ -2250,9 +2300,21 @@ textarea.code {
   flex-wrap: wrap;
 }
 
+.live-grid .actions.test-row {
+  align-items: center;
+}
+
 .note {
   font-size: 12px;
   color: var(--faint);
+}
+
+.test-note {
+  margin: var(--space-sm) 0 0;
+  padding: var(--space-sm) var(--space-md);
+  background: var(--surface-low);
+  border-left: 2px solid var(--border-strong);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
 .verdict {
@@ -2286,7 +2348,7 @@ textarea.code {
 
 .rail {
   max-width: 1280px;
-  margin: 0 auto var(--space-xl);
+  margin: var(--space-md) auto 0;
   padding: 0 var(--space-lg);
   width: 100%;
 }
@@ -2297,6 +2359,8 @@ textarea.code {
   padding: 0;
   display: grid;
   gap: var(--space-sm);
+  max-height: 420px;
+  overflow-y: auto;
 }
 
 .turn {
