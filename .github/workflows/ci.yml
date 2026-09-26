@@ -7,9 +7,13 @@
 
 name: ci
 
+permissions:
+  contents: read
+
 on:
   push:
     branches: [main]
+    paths-ignore: ['blueprint/**', 'docs/**', '*.md']
   pull_request:
 
 env:
@@ -63,6 +67,8 @@ jobs:
         run: pnpm build
 
       - name: Build web client
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
         run: pnpm --filter @interview-coach/web-client build
 
       - name: Security — no secret values in the client bundle
