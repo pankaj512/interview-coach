@@ -11,6 +11,7 @@ import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, TestCaseI
 import type { LiveCodeReader } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
 import { formatApiError } from "../state/use-interview.js";
+import { DEFAULT_EDITOR_LANGUAGE, loadEditorLanguage, saveEditorLanguage } from "./editor-prefs.js";
 
 function tryJson(raw: string): unknown {
   try {
@@ -88,7 +89,7 @@ export function CodeWorkspace({
    *  get_candidate_code locally. Cleared on unmount. */
   readonly codeReaderRef?: { current: LiveCodeReader | null };
 }) {
-  const [language, setLanguage] = useState<CodeLanguage>("python");
+  const [language, setLanguage] = useState<CodeLanguage>(() => loadEditorLanguage() ?? DEFAULT_EDITOR_LANGUAGE);
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<SerializedRun | null>(null);
@@ -251,7 +252,11 @@ export function CodeWorkspace({
         <strong>Editor</strong>
         <select
           value={language}
-          onChange={(e) => setLanguage(e.target.value as CodeLanguage)}
+          onChange={(e) => {
+            const next = e.target.value as CodeLanguage;
+            setLanguage(next);
+            saveEditorLanguage(next);
+          }}
           aria-label="Language"
         >
           <option value="python">Python</option>
