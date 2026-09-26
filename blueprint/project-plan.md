@@ -38,10 +38,13 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 - Adaptive loop (evaluation -> skill update -> regenerated recommendation)
 - Server-backed History, Progress, Weak-Areas views
 
-Next (unchecked in `build-plan.md` 14-20): green main, UI prototype,
-isolated multi-language sandbox, fresh UI rebuild, problem content
-(shared runner library in three language slices + reseed all 300 + new
-endpoints + AI-only Submit), loop verification, client URL routing.
+Shipped since (see `build-plan.md` 14-17, 18a.1-18c, 20): green
+main, UI prototype, isolated multi-language sandbox, fresh UI rebuild
+(17a-17d), problem content slices + full reseed + new endpoints,
+client URL routing.
+
+Next (unchecked in `build-plan.md`): AI-only Submit (18d) and loop
+verification (19); the v2 items stay deferred.
 
 ## 4. Data - What are we storing?
 
@@ -99,9 +102,9 @@ Intentional, keep as-is (per user interview):
   direction: throw away screens/components and rebuild on the kept
   wiring (`api/backend-client`, voice-client/tool-forwarder, backend APIs).
 - Shipped: theme shell + public screens (17a), practice-loop screens
-  Dashboard/Lobby/Live/Evaluating (17b), client URL routing (20), two
+  Dashboard/Lobby/Live/Evaluating (17b), feedback screens (17c),
+  account/history screens (17d), client URL routing (20), plus
   auth-entry/nav fixes (dead entry flows, auth nav polish).
-  Pending: 17c/17d screens.
 - Ritual flow confirmed by the approved prototype and the shipped rebuild:
   Landing -> Sign-in -> Onboarding -> Dashboard -> Lobby -> Live ->
   Evaluating -> Results -> Transcript/Feedback ->

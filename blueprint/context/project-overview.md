@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 726c7cdbd85fd6c92762863b6f6606895f2cef46847a83c7b8a34472172237db -->
+<!-- blueprint:source-hash df9fdb3eff5573df7cd814233b8f14d1195ef53ba3c0b670b842e51845f76b2e -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -32,7 +32,7 @@ is chosen by the system from persisted skill state, not by browsing.
 
 ## Features
 
-Shipped (1-17, 20):
+Shipped (1-17, 18a.1-18c, 20):
 
 1. **Architecture principles** - ADR-002 alignment; LLM advisory, backend owns truth.
 2. **Profile + onboarding** - `UserProfile`, taxonomy, required first-run gate.
@@ -51,17 +51,12 @@ Shipped (1-17, 20):
 15. **UI prototype** - throwaway mockups rethinking the client; locked target for the rebuild.
 16. **Isolated sandbox** - Docker-isolated C++/JS/Python execution behind the existing sandbox routes; local runner retired.
 17. **Fresh UI rebuild** - theme shell + public screens (17a), practice-loop screens (17b), feedback screens (17c), account/history screens (17d) on the new theme.
-18. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
+18. **Problem content slices (18a.1-18c)** - cleaned statements/constraints/array-encoded samples for all 300; per-language starter-signature census, shared node-type prelude + shape runners, `{runnerId, entry, codecs}` link metadata; full reseed; new problem-content endpoints adopted by the problem pane.
+19. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
 
-Next (18-19):
+Next (18d, 19):
 
-- **18. Problem content, shared runners, and Submit** - Postgres is the system of record, lookup cache a build-time import source only; editors show fetched LeetCode starters verbatim; a committed shared shape-runner library (one runner per I/O signature shape per language, `{runnerId, entry, codecs}` link per problem, inline runner only when no shape fits, shared ListNode/TreeNode prelude per language) makes Test executable in the sandbox; all 300 reseeded; new problem-content endpoints (old ones retired later); AI-only Submit, no sandbox run, no persistence in this pass.
-  - **18a.1. Python: cleaned data + shared runners** - cleaned statements, constraints, array-encoded samples for all 300; Python signature census; shared node-type prelude + shape runners; link metadata per problem; no hidden tests, AI judges correctness.
-  - **18a.2. JavaScript: shared runners** - JS signature census; shared prelude + shape runners; link metadata; same gate shape as 18a.1.
-  - **18a.3. C++: shared runners** - C++ signature census; shared prelude + shape runners; link metadata; same gate shape as 18a.1.
-  - **18b. Full reseed** - all 300 problems reseeded from the cleaned data in one pass.
-  - **18c. API + client wiring** - new problem-content endpoints adopted by the problem pane; existing endpoints untouched.
-  - **18d. AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only.
+- **18d. AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only.
 - **19. Loop verification** - end-to-end pass against a live DB; no new functionality.
 
 Deferred to v2: security/observability hardening, testing consolidation,
@@ -88,7 +83,7 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 ### Problem
 
 - `id` (`prob_<slug>`), `title`, `difficulty`, `topicId`, source links
-- Statement/sample/starter content is DB-owned once reseeded (18b);
+- Statement/sample/starter content is DB-owned (reseeded 18b);
   the external lookup cache stays a build-time import source only.
 - Editors show the fetched LeetCode starters verbatim; sample tests run
   them in the sandbox via the shared shape-runner library: one committed
@@ -166,7 +161,8 @@ Client rethink approved and rebuild complete through 17d: the approved prototype
 `docs/interview-coach-ui-specification.md` (locked target) define the look.
 Shipped: theme shell + public screens (17a), practice-loop screens (17b),
 feedback screens (17c), account/history screens (17d), client URL routing (20),
-two auth-entry/nav fixes. Confirmed ritual flow:
+plus small room/voice hardening fixes (join flash gate, pause/mute hardening,
+resume continuity, live-code tool, editor language memory). Confirmed ritual flow:
 
 - `/` landing -> sign-in -> onboarding -> dashboard (recommendation CTA) ->
   lobby (automated checks) -> live DSA (problem + editor) -> evaluating ->
@@ -192,7 +188,3 @@ two auth-entry/nav fixes. Confirmed ritual flow:
 
 - > TODO (confirm): broader tracks beyond DSA and their timing.
 - > TODO (confirm): monetization, if any.
-- Plan drift (does not block 18a.1): `project-plan.md` §3 still frames items
-  14-20 as "unchecked" and §7 lists 17c/17d screens as pending, while
-  `build-plan.md` marks 14-17 (incl. 17c/d) and 20 checked. Fix in the plans,
-  then re-run `/overview`.
