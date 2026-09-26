@@ -1,13 +1,14 @@
 // H-Live right panel (ux-spec §9): a minimal code workspace.
 //
-// Language + editor + a single "Test code" action that runs the candidate's
-// code against the problem's sample test case. No submit button and no
-// test-case editor — the sample case comes from the problem.
+// Language + editor + "Test code" (runs the candidate's code against the
+// problem's sample test case) and "Submit" (asks the AI judge for a
+// correctness/optimality verdict, persisted nowhere). No test-case editor —
+// the sample case comes from the problem.
 
 import { useEffect, useRef, useState } from "react";
 import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
-import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../api/types.js";
+import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, TestCaseInput } from "../api/types.js";
 import type { LiveCodeReader } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
 import { formatApiError } from "../state/use-interview.js";
@@ -93,6 +94,7 @@ export function CodeWorkspace({
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [run, setRun] = useState<SerializedRun | null>(null);
+  const [verdict, setVerdict] = useState<SerializedSubmitVerdict | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editorReady, setEditorReady] = useState(false);
   const dirtyRef = useRef(false);
@@ -246,6 +248,28 @@ export function CodeWorkspace({
     }
   }
 
+  async function submitForVerdict() {
+    if (code.trim() === "") {
+      setError("Write code before submitting.");
+      return;
+    }
+    setBusy(true);
+    setError(null);
+    try {
+      const result = await backend.submitVerdict(interviewId, {
+        language,
+        code,
+        ...(problem === null ? {} : { problemId: problem.id }),
+      });
+      setVerdict(result);
+      onActivity(`submit verdict ${result.correctness}/${result.optimality}`);
+    } catch (e) {
+      setError(formatApiError(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   return (
     <section className="card" aria-label="Code editor">
       <div className="editorbar">
@@ -272,11 +296,45 @@ export function CodeWorkspace({
         <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
           {busy ? "Testing…" : "Test sample cases"}
         </PrimaryButton>
+        <PrimaryButton onClick={() => void submitForVerdict()} disabled={busy || code.trim() === ""}>
+          {busy ? "Submitting…" : "Submit for AI verdict"}
+        </PrimaryButton>
         <span className="hint test-hint">
           {sample === null ? "No sample test case available for this problem." : "Runs your code against the sample test case."}
         </span>
       </div>
       {error !== null && <p className="error">{error}</p>}
+      {verdict !== null && (
+        <div className="verdict" aria-label="Submit verdict">
+          <strong className={verdict.correctness === "correct" ? "accent-good" : "accent-warn"}>
+            {verdict.correctness}
+          </strong>
+          <span className="hint"> · {verdict.optimality} optimality</span>
+          {verdict.correctnessNotes !== "" && <p className="note">{verdict.correctnessNotes}</p>}
+          {verdict.optimalityNotes !== "" && <p className="note">{verdict.optimalityNotes}</p>}
+          {verdict.breakPoints.length > 0 && (
+            <>
+              <strong>Break-points</strong>
+              <ul className="event-log">
+                {verdict.breakPoints.map((point) => (
+                  <li key={point}>{point}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {verdict.edgeCases.length > 0 && (
+            <>
+              <strong>Edge cases</strong>
+              <ul className="event-log">
+                {verdict.edgeCases.map((edge) => (
+                  <li key={edge}>{edge}</li>
+                ))}
+              </ul>
+            </>
+          )}
+          {verdict.summary !== "" && <p className="note">{verdict.summary}</p>}
+        </div>
+      )}
       {run !== null && (
         <div className="verdict" aria-label="Sample verdict">
           <strong className={run.status === "passed" ? "accent-good" : "accent-warn"}>
@@ -293,7 +351,7 @@ export function CodeWorkspace({
           </ul>
         </div>
       )}
-      <p className="note test-note">No Submit button: the interviewer reads the code and judges correctness in conversation. Runs execute in the isolated sandbox.</p>
+      <p className="note test-note">Submit asks the AI judge for a correctness and optimality verdict and persists nothing. Runs execute in the isolated sandbox.</p>
     </section>
   );
 }

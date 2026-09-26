@@ -15,6 +15,7 @@ import type {
   ProblemRunnerLinks,
   ProblemStarters,
   Recommendation,
+  SubmitVerdict,
   UserCurriculumProgress,
   UserProfile,
   UserSkillState,
@@ -366,8 +367,7 @@ export interface SerializedRun {
   readonly createdAt: string;
 }
 
-export function serializeSubmission(
-  submission: CodeSubmission,
+export function serializeSubmission(  submission: CodeSubmission,
 ): SerializedSubmission {
   return {
     id: submission.id,
@@ -378,6 +378,32 @@ export function serializeSubmission(
     ...(submission.problemId === undefined
       ? {}
       : { problemId: submission.problemId }),
+  };
+}
+
+// Feature 18d: AI-only Submit verdict. The domain validator already
+// normalized the proposal, so this is a structural pass-through.
+export interface SerializedSubmitVerdict {
+  readonly correctness: string;
+  readonly correctnessNotes: string;
+  readonly optimality: string;
+  readonly optimalityNotes: string;
+  readonly breakPoints: readonly string[];
+  readonly edgeCases: readonly string[];
+  readonly summary: string;
+}
+
+export function serializeSubmitVerdict(
+  verdict: SubmitVerdict,
+): SerializedSubmitVerdict {
+  return {
+    correctness: verdict.correctness,
+    correctnessNotes: verdict.correctnessNotes,
+    optimality: verdict.optimality,
+    optimalityNotes: verdict.optimalityNotes,
+    breakPoints: [...verdict.breakPoints],
+    edgeCases: [...verdict.edgeCases],
+    summary: verdict.summary,
   };
 }
 

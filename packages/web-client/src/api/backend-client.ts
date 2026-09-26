@@ -24,6 +24,7 @@ import type {
   SerializedRun,
   SerializedStateSnapshot,
   SerializedSubmission,
+  SerializedSubmitVerdict,
   SubmitCodeInput,
   ToolArgs,
   ToolExecOutcome,
@@ -561,6 +562,18 @@ export class BackendClient {
       { ...input },
     );
     return body.submission;
+  }
+
+  // Feature 18d: AI-only Submit verdict (no sandbox run, zero persistence).
+  // The request input mirrors SubmitCodeInput; the verdict shape mirrors
+  // SerializedSubmitVerdict.
+  async submitVerdict(id: string, input: SubmitCodeInput): Promise<SerializedSubmitVerdict> {
+    const body = await this.request<{ ok: true; verdict: SerializedSubmitVerdict }>(
+      "POST",
+      `/api/interviews/${encodeURIComponent(id)}/submit-verdict`,
+      { ...input },
+    );
+    return body.verdict;
   }
 
   async listSubmissions(id: string): Promise<readonly SerializedSubmission[]> {

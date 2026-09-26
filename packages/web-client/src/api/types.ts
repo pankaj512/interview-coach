@@ -289,6 +289,18 @@ export interface SerializedSubmission {
   readonly createdAt: string;
 }
 
+// Feature 18d: AI-only Submit verdict. Structural mirror of the backend
+// serializer; computed per request, never persisted.
+export interface SerializedSubmitVerdict {
+  readonly correctness: string;
+  readonly correctnessNotes: string;
+  readonly optimality: string;
+  readonly optimalityNotes: string;
+  readonly breakPoints: readonly string[];
+  readonly edgeCases: readonly string[];
+  readonly summary: string;
+}
+
 export interface TestCaseInput {
   readonly name: string;
   readonly args: readonly unknown[];

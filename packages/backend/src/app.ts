@@ -70,13 +70,19 @@ import {
   asUserId,
   selectProblems,
   TOOL_NAMES,
+  validateSubmitVerdictInput,
+  validateSubmitVerdictProposal,
   type CodeExecutor,
   type EvaluationModel,
   type InterviewConfiguration,
   type InterviewId,
+  type Problem,
   type RecommendationId,
   type RecommendationModel,
   type RepositorySet,
+  type SubmitVerdict,
+  type SubmitVerdictModel,
+  type SubmitVerdictProblem,
   type ToolName,
   type ToolResult,
   type TopicId,
@@ -110,6 +116,7 @@ import {
   serializeRun,
   serializeStateSnapshot,
   serializeSubmission,
+  serializeSubmitVerdict,
   serializeUserCurriculumProgress,
   serializeUserProfile,
   serializeUserSkillState,
@@ -125,6 +132,7 @@ import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
 import { assembleSessionContext, type SessionContext } from "./session-context.js";
 import { EvaluationService } from "./evaluation.js";
 import { createEvaluationModelFromEnv } from "./evaluation-model.js";
+import { createSubmitVerdictModelFromEnv, UnconfiguredSubmitVerdictModel } from "./submit-verdict-model.js";
 import { DockerCodeRunner } from "./docker-runner.js";
 
 export interface BuildAppDeps {
@@ -136,6 +144,8 @@ export interface BuildAppDeps {
   readonly recommendationModel?: RecommendationModel;
   /** Phase 10: injectable so tests use a deterministic fake, never a live LLM. */
   readonly evaluationModel?: EvaluationModel;
+
+  readonly submitVerdictModel?: SubmitVerdictModel;
   /** Phase 10: tests set true so `end` runs the evaluation synchronously. */
   readonly evaluationRunSynchronously?: boolean;
   readonly logger?: boolean;
@@ -278,8 +288,24 @@ const submitCodeSchema = z.object({
   problemId: z.string().min(1).max(200).optional(),
 });
 
-const sandboxTestCaseSchema = z.object({
-  name: z.string().min(1).max(120),
+// Feature 18d: map a catalog problem onto the verdict contract. Returns
+// null when the problem lacks a usable statement or constraints, so the
+// model judges code alone instead of receiving a half-empty problem.
+function toVerdictProblem(problem: Problem): SubmitVerdictProblem | null {
+  const statement = problem.description?.trim() ?? "";
+  const constraints = (problem.constraints ?? [])
+    .map((entry) => entry.trim())
+    .filter((entry) => entry !== "");
+  if (statement === "" || constraints.length === 0) return null;
+  return {
+    id: problem.id,
+    title: problem.title,
+    statement,
+    constraints: constraints.join("\n"),
+  };
+}
+
+const sandboxTestCaseSchema = z.object({  name: z.string().min(1).max(120),
   args: z.array(z.unknown()),
   expected: z.unknown(),
   hidden: z.boolean().optional(),
@@ -429,6 +455,10 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       ? {}
       : { runSynchronously: deps.evaluationRunSynchronously }),
   });
+  // Feature 18d: AI-only Submit verdict over the same server-side LLM port.
+  // No sandbox run, zero persistence — the verdict is computed and returned.
+  const submitVerdictModel =
+    deps.submitVerdictModel ?? createSubmitVerdictModelFromEnv(config.llm);
   // Feature 16 sandbox: Docker-isolated runner (HLD Phase 6). Tests inject
   // a fake via deps.codeRunner; without a daemon, runs persist as errors.
   const codeRunner =
@@ -1315,6 +1345,82 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply
       .status(201)
       .send({ ok: true, submission: serializeSubmission(submitted.value) });
+  });
+
+  // Feature 18d: AI-only Submit. A second-AI verdict on the candidate's
+  // code with no sandbox run and zero persistence — nothing is stored, the
+  // verdict is computed and returned. Failures surface errors, never an
+  // invented verdict. Body mirrors submitCodeSchema (submitCode-like guards).
+  app.post("/api/interviews/:id/submit-verdict", async (request, reply) => {
+    const params = idParamSchema.safeParse(request.params);
+    if (!params.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
+    }
+    const parsed = submitCodeSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
+    }
+    const id = asInterviewId(params.data.id);
+    const state = await interviews.getState(id);
+    if (!state.ok) return sendDomainError(reply, state.error);
+    const current =
+      parsed.data.problemId === undefined
+        ? state.value.currentProblem
+        : await deps.repos.problems.findById(asProblemId(parsed.data.problemId));
+    const input = validateSubmitVerdictInput({
+      interviewId: params.data.id,
+      language: parsed.data.language,
+      code: parsed.data.code,
+      problem: current === null ? null : toVerdictProblem(current),
+    });
+    if (input === null) {
+      return sendApiError(reply, 400, "VALIDATION_ERROR", "Invalid verdict input", false);
+    }
+    // No judge to call without LLM keys: 503 with plain copy, never the
+    // raw "not configured" message and never a 502 (which means the model
+    // ran and its output was unusable).
+    if (submitVerdictModel instanceof UnconfiguredSubmitVerdictModel) {
+      return sendApiError(
+        reply,
+        503,
+        "VERDICT_NOT_CONFIGURED",
+        "Submit verdict is unavailable right now. Try again later.",
+        false,
+      );
+    }
+    let proposal: SubmitVerdict | null;
+    try {
+      const judged = await submitVerdictModel.judge(input);
+      if (judged.proposal === null) {
+        return sendApiError(
+          reply,
+          502,
+          "VERDICT_FAILED",
+          judged.error ?? "Verdict model returned no verdict",
+          true,
+        );
+      }
+      proposal = validateSubmitVerdictProposal(judged.proposal);
+    } catch (error) {
+      return sendApiError(
+        reply,
+        502,
+        "VERDICT_FAILED",
+        error instanceof Error ? error.message : "Verdict model failed",
+        true,
+      );
+    }
+    if (proposal === null) {
+      return sendApiError(
+        reply,
+        502,
+        "VERDICT_FAILED",
+        "Verdict model returned an invalid verdict",
+        true,
+      );
+    }
+    request.log.info({ interviewId: params.data.id }, "code.verdict");
+    return reply.send({ ok: true, verdict: serializeSubmitVerdict(proposal) });
   });
 
   app.get("/api/interviews/:id/submissions", async (request, reply) => {

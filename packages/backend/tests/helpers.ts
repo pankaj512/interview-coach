@@ -13,6 +13,7 @@ import {
   type EvaluationModel,
   type RecommendationModel,
   type RepositorySet,
+  type SubmitVerdictModel,
 } from "@interview-coach/domain";
 import { buildApp, type BuiltBackend } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
@@ -26,6 +27,7 @@ export function buildTestBackend(
   options: {
     readonly recommendationModel?: RecommendationModel;
     readonly evaluationModel?: EvaluationModel;
+    readonly submitVerdictModel?: SubmitVerdictModel;
   } = {},
 ): TestBackend {
   const repos = createInMemoryRepositories();
@@ -44,6 +46,9 @@ export function buildTestBackend(
     ...(options.evaluationModel === undefined
       ? {}
       : { evaluationModel: options.evaluationModel }),
+    ...(options.submitVerdictModel === undefined
+      ? {}
+      : { submitVerdictModel: options.submitVerdictModel }),
     // Phase 10: run the evaluation job inline so HTTP tests are deterministic.
     evaluationRunSynchronously: true,
     logger: false,
