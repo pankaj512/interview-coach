@@ -15,6 +15,7 @@ import { Card, Dialog, VoiceRail, Wave } from "../ds/primitives.js";
 import { StatusChip, Timer, VoiceState } from "../ds/status.js";
 import { secondsLeftFor } from "../ds/model.js";
 import { formatApiError, useLiveInterview, type LiveEvent } from "../state/use-interview.js";
+import type { LiveCodeReader } from "../voice/session.js";
 import type { VoiceConnectionState } from "../voice/voice-client.js";
 import type { Interaction, InterviewMode } from "../flow.js";
 
@@ -74,7 +75,12 @@ export function LiveScreen({
   ) => void;
   readonly onExit: () => void;
 }) {
-  const live = useLiveInterview(backend, interview);
+  // Live editor reader holder: CodeWorkspace registers a getter here so
+  // get_candidate_code is answered locally from current editor content.
+  const codeReaderRef = useRef<LiveCodeReader | null>(null);
+  const live = useLiveInterview(backend, interview, {
+    codeReader: () => codeReaderRef.current?.() ?? null,
+  });
   const [confirmEnd, setConfirmEnd] = useState(false);
   const [tabHidden, setTabHidden] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -332,6 +338,7 @@ export function LiveScreen({
               interviewId={interview.id}
               problem={problem}
               starters={content?.starters ?? null}
+              codeReaderRef={codeReaderRef}
               onActivity={(detail) => {
                 live.log("code", detail);
                 void live.refresh();

@@ -11,7 +11,7 @@
 // (POST /api/interviews/:id/voice-session, frozen section 3) — never
 // hardcoded here — so frozen-config changes land server-side only.
 
-import type { VoiceSessionPayload } from "../api/types.js";
+import type { CodeLanguage, ToolExecOutcome, VoiceSessionPayload } from "../api/types.js";
 
 export interface RealtimeToolDefinition {
   readonly type: "function";
@@ -25,12 +25,14 @@ export interface RealtimeToolDefinition {
   };
 }
 
-// Phase 8 canonical tool surface (ADR-002 decision 11): four explicit tools.
+// Phase 8 canonical tool surface (ADR-002 decision 11): five explicit tools.
 // The pre-Phase-8 names remain backend/forwarder aliases for CLI-harness
 // compatibility but are never advertised to the web model. Hints are
 // model-driven conversation (no get_problem_hint tool) and code execution
 // stays the client HTTP path; the model records answers/code via
-// submit_interview_data and reads state via get_current_interview.
+// submit_interview_data, reads state via get_current_interview, and reads
+// the live editor via get_candidate_code (answered locally in the browser,
+// never forwarded to tool-exec).
 export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
   {
     type: "function",
@@ -44,6 +46,13 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
     name: "get_current_problem",
     description:
       "Get the current DSA problem the candidate is solving. Call this when the user asks what problem they are solving or needs problem details.",
+    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+  },
+  {
+    type: "function",
+    name: "get_candidate_code",
+    description:
+      "Get the candidate's current code from the live editor. Call this when the candidate asks what you can see, or when discussing their implementation. The code is the live editor content, which may be newer than the last tested submission.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
   },
   {
@@ -131,6 +140,66 @@ export function buildFunctionCallOutput(
     type: "conversation.item.create",
     item: { type: "function_call_output", call_id: callId, output },
     ...(previousItemId === undefined || previousItemId === "" ? {} : { previous_item_id: previousItemId }),
+  };
+}
+
+// Live editor snapshot for get_candidate_code: the reader is registered by
+// the editor owner and answered locally in the browser, so the model sees
+// the current content without a backend round trip.
+export interface LiveCodeSnapshot {
+  readonly language: CodeLanguage;
+  readonly code: string;
+}
+
+export type LiveCodeReader = () => LiveCodeSnapshot | null;
+
+export interface CandidateCodeResult {
+  readonly language: CodeLanguage;
+  readonly code: string;
+  readonly truncated: boolean;
+}
+
+// Bound the code text sent as a tool result; the model discusses the
+// implementation from this snapshot while the candidate keeps editing.
+const CANDIDATE_CODE_MAX_CHARS = 8000;
+
+export function buildCandidateCodeResult(snapshot: LiveCodeSnapshot): CandidateCodeResult {
+  if (snapshot.code.length <= CANDIDATE_CODE_MAX_CHARS) {
+    return { language: snapshot.language, code: snapshot.code, truncated: false };
+  }
+  return {
+    language: snapshot.language,
+    code: snapshot.code.slice(-CANDIDATE_CODE_MAX_CHARS),
+    truncated: true,
+  };
+}
+
+// Local get_candidate_code execution: same ToolExecOutcome shape as the
+// backend tool-exec path so the forwarder ledger treats it identically.
+// A missing reader is permanent model-facing data (never retried).
+export function resolveCandidateCode(
+  callId: string,
+  reader: LiveCodeReader | null | undefined,
+): ToolExecOutcome {
+  const snapshot = reader?.() ?? null;
+  if (snapshot === null) {
+    return {
+      ok: false,
+      status: 404,
+      code: "NO_EDITOR_CONTENT",
+      message: "No editor content is available right now.",
+      retryable: false,
+      callId,
+      tool: "get_candidate_code",
+      replayed: false,
+    };
+  }
+  return {
+    ok: true,
+    callId,
+    tool: "get_candidate_code",
+    result: buildCandidateCodeResult(snapshot),
+    replayed: false,
   };
 }
 

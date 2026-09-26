@@ -121,6 +121,7 @@ interface PendingCall {
 const VALID_TOOL_NAMES: readonly string[] = [
   "get_current_interview",
   "get_current_problem",
+  "get_candidate_code",
   "submit_interview_data",
   "end_interview",
   // Deprecated aliases: accepted for CLI-harness compatibility and replayed

@@ -206,7 +206,7 @@ describe("VoiceInterviewClient", () => {
     expect(update.type).toBe("session.update");
     expect(update.session["voice"]).toBe("alloy");
     expect(update.session["turn_detection"]).toMatchObject({ type: "server_vad", threshold: 0.35 });
-    expect((update.session["tools"] as unknown[]).length).toBe(4);
+    expect((update.session["tools"] as unknown[]).length).toBe(5);
     expect(socket.sentTypes()).toContain("response.create");
     expect(h.client.state).toBe("connected");
     expect(h.states).toContain("connected");

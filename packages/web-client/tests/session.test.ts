@@ -4,9 +4,11 @@ import { describe, expect, it } from "vitest";
 import type { VoiceSessionPayload } from "../src/api/types.js";
 import {
   buildAuthenticatedVoiceUrl,
+  buildCandidateCodeResult,
   buildFunctionCallOutput,
   buildResumeHistory,
   buildSessionUpdate,
+  resolveCandidateCode,
   REALTIME_TOOL_DEFINITIONS,
   type ResumeTurn,
 } from "../src/voice/session.js";
@@ -41,10 +43,11 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
 }
 
 describe("session wire format", () => {
-  it("advertises the four canonical Phase 8 tools", () => {
+  it("advertises the five canonical Phase 8 tools", () => {
     expect(REALTIME_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([
       "get_current_interview",
       "get_current_problem",
+      "get_candidate_code",
       "submit_interview_data",
       "end_interview",
     ]);
@@ -54,6 +57,59 @@ describe("session wire format", () => {
     }
   });
 
+  it("declares the get_candidate_code tool with no required arguments", () => {
+    const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
+    const code = byName.get("get_candidate_code");
+    expect(code?.type).toBe("function");
+    expect(code?.parameters.required).toEqual([]);
+    expect(code?.parameters.additionalProperties).toBe(false);
+  });
+
+  it("builds the live code result without truncating short code", () => {
+    expect(buildCandidateCodeResult({ language: "python", code: "def solve():\n  pass\n" })).toEqual({
+      language: "python",
+      code: "def solve():\n  pass\n",
+      truncated: false,
+    });
+  });
+
+  it("passes empty editor content through untruncated", () => {
+    expect(buildCandidateCodeResult({ language: "javascript", code: "" })).toEqual({
+      language: "javascript",
+      code: "",
+      truncated: false,
+    });
+  });
+
+  it("truncates long code to the trailing window and flags it", () => {
+    const code = `${"x".repeat(7991)}0123456789`;
+    const result = buildCandidateCodeResult({ language: "cpp", code });
+    expect(result.truncated).toBe(true);
+    expect(result.code).toBe(code.slice(-8000));
+    expect(result.code).toHaveLength(8000);
+  });
+
+  it("resolves a local code outcome without a backend round trip", () => {
+    const outcome = resolveCandidateCode("call_1", () => ({ language: "python", code: "pass" }));
+    expect(outcome).toEqual({
+      ok: true,
+      callId: "call_1",
+      tool: "get_candidate_code",
+      result: { language: "python", code: "pass", truncated: false },
+      replayed: false,
+    });
+  });
+
+  it("resolves a missing reader as a permanent model-facing failure", () => {
+    for (const reader of [null, undefined]) {
+      const outcome = resolveCandidateCode("call_2", reader ?? undefined);
+      expect(outcome.ok).toBe(false);
+      if (!outcome.ok) {
+        expect(outcome.retryable).toBe(false);
+        expect(outcome.tool).toBe("get_candidate_code");
+      }
+    }
+  });
   it("declares the submit_interview_data argument schema", () => {
     const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
     const submit = byName.get("submit_interview_data");
@@ -88,7 +144,7 @@ describe("session wire format", () => {
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
     expect(update.session["tool_choice"]).toBe("auto");
-    expect((update.session["tools"] as unknown[]).length).toBe(4);
+    expect((update.session["tools"] as unknown[]).length).toBe(5);
   });
 
   it("transports api-key credentials as a query parameter (no header support in browsers)", () => {

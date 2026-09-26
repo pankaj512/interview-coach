@@ -8,6 +8,7 @@ import { useEffect, useRef, useState } from "react";
 import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
 import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../api/types.js";
+import type { LiveCodeReader } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
 import { formatApiError } from "../state/use-interview.js";
 
@@ -73,6 +74,7 @@ export function CodeWorkspace({
   problem,
   starters = null,
   onActivity,
+  codeReaderRef,
 }: {
   readonly backend: BackendClient;
   readonly interviewId: string;
@@ -81,6 +83,10 @@ export function CodeWorkspace({
    *  while the candidate has not typed anything; never clobbers edits. */
   readonly starters?: ProblemStarterSet | null;
   readonly onActivity: (detail: string) => void;
+  /** Optional holder for a live code reader: set to a getter over the
+   *  current language/code refs so the voice tool can answer
+   *  get_candidate_code locally. Cleared on unmount. */
+  readonly codeReaderRef?: { current: LiveCodeReader | null };
 }) {
   const [language, setLanguage] = useState<CodeLanguage>("python");
   const [code, setCode] = useState("");
@@ -182,11 +188,20 @@ export function CodeWorkspace({
     };
   }, []);
 
+  // Expose the live editor content to the voice tool path. The getter
+  // reads the refs (not state) so it stays fresh without re-registering.
+  useEffect(() => {
+    if (codeReaderRef === undefined) return;
+    codeReaderRef.current = () => ({ language: languageRef.current, code: codeRef.current });
+    return () => {
+      codeReaderRef.current = null;
+    };
+  }, [codeReaderRef]);
+
   // Verbatim-starter prefill while untouched; refill on problem/language
   // change while untouched; never clobber edits.
   useEffect(() => {
-    if (dirtyRef.current) return;
-    const starter = starterForLanguage(starters, language);
+    if (dirtyRef.current) return;    const starter = starterForLanguage(starters, language);
     if (starter === null) return;
     const editor = editorRef.current;
     if (editor !== null && editor.getValue() !== starter) pushValue(editor, starter);

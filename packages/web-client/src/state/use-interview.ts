@@ -16,7 +16,7 @@ import type {
 import { loadWebConfig } from "../config.js";
 import { useAuthSession } from "./auth-store.js";
 import { createBrowserMicCapture, createBrowserPlayback } from "../voice/browser-audio.js";
-import { buildResumeHistory } from "../voice/session.js";
+import { buildResumeHistory, resolveCandidateCode, type LiveCodeReader } from "../voice/session.js";
 import { VoiceInterviewClient, type VoiceConnectionState, type VoiceWebSocket } from "../voice/voice-client.js";
 
 export function useBackendClient(): BackendClient {
@@ -51,7 +51,18 @@ export interface LiveEvent {
 // HLD 4.2: realtime interview screen state — connection, speakers, timer,
 // polled backend snapshot, tool/transcript activity, plus the S6.1 mute/pause
 // controls and the text-fallback path.
-export function useLiveInterview(backend: BackendClient, interview: SerializedInterview) {
+export interface UseLiveInterviewOptions {
+  // Live editor reader for get_candidate_code: answered locally in the
+  // browser, never forwarded to tool-exec. Absent (e.g. no editor mounted)
+  // yields a permanent model-facing failure, not a retry.
+  readonly codeReader?: LiveCodeReader;
+}
+
+export function useLiveInterview(
+  backend: BackendClient,
+  interview: SerializedInterview,
+  options?: UseLiveInterviewOptions,
+) {
   const [connection, setConnection] = useState<VoiceConnectionState>("idle");
   const [assistantSpeaking, setAssistantSpeaking] = useState(false);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
@@ -88,6 +99,10 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
   // forward so the elapsed clock freezes while paused.
   const pausedAtRef = useRef<number | null>(null);
   const startingRef = useRef(false);
+  // Latest hook options for callbacks created once (start/toolExecutor):
+  // the live editor reader must stay fresh without re-creating them.
+  const optionsRef = useRef(options);
+  optionsRef.current = options;
 
   const log = useCallback((kind: string, detail: string) => {
     const entry: LiveEvent = { at: new Date().toISOString(), kind, detail };
@@ -124,8 +139,12 @@ export function useLiveInterview(backend: BackendClient, interview: SerializedIn
           wsFactory: (url) => new WebSocket(url) as unknown as VoiceWebSocket,
           mic,
           playback: createBrowserPlayback(),
-          toolExecutor: (callId, tool: ToolName, signal, args) =>
-            backend.toolExec(interview.id, callId, tool, signal, args),
+          toolExecutor: (callId, tool: ToolName, signal, args) => {
+            if (tool === "get_candidate_code") {
+              return Promise.resolve(resolveCandidateCode(callId, optionsRef.current?.codeReader));
+            }
+            return backend.toolExec(interview.id, callId, tool, signal, args);
+          },
           storage: sessionStorage,
         },
         {

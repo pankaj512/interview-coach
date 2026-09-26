@@ -23,6 +23,7 @@ export type EvaluationStatus = "none" | "pending" | "completed" | "failed";
 export type CanonicalToolName =
   | "get_current_interview"
   | "get_current_problem"
+  | "get_candidate_code"
   | "submit_interview_data"
   | "end_interview";
 
