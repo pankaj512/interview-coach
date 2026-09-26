@@ -372,7 +372,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const voiceProvider = deps.voiceProvider ?? createVoiceSessionProviderFromEnv();
   // S8a: explicit body cap (code 50k + cases fit comfortably); oversized
   // payloads 413 via the error handler instead of consuming the runner.
-  const app = Fastify({ logger: deps.logger ?? true, bodyLimit: 256 * 1024 });
+  const app = Fastify({ logger: deps.logger ?? true, bodyLimit: 256 * 1024, forceCloseConnections: true });
   const toolIdempotency = new IdempotencyStore<ToolResult>({
     ttlMs: config.tools.idempotencyTtlMs,
     maxEntries: config.tools.idempotencyMaxEntries,
