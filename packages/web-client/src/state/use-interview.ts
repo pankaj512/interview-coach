@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackendApiError, BackendClient } from "../api/backend-client.js";
 import type {
+  InterviewStatus,
   SerializedInterview,
   SerializedStateSnapshot,
   ToolName,
@@ -46,6 +47,22 @@ export interface LiveEvent {
   readonly at: string;
   readonly kind: string;
   readonly detail: string;
+}
+
+/** Delay after the snapshot reaches "completing" before the client
+ *  auto-finishes: covers end_interview tool-call latency now that the
+ *  model's goodbye precedes the call. Manual End stays immediate. */
+export const AUTO_FINISH_DELAY_MS = 2000;
+
+/** Derive whether the client should schedule its once-only auto-finish:
+ *  only from a fresh "completing" snapshot, never after a manual finish
+ *  and never twice. Pure for unit tests; the hook owns the timer. */
+export function shouldAutoFinish(
+  status: InterviewStatus | null | undefined,
+  finished: boolean,
+  scheduled: boolean,
+): boolean {
+  return status === "completing" && !finished && !scheduled;
 }
 
 // HLD 4.2: realtime interview screen state — connection, speakers, timer,
@@ -354,6 +371,22 @@ export function useLiveInterview(
       setBusy(false);
     }
   }, [backend, hangup, interview.id, log]);
+
+  // Fix A: the model ends the interview by calling end_interview (goodbye
+  // already said), which lands the backend in "completing" with the socket
+  // still open. Finish once from the client after a short beat so the room
+  // does not strand on "Wrapping up". A manual End during the beat flips
+  // finished and clears the timer via cleanup; the ref guards re-renders.
+  const autoFinishRef = useRef(false);
+  useEffect(() => {
+    if (!shouldAutoFinish(snapshot?.interview.status, finished, autoFinishRef.current)) return;
+    autoFinishRef.current = true;
+    log("interview", "model ended the interview — auto-finishing");
+    const timer = setTimeout(() => {
+      void finish();
+    }, AUTO_FINISH_DELAY_MS);
+    return () => clearTimeout(timer);
+  }, [snapshot, finished, finish, log]);
 
   // Release the session when the room unmounts (navigation, tab close).
   const hangupRef = useRef(hangup);

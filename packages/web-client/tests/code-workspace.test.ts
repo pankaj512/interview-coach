@@ -9,6 +9,7 @@ import {
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
 import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability } from "../src/screens/LiveScreen.js";
+import { AUTO_FINISH_DELAY_MS, shouldAutoFinish } from "../src/state/use-interview.js";
 import type { Problem, ProblemStarterSet } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
@@ -122,5 +123,26 @@ describe("isRoomVisible", () => {
     expect(isRoomVisible("connected", false)).toBe(true);
     expect(isRoomVisible("reconnecting", false)).toBe(true);
     expect(isRoomVisible("failed", true)).toBe(false);
+  });
+});
+
+describe("shouldAutoFinish", () => {
+  it("fires only from a fresh completing snapshot", () => {
+    expect(AUTO_FINISH_DELAY_MS).toBeGreaterThan(0);
+    expect(shouldAutoFinish("completing", false, false)).toBe(true);
+  });
+
+  it("never refires after a finish or a scheduled beat", () => {
+    expect(shouldAutoFinish("completing", true, false)).toBe(false);
+    expect(shouldAutoFinish("completing", false, true)).toBe(false);
+    expect(shouldAutoFinish("completing", true, true)).toBe(false);
+  });
+
+  it("stays quiet for every other status", () => {
+    expect(shouldAutoFinish(null, false, false)).toBe(false);
+    expect(shouldAutoFinish(undefined, false, false)).toBe(false);
+    expect(shouldAutoFinish("in_progress", false, false)).toBe(false);
+    expect(shouldAutoFinish("paused", false, false)).toBe(false);
+    expect(shouldAutoFinish("completed", false, false)).toBe(false);
   });
 });

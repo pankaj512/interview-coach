@@ -77,7 +77,7 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
     type: "function",
     name: "end_interview",
     description:
-      "Signal that the interview is finished and should be wrapped up. Call when the candidate has completed the discussion or explicitly wants to end. The application finalizes the interview; continue the conversation naturally afterwards.",
+      "Signal that the interview is finished and should be wrapped up. Say your final goodbye to the candidate FIRST, then call end_interview as your very last operation. Say nothing further after the call returns — the application finalizes the interview.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
   },
 ];
