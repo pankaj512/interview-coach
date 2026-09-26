@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 9dbdc88c508d365764bf691f967099ba678575d1afcc82ae179050bd9acbc069 -->
+<!-- blueprint:source-hash 3930f16b6cab33385503a0961ed3b6965cec23999f3330ec97dc99038d4c6c8b -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -32,7 +32,7 @@ is chosen by the system from persisted skill state, not by browsing.
 
 ## Features
 
-Shipped (1-17, 18a.1-18c, 20):
+Shipped (1-18, 20):
 
 1. **Architecture principles** - ADR-002 alignment; LLM advisory, backend owns truth.
 2. **Profile + onboarding** - `UserProfile`, taxonomy, required first-run gate.
@@ -52,12 +52,13 @@ Shipped (1-17, 18a.1-18c, 20):
 16. **Isolated sandbox** - Docker-isolated C++/JS/Python execution behind the existing sandbox routes; local runner retired.
 17. **Fresh UI rebuild** - theme shell + public screens (17a), practice-loop screens (17b), feedback screens (17c), account/history screens (17d) on the new theme.
 18. **Problem content slices (18a.1-18c)** - cleaned statements/constraints/array-encoded samples for all 300; per-language starter-signature census, shared node-type prelude + shape runners, `{runnerId, entry, codecs}` link metadata; full reseed; new problem-content endpoints adopted by the problem pane.
-19. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
+19. **AI-only Submit (18d)** - backend second-AI correctness/optimality verdict with break-points and edge cases; no sandbox run, nothing persisted; unconfigured keys surface a friendly 503; voice stays interview-only.
+20. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
 
-Next (18d, 19):
+Next (19, 21):
 
-- **18d. AI-only Submit** - backend second-AI correctness/optimality verdict with break-points and edge cases; voice stays interview-only.
 - **19. Loop verification** - end-to-end pass against a live DB; no new functionality.
+- **21. Provider-switchable LLM transport** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports.
 
 Deferred to v2: security/observability hardening, testing consolidation,
 final integration, prod identity + voice, multi-track expansion.
@@ -147,7 +148,8 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 - **db** - Drizzle ORM + `postgres` driver on Postgres 16
 - **web-client** - React 19 + Vite 7 (`VITE_BACKEND_URL` only, never secrets)
 - **LLMs** - Azure Voice Live realtime vs server-side Foundry text behind
-  `RecommendationModel` / `EvaluationModel` (Managed Identity prod, key local-dev)
+  `RecommendationModel` / `EvaluationModel` (Managed Identity prod, key local-dev);
+  provider-switchable transport (Azure + Inception) is item 21, upcoming
 - **Tests / CI** - Vitest everywhere (live `*_test` DB or warn-and-pass);
   `.github/workflows/ci.yml`: typecheck -> tests -> builds -> secret scans -> boot probe
 

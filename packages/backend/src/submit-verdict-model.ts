@@ -19,22 +19,16 @@ import {
 } from "@interview-coach/domain";
 import type { LlmConfig } from "./config.js";
 import {
+  buildChatRequest,
+  defaultFetch,
   extractChatContent,
+  isProviderConfigured,
+  postChatCompletions,
+  resolveLlmProvider,
   type ChatMessage,
   type LlmFetch,
-} from "./recommendation-model.js";
-
-function defaultFetch(): LlmFetch {
-  const impl = (globalThis as { fetch?: unknown })["fetch"];
-  if (typeof impl !== "function") {
-    throw new Error("No fetch implementation available for the submit-verdict model");
-  }
-  const fn = impl as (
-    input: string,
-    init: Record<string, unknown>,
-  ) => Promise<{ status: number; text(): Promise<string> }>;
-  return (input, init) => fn(input, init);
-}
+  type LlmProviderName,
+} from "./llm-transport.js";
 
 const SYSTEM_PROMPT = [
   "You are the code-judge engine for a DSA interview-practice coach.",
@@ -104,13 +98,12 @@ export interface AzureFoundrySubmitVerdictModelDeps {
   readonly apiKey: string;
   readonly deployment: string;
   readonly apiVersion: string;
+  readonly provider?: LlmProviderName;
+  readonly baseUrl?: string;
+  readonly model?: string;
   readonly timeoutMs?: number;
   readonly maxRetries?: number;
   readonly fetchImpl?: LlmFetch;
-}
-
-function joinUrl(base: string, path: string): string {
-  return `${base.replace(/\/+$/, "")}${path}`;
 }
 
 export class AzureFoundrySubmitVerdictModel implements SubmitVerdictModel {
@@ -119,6 +112,9 @@ export class AzureFoundrySubmitVerdictModel implements SubmitVerdictModel {
   private readonly apiKey: string;
   private readonly deployment: string;
   private readonly apiVersion: string;
+  private readonly provider: LlmProviderName;
+  private readonly baseUrl: string | undefined;
+  private readonly model: string | undefined;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly fetchFn: LlmFetch;
@@ -128,9 +124,12 @@ export class AzureFoundrySubmitVerdictModel implements SubmitVerdictModel {
     this.apiKey = deps.apiKey;
     this.deployment = deps.deployment;
     this.apiVersion = deps.apiVersion;
+    this.provider = deps.provider ?? "azure";
+    this.baseUrl = deps.baseUrl;
+    this.model = deps.model;
     this.timeoutMs = deps.timeoutMs ?? 20_000;
     this.maxRetries = deps.maxRetries ?? 2;
-    this.fetchFn = deps.fetchImpl ?? defaultFetch();
+    this.fetchFn = deps.fetchImpl ?? defaultFetch("submit-verdict");
   }
 
   async judge(input: SubmitVerdictInput): Promise<SubmitVerdictModelResult> {
@@ -138,73 +137,32 @@ export class AzureFoundrySubmitVerdictModel implements SubmitVerdictModel {
     if (checked === null) {
       return { proposal: null, error: "Invalid submit-verdict input" };
     }
-    const url = joinUrl(
-      this.endpoint,
-      `/openai/deployments/${encodeURIComponent(this.deployment)}/chat/completions?api-version=${encodeURIComponent(this.apiVersion)}`,
-    );
-    const body = JSON.stringify({
+    const request = buildChatRequest({
+      provider: this.provider,
+      apiKey: this.apiKey,
+      endpoint: this.endpoint,
+      deployment: this.deployment,
+      apiVersion: this.apiVersion,
+      baseUrl: this.baseUrl,
+      model: this.model,
       messages: buildSubmitVerdictMessages(checked),
-      temperature: 0.2,
-      response_format: { type: "json_object" },
     });
-    let lastError = "Submit-verdict model unavailable";
-    for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
-      const outcome = await this.attempt(url, body);
-      if (outcome.proposal !== null) return { proposal: outcome.proposal };
-      lastError = outcome.error;
-      if (!outcome.retryable) return { proposal: null, error: lastError };
-    }
-    return { proposal: null, error: lastError };
-  }
-
-  private async attempt(
-    url: string,
-    body: string,
-  ): Promise<
-    | { proposal: SubmitVerdict; error: ""; retryable: false }
-    | { proposal: null; error: string; retryable: boolean }
-  > {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), this.timeoutMs);
-    let status: number;
-    let text: string;
-    try {
-      const response = await this.fetchFn(url, {
-        method: "POST",
-        headers: { "content-type": "application/json", "api-key": this.apiKey },
-        body,
-        signal: controller.signal,
-      });
-      status = response.status;
-      text = await response.text();
-    } catch (error) {
-      return {
-        proposal: null,
-        error:
-          error instanceof Error && error.name === "AbortError"
-            ? "Submit-verdict model timed out"
-            : "Submit-verdict model request failed",
-        retryable: true,
-      };
-    } finally {
-      clearTimeout(timer);
-    }
-    if (status < 200 || status >= 300) {
-      return {
-        proposal: null,
-        error: `Submit-verdict model returned HTTP ${status}`,
-        retryable: status === 429 || status >= 500,
-      };
-    }
-    const content = extractChatContent(text);
+    const outcome = await postChatCompletions(request.url, request.headers, request.body, {
+      fetchImpl: this.fetchFn,
+      timeoutMs: this.timeoutMs,
+      maxRetries: this.maxRetries,
+      errorPrefix: "Submit-verdict model",
+    });
+    if (outcome.raw === null) return { proposal: null, error: outcome.error };
+    const content = extractChatContent(outcome.raw);
     if (content === null) {
-      return { proposal: null, error: "Submit-verdict model returned no content", retryable: true };
+      return { proposal: null, error: "Submit-verdict model returned no content" };
     }
     const proposal = parseSubmitVerdictProposal(content);
     if (proposal === null) {
-      return { proposal: null, error: "Submit-verdict model returned invalid JSON", retryable: true };
+      return { proposal: null, error: "Submit-verdict model returned invalid JSON" };
     }
-    return { proposal, error: "", retryable: false };
+    return { proposal };
   }
 }
 
@@ -216,14 +174,18 @@ export class UnconfiguredSubmitVerdictModel implements SubmitVerdictModel {
 }
 
 export function createSubmitVerdictModelFromEnv(config: LlmConfig): SubmitVerdictModel {
-  if (config.endpoint === undefined || config.apiKey === undefined) {
+  const provider = resolveLlmProvider(config.provider);
+  if (!isProviderConfigured(provider, config)) {
     return new UnconfiguredSubmitVerdictModel();
   }
   return new AzureFoundrySubmitVerdictModel({
-    endpoint: config.endpoint,
-    apiKey: config.apiKey,
+    endpoint: config.endpoint ?? "",
+    apiKey: config.apiKey ?? "",
     deployment: config.deployment,
     apiVersion: config.apiVersion,
+    provider: provider ?? "azure",
+    baseUrl: config.baseUrl,
+    model: config.model,
     timeoutMs: config.timeoutMs,
     maxRetries: config.maxRetries,
   });

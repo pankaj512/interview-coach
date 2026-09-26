@@ -94,6 +94,41 @@ describe("submit-verdict model factory", () => {
       apiKey: undefined,
       deployment: "gpt-4o-mini",
       apiVersion: "2024-10-21",
+      provider: "azure",
+      baseUrl: "",
+      model: "",
+      timeoutMs: 1000,
+      maxRetries: 1,
+    });
+    expect(model).toBeInstanceOf(UnconfiguredSubmitVerdictModel);
+    const result = await model.judge(input);
+    expect(result.proposal).toBeNull();
+  });
+
+  it("returns the keyed model for inception without an endpoint", () => {
+    const model = createSubmitVerdictModelFromEnv({
+      endpoint: undefined,
+      apiKey: "k",
+      deployment: "gpt-4o-mini",
+      apiVersion: "2024-10-21",
+      provider: "inception",
+      baseUrl: "",
+      model: "",
+      timeoutMs: 1000,
+      maxRetries: 1,
+    });
+    expect(model).toBeInstanceOf(AzureFoundrySubmitVerdictModel);
+  });
+
+  it("treats an unknown provider as unconfigured", async () => {
+    const model = createSubmitVerdictModelFromEnv({
+      endpoint: "https://foundry.example",
+      apiKey: "k",
+      deployment: "gpt-4o-mini",
+      apiVersion: "2024-10-21",
+      provider: "bogus",
+      baseUrl: "",
+      model: "",
       timeoutMs: 1000,
       maxRetries: 1,
     });

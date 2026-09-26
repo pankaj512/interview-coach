@@ -38,13 +38,14 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 - Adaptive loop (evaluation -> skill update -> regenerated recommendation)
 - Server-backed History, Progress, Weak-Areas views
 
-Shipped since (see `build-plan.md` 14-17, 18a.1-18c, 20): green
+Shipped since (see `build-plan.md` 14-18, 20): green
 main, UI prototype, isolated multi-language sandbox, fresh UI rebuild
 (17a-17d), problem content slices + full reseed + new endpoints,
-client URL routing.
+AI-only Submit (18d), client URL routing.
 
-Next (unchecked in `build-plan.md`): AI-only Submit (18d) and loop
-verification (19); the v2 items stay deferred.
+Next (unchecked in `build-plan.md`): loop
+verification (19) and provider-switchable LLM transport (21); the v2
+items stay deferred.
 
 ## 4. Data - What are we storing?
 

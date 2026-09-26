@@ -2,6 +2,11 @@
 // Env-driven. Azure voice credentials stay server-side; only derived,
 // non-secret session parameters ever leave the backend (frozen sections 3, 7).
 
+import {
+  INCEPTION_DEFAULT_BASE_URL,
+  INCEPTION_DEFAULT_MODEL,
+} from "./llm-transport.js";
+
 export interface VoiceConfig {
   readonly endpoint: string;
   readonly model: string;
@@ -60,6 +65,9 @@ export interface LlmConfig {
   readonly apiKey: string | undefined;
   readonly deployment: string;
   readonly apiVersion: string;
+  readonly provider: string;
+  readonly baseUrl: string;
+  readonly model: string;
   readonly timeoutMs: number;
   readonly maxRetries: number;
 }
@@ -175,6 +183,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       apiKey: optSecret(env, "LLM_API_KEY"),
       deployment: str(env, "LLM_DEPLOYMENT", "gpt-4o-mini"),
       apiVersion: str(env, "LLM_API_VERSION", "2024-10-21"),
+      // Feature 21 provider switch: azure = Azure AI Foundry deployment
+      // path; inception = Inception Mercury OpenAI-compatible API.
+      // Anything else behaves as unconfigured (same as missing keys).
+      provider: str(env, "LLM_PROVIDER", "azure"),
+      baseUrl: str(env, "LLM_BASE_URL", INCEPTION_DEFAULT_BASE_URL),
+      model: str(env, "LLM_MODEL", INCEPTION_DEFAULT_MODEL),
       timeoutMs: num(env, "LLM_TIMEOUT_MS", 10_000),
       maxRetries: num(env, "LLM_MAX_RETRIES", 2),
     },

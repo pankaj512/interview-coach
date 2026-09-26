@@ -1,7 +1,7 @@
 // Phase 4 server-side recommendation model: prompt/parse helpers and the
 // Azure Foundry adapter against a fake HTTP transport (no live LLM).
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   asCurriculumId,
   asProblemId,
@@ -151,6 +151,9 @@ describe("model selection", () => {
       apiKey: undefined,
       deployment: "d",
       apiVersion: "v",
+      provider: "azure",
+      baseUrl: "",
+      model: "",
       timeoutMs: 1000,
       maxRetries: 1,
     });
@@ -165,9 +168,75 @@ describe("model selection", () => {
       apiKey: "k",
       deployment: "d",
       apiVersion: "v",
+      provider: "azure",
+      baseUrl: "",
+      model: "",
       timeoutMs: 1000,
       maxRetries: 1,
     });
     expect(model).toBeInstanceOf(AzureFoundryRecommendationModel);
+  });
+
+  it("uses the keyed model for inception without an endpoint", () => {
+    const model = createRecommendationModelFromEnv({
+      endpoint: undefined,
+      apiKey: "k",
+      deployment: "d",
+      apiVersion: "v",
+      provider: "inception",
+      baseUrl: "",
+      model: "",
+      timeoutMs: 1000,
+      maxRetries: 1,
+    });
+    expect(model).toBeInstanceOf(AzureFoundryRecommendationModel);
+  });
+
+  it("treats an unknown provider as unconfigured", async () => {
+    const model = createRecommendationModelFromEnv({
+      endpoint: "https://foundry.example",
+      apiKey: "k",
+      deployment: "d",
+      apiVersion: "v",
+      provider: "bogus",
+      baseUrl: "",
+      model: "",
+      timeoutMs: 1000,
+      maxRetries: 1,
+    });
+    expect(model).toBeInstanceOf(UnconfiguredRecommendationModel);
+    const result = await model.recommend(input);
+    expect(result.proposal).toBeNull();
+  });
+
+  it("sends the Mercury request for inception with a stubbed fetch", async () => {
+    const calls: Array<{ input: string; init: { headers: Record<string, string>; body: string } }> = [];
+    vi.stubGlobal("fetch", async (input: string, init: { headers: Record<string, string>; body: string }) => {
+      calls.push({ input, init });
+      return jsonResponse(200, VALID_CONTENT);
+    });
+    try {
+      const model = createRecommendationModelFromEnv({
+        endpoint: undefined,
+        apiKey: "k",
+        deployment: "d",
+        apiVersion: "v",
+        provider: "inception",
+        baseUrl: "https://proxy.example/v1",
+        model: "mercury-test",
+        timeoutMs: 1000,
+        maxRetries: 0,
+      });
+      const result = await model.recommend(input);
+      expect(result.proposal).toMatchObject({ problemId: "prob_two-sum" });
+      expect(calls).toHaveLength(1);
+      expect(calls[0]?.input).toBe("https://proxy.example/v1/chat/completions");
+      expect(calls[0]?.init.headers["authorization"]).toBe("Bearer k");
+      const body = JSON.parse(calls[0]?.init.body ?? "{}") as Record<string, unknown>;
+      expect(body["model"]).toBe("mercury-test");
+      expect(body["temperature"]).toBeGreaterThanOrEqual(0.5);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
