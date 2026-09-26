@@ -157,6 +157,41 @@ describe("ToolService", () => {
     expect(events.some((e) => e.type === "tool.failed")).toBe(false);
   });
 
+  it("get_last_submission reports found:false when nothing was submitted", async () => {
+    const { repos, interviews, tools } = setup();
+    const id = await readyInterview(interviews, repos, { withProblem: true });
+    const result = must(
+      await tools.dispatch("get_last_submission", {
+        interviewId: id,
+        callId: "call_8",
+      }),
+    );
+    expect(result).toEqual({ found: false });
+  });
+
+  it("get_last_submission returns the latest persisted code", async () => {
+    const { repos, interviews, tools } = setup();
+    const id = await readyInterview(interviews, repos, { withProblem: true });
+    must(
+      await tools.dispatch("submit_interview_data", {
+        interviewId: id,
+        callId: "call_9",
+      }, { language: "python", code: "def moveZeroes(nums):\n    pass\n" }),
+    );
+    const result = must(
+      await tools.dispatch("get_last_submission", {
+        interviewId: id,
+        callId: "call_10",
+      }),
+    );
+    expect(result).toMatchObject({
+      found: true,
+      language: "python",
+      code: "def moveZeroes(nums):\n    pass",
+      truncated: false,
+    });
+  });
+
   it("dispatch records tool.failed on error", async () => {
     const { repos, interviews, tools } = setup();
     const id = await readyInterview(interviews, repos, { withProblem: false });

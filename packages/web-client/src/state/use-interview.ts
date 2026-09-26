@@ -353,6 +353,13 @@ export function useLiveInterview(
     [backend, interview.id, log],
   );
 
+  // Fix B push: best-effort verdict summary into the live session. False
+  // (not connected) is a normal outcome the caller ignores.
+  const pushVerdictSummary = useCallback((summary: string): boolean => {
+    const client = clientRef.current;
+    return client !== null && client.notifySubmission(summary);
+  }, []);
+
   const finish = useCallback(async (): Promise<SerializedStateSnapshot | null> => {
     setBusy(true);
     try {
@@ -452,6 +459,7 @@ export function useLiveInterview(
     toggleMute,
     togglePause,
     sendText,
+    pushVerdictSummary,
     refresh: refreshSnapshot,
     log,
     clearError: () => setError(null),

@@ -122,6 +122,7 @@ const VALID_TOOL_NAMES: readonly string[] = [
   "get_current_interview",
   "get_current_problem",
   "get_candidate_code",
+  "get_last_submission",
   "submit_interview_data",
   "end_interview",
   // Deprecated aliases: accepted for CLI-harness compatibility and replayed
@@ -367,6 +368,21 @@ export class VoiceInterviewClient {
     });
     this.sendJson({ type: "response.create" });
     this.metric("text_turn_sent", { interviewId: this.interviewId ?? "" });
+    return true;
+  }
+
+  // Fix B push: surface a Submit verdict summary to the interviewer as a
+  // framed turn, not candidate-typed text. Best-effort: returns false when
+  // the session is not connected and the caller moves on.
+  notifySubmission(summary: string): boolean {
+    const trimmed = summary.trim();
+    if (trimmed === "" || this.ws === null || this.connectionState !== "connected") return false;
+    this.sendJson({
+      type: "conversation.item.create",
+      item: { type: "message", role: "user", content: [{ type: "input_text", text: `[Submit result] ${trimmed}` }] },
+    });
+    this.sendJson({ type: "response.create" });
+    this.metric("submit_push_sent", { interviewId: this.interviewId ?? "" });
     return true;
   }
 

@@ -11,7 +11,7 @@
 // (POST /api/interviews/:id/voice-session, frozen section 3) — never
 // hardcoded here — so frozen-config changes land server-side only.
 
-import type { CodeLanguage, ToolExecOutcome, VoiceSessionPayload } from "../api/types.js";
+import type { CodeLanguage, SerializedSubmitVerdict, ToolExecOutcome, VoiceSessionPayload } from "../api/types.js";
 
 export interface RealtimeToolDefinition {
   readonly type: "function";
@@ -53,6 +53,13 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
     name: "get_candidate_code",
     description:
       "Get the candidate's current code from the live editor. Call this when the candidate asks what you can see, or when discussing their implementation. The code is the live editor content, which may be newer than the last tested submission.",
+    parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
+  },
+  {
+    type: "function",
+    name: "get_last_submission",
+    description:
+      "Get the candidate's last submitted code from the backend. Call this after a Submit result arrives, or when the candidate refers to submitted code and the live editor may have moved on. Returns found:false when nothing was submitted yet.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
   },
   {
@@ -201,6 +208,20 @@ export function resolveCandidateCode(
     result: buildCandidateCodeResult(snapshot),
     replayed: false,
   };
+}
+
+// Fix B push: short verdict summary framed for the live session. The
+// verdict lists are already capped by the backend validator, so this is a
+// pure join with empty segments omitted.
+export function buildVerdictPushSummary(verdict: SerializedSubmitVerdict): string {
+  const parts = [
+    `correctness: ${verdict.correctness}`,
+    `optimality: ${verdict.optimality}`,
+    verdict.summary,
+  ];
+  if (verdict.breakPoints.length > 0) parts.push(`Break-points: ${verdict.breakPoints.join("; ")}`);
+  if (verdict.edgeCases.length > 0) parts.push(`Edge cases: ${verdict.edgeCases.join("; ")}`);
+  return parts.join(" ");
 }
 
 // Resume continuity: the realtime API has no session resumption, so a resumed

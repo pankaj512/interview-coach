@@ -339,6 +339,7 @@ export function LiveScreen({
               problem={problem}
               starters={content?.starters ?? null}
               codeReaderRef={codeReaderRef}
+              pushVerdictSummary={(summary) => live.pushVerdictSummary(summary)}
               onActivity={(detail) => {
                 live.log("code", detail);
                 void live.refresh();

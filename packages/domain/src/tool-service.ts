@@ -57,6 +57,7 @@ import { err, ok } from "./result.js";
 export type CanonicalToolName =
   | "get_current_interview"
   | "get_current_problem"
+  | "get_last_submission"
   | "submit_interview_data"
   | "end_interview";
 
@@ -74,6 +75,7 @@ export type ToolName = CanonicalToolName | DeprecatedToolAlias;
 export const CANONICAL_TOOL_NAMES: readonly CanonicalToolName[] = [
   "get_current_interview",
   "get_current_problem",
+  "get_last_submission",
   "submit_interview_data",
   "end_interview",
 ];
@@ -218,6 +220,20 @@ export type SubmitInterviewDataResult =
       readonly submissionCount: number;
     };
 
+// Fix B: fetch-last-submission read. The latest persisted submission
+// (Submit stores code with zero runs), so the model can pull saved code on
+// demand when the live editor has moved on. found:false is a definitive
+// answer, not an error.
+export type LastSubmissionResult =
+  | { readonly found: false }
+  | {
+      readonly found: true;
+      readonly submissionId: string;
+      readonly language: string;
+      readonly code: string;
+      readonly truncated: boolean;
+    };
+
 export type ToolResult =
   | CurrentProblemResult
   | InterviewStateResult
@@ -229,6 +245,7 @@ export type ToolResult =
   | SubmitSolutionResult
   | RunCodeResult
   | CurrentInterviewResult
+  | LastSubmissionResult
   | SubmitInterviewDataResult;
 
 export interface ToolServiceDeps {
@@ -244,6 +261,11 @@ export interface ToolServiceDeps {
 // forwarder's 8s request timeout, so its timeout is capped below that window.
 // The HTTP runs route keeps the full 100ms..30s range.
 const TOOL_RUN_MAX_TIMEOUT_MS = 6000;
+
+// get_last_submission returns persisted code to the model: bound it like
+// the live editor snapshot (client CANDIDATE_CODE_MAX_CHARS) so a 50k
+// submission does not flood the realtime context.
+const LAST_SUBMISSION_CODE_MAX_CHARS = 8000;
 
 const RESPONSE_KINDS: readonly ResponseKind[] = [
   "answer",
@@ -285,6 +307,9 @@ export class ToolService {
     switch (name) {
       case "get_current_problem":
         result = await this.getCurrentProblem(ctx);
+        break;
+      case "get_last_submission":
+        result = await this.getLastSubmission(ctx);
         break;
       case "get_interview_state":
         result = await this.getInterviewState(ctx);
@@ -362,6 +387,31 @@ export class ToolService {
     const state = await this.interviews.getState(ctx.interviewId);
     if (!state.ok) return state;
     return ok(toStateResult(state.value));
+  }
+
+  async getLastSubmission(
+    ctx: ToolContext,
+  ): Promise<Result<LastSubmissionResult>> {
+    const latest = await this.submissions.latestSubmission(ctx.interviewId);
+    if (!latest.ok) return latest;
+    if (latest.value === null) return ok({ found: false });
+    const sub = latest.value;
+    if (sub.code.length <= LAST_SUBMISSION_CODE_MAX_CHARS) {
+      return ok({
+        found: true,
+        submissionId: sub.id,
+        language: sub.language,
+        code: sub.code,
+        truncated: false,
+      });
+    }
+    return ok({
+      found: true,
+      submissionId: sub.id,
+      language: sub.language,
+      code: sub.code.slice(-LAST_SUBMISSION_CODE_MAX_CHARS),
+      truncated: true,
+    });
   }
 
   async getCandidatePerformance(

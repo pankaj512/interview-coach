@@ -10,6 +10,7 @@ import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
 import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, TestCaseInput } from "../api/types.js";
 import type { LiveCodeReader } from "../voice/session.js";
+import { buildVerdictPushSummary } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
 import { formatApiError } from "../state/use-interview.js";
 import { DEFAULT_EDITOR_LANGUAGE, loadEditorLanguage, saveEditorLanguage } from "./editor-prefs.js";
@@ -77,6 +78,7 @@ export function CodeWorkspace({
   starters = null,
   onActivity,
   codeReaderRef,
+  pushVerdictSummary,
 }: {
   readonly backend: BackendClient;
   readonly interviewId: string;
@@ -89,6 +91,9 @@ export function CodeWorkspace({
    *  current language/code refs so the voice tool can answer
    *  get_candidate_code locally. Cleared on unmount. */
   readonly codeReaderRef?: { current: LiveCodeReader | null };
+  /** Fix B push: best-effort verdict summary into the live session after a
+   *  successful Submit. False (not connected) is ignored. */
+  readonly pushVerdictSummary?: (summary: string) => boolean;
 }) {
   const [language, setLanguage] = useState<CodeLanguage>(() => loadEditorLanguage() ?? DEFAULT_EDITOR_LANGUAGE);
   const [code, setCode] = useState("");
@@ -263,6 +268,7 @@ export function CodeWorkspace({
       });
       setVerdict(result);
       onActivity(`submit verdict ${result.correctness}/${result.optimality}`);
+      pushVerdictSummary?.(buildVerdictPushSummary(result));
     } catch (e) {
       setError(formatApiError(e));
     } finally {

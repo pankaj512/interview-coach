@@ -8,6 +8,7 @@ import {
   buildFunctionCallOutput,
   buildResumeHistory,
   buildSessionUpdate,
+  buildVerdictPushSummary,
   resolveCandidateCode,
   REALTIME_TOOL_DEFINITIONS,
   type ResumeTurn,
@@ -43,11 +44,12 @@ function mint(overrides: Partial<VoiceSessionPayload> = {}): VoiceSessionPayload
 }
 
 describe("session wire format", () => {
-  it("advertises the five canonical Phase 8 tools", () => {
+  it("advertises the six canonical Phase 8 tools", () => {
     expect(REALTIME_TOOL_DEFINITIONS.map((tool) => tool.name)).toEqual([
       "get_current_interview",
       "get_current_problem",
       "get_candidate_code",
+      "get_last_submission",
       "submit_interview_data",
       "end_interview",
     ]);
@@ -110,6 +112,29 @@ describe("session wire format", () => {
       }
     }
   });
+  it("declares the get_last_submission tool with no required arguments", () => {
+    const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
+    const last = byName.get("get_last_submission");
+    expect(last?.type).toBe("function");
+    expect(last?.parameters.required).toEqual([]);
+    expect(last?.parameters.additionalProperties).toBe(false);
+  });
+
+  it("builds a compact verdict push summary, omitting empty lists", () => {
+    expect(
+      buildVerdictPushSummary({
+        correctness: "correct",
+        correctnessNotes: "",
+        optimality: "O(n) time, O(1) space",
+        optimalityNotes: "",
+        breakPoints: ["Empty input"],
+        edgeCases: [],
+        summary: "Clean two-pointer pass.",
+      }),
+    ).toBe(
+      "correctness: correct optimality: O(n) time, O(1) space Clean two-pointer pass. Break-points: Empty input",
+    );
+  });
   it("declares the submit_interview_data argument schema", () => {
     const byName = new Map(REALTIME_TOOL_DEFINITIONS.map((tool) => [tool.name, tool]));
     const submit = byName.get("submit_interview_data");
@@ -144,7 +169,7 @@ describe("session wire format", () => {
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
     expect(update.session["tool_choice"]).toBe("auto");
-    expect((update.session["tools"] as unknown[]).length).toBe(5);
+    expect((update.session["tools"] as unknown[]).length).toBe(6);
   });
 
   it("transports api-key credentials as a query parameter (no header support in browsers)", () => {

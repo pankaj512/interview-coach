@@ -3,6 +3,7 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  asInterviewId,
   asProblemId,
   type SubmitVerdict,
   type SubmitVerdictInput,
@@ -48,7 +49,7 @@ function useBackendWithFake(
 }
 
 describe("POST /api/interviews/:id/submit-verdict", () => {
-  it("returns the validated verdict without persisting anything", async () => {
+  it("returns the validated verdict and stores one run-less submission", async () => {
     const seen: SubmitVerdictInput[] = [];
     const b = useBackendWithFake(seen);
     await seedProblem(b.repos);
@@ -62,14 +63,19 @@ describe("POST /api/interviews/:id/submit-verdict", () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toMatchObject({ ok: true, verdict: VERDICT });
     // seedProblem carries no description/constraints, so the model judges
-    // code alone — and nothing was persisted.
+    // code alone.
     expect(seen).toHaveLength(1);
     expect(seen[0]?.problem).toBeNull();
+    // The code persists as evidence for the evaluation reader, but no
+    // sandbox run is created.
     const submissions = await b.app.inject({
       method: "GET",
       url: `/api/interviews/${id}/submissions`,
     });
-    expect((submissions.json() as { submissions: unknown[] }).submissions).toEqual([]);
+    const rows = (submissions.json() as { submissions: unknown[] }).submissions;
+    expect(rows).toHaveLength(1);
+    const runs = await b.repos.runs.listByInterview(asInterviewId(id));
+    expect(runs).toEqual([]);
   });
 
   it("rejects empty code with 400", async () => {
@@ -123,7 +129,7 @@ describe("POST /api/interviews/:id/submit-verdict", () => {
       description: "Add two numbers.",
       constraints: ["1 <= n <= 10", "n is an integer"],
     });
-    const { id } = await createStartedInterview(b);
+    const { id } = await createStartedInterview(b, ["prob_rich"]);
     const res = await b.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/submit-verdict`,

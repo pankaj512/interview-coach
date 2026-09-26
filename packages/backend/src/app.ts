@@ -1347,10 +1347,11 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       .send({ ok: true, submission: serializeSubmission(submitted.value) });
   });
 
-  // Feature 18d: AI-only Submit. A second-AI verdict on the candidate's
-  // code with no sandbox run and zero persistence — nothing is stored, the
-  // verdict is computed and returned. Failures surface errors, never an
-  // invented verdict. Body mirrors submitCodeSchema (submitCode-like guards).
+    // Feature 18d: AI-only Submit. A second-AI verdict on the candidate's
+    // code with no sandbox run — the verdict is computed and returned, and
+    // the code is stored as a run-less submission (no runs, no verdict row).
+    // Failures surface errors, never an invented verdict, and store nothing.
+    // Body mirrors submitCodeSchema (submitCode-like guards).
   app.post("/api/interviews/:id/submit-verdict", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -1419,7 +1420,23 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         true,
       );
     }
-    request.log.info({ interviewId: params.data.id }, "code.verdict");
+    // Fix: Submit persists the code as a run-less submission through the
+    // same service the Test path uses (shared cap, status and problem
+    // guards), so the evaluation reader credits coding evidence. Still no
+    // sandbox run, no verdict row. Only a judged submit persists: 400/404
+    // and 502/503 failures store nothing.
+    const stored = await submissions.submit(id, {
+      language: parsed.data.language,
+      code: parsed.data.code,
+      ...(parsed.data.problemId === undefined
+        ? {}
+        : { problemId: parsed.data.problemId }),
+    });
+    if (!stored.ok) return sendDomainError(reply, stored.error);
+    request.log.info(
+      { interviewId: params.data.id, submissionId: stored.value.id },
+      "code.verdict",
+    );
     return reply.send({ ok: true, verdict: serializeSubmitVerdict(proposal) });
   });
 

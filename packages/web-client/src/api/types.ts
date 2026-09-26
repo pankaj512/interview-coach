@@ -24,6 +24,7 @@ export type CanonicalToolName =
   | "get_current_interview"
   | "get_current_problem"
   | "get_candidate_code"
+  | "get_last_submission"
   | "submit_interview_data"
   | "end_interview";
 
