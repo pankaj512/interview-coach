@@ -401,7 +401,7 @@ describe("screen render smoke", () => {
   });
   it("SettingsScreen renders the account section", () => {
     const html = renderToString(
-      <SettingsScreen entries={entries} deletingAll={false} onDeleteAll={noop} onSignIn={noop} onCreateAccount={noop} onSignOut={noop} />,
+      <SettingsScreen entries={entries} deletingAll={false} onDeleteAll={noop} resettingAll={false} onResetAll={noop} onSignIn={noop} onCreateAccount={noop} onSignOut={noop} />,
     );
     expect(html).toContain("Settings");
     expect(html).toContain("Account");
@@ -409,6 +409,7 @@ describe("screen render smoke", () => {
     // No implementation leaks: the dropdown shows the real default voice,
     // and no copy mentions the server.
     expect(html).toContain("Delete interviews");
+    expect(html).toContain("Reset learning state");
     expect(html).not.toContain("Reload interviews");
     expect(html).not.toContain("Server default");
     expect(html).not.toContain("server");

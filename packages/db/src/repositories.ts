@@ -1208,6 +1208,14 @@ export class DrizzleUserSkillStateRepository
       .limit(1);
     return rows[0] === undefined ? null : toUserSkillState(rows[0]);
   }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const removed = await this.db
+      .delete(schema.userSkillStates)
+      .where(eq(schema.userSkillStates.userId, userId))
+      .returning({ userId: schema.userSkillStates.userId });
+    return removed.length;
+  }
 }
 
 type UserCurriculumProgressRow = typeof schema.userCurriculumProgress.$inferSelect;
@@ -1272,6 +1280,14 @@ export class DrizzleUserCurriculumProgressRepository
       )
       .limit(1);
     return rows[0] === undefined ? null : toUserCurriculumProgress(rows[0]);
+  }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const removed = await this.db
+      .delete(schema.userCurriculumProgress)
+      .where(eq(schema.userCurriculumProgress.userId, userId))
+      .returning({ userId: schema.userCurriculumProgress.userId });
+    return removed.length;
   }
 }
 
@@ -1374,6 +1390,14 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
       )
       .orderBy(desc(schema.recommendations.createdAt), desc(schema.recommendations.updatedAt));
     return rows.map(toRecommendation);
+  }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const removed = await this.db
+      .delete(schema.recommendations)
+      .where(eq(schema.recommendations.userId, userId))
+      .returning({ id: schema.recommendations.id });
+    return removed.length;
   }
 }
 

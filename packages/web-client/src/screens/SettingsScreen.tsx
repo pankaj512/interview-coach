@@ -15,6 +15,8 @@ export function SettingsScreen({
   entries,
   deletingAll,
   onDeleteAll,
+  resettingAll,
+  onResetAll,
   onSignIn,
   onCreateAccount,
   onSignOut,
@@ -22,12 +24,15 @@ export function SettingsScreen({
   readonly entries: readonly HistoryEntry[];
   readonly deletingAll: boolean;
   readonly onDeleteAll: () => void;
+  readonly resettingAll: boolean;
+  readonly onResetAll: () => void;
   readonly onSignIn: () => void;
   readonly onCreateAccount: () => void;
   readonly onSignOut: () => void;
 }) {
   const [exportError, setExportError] = useState<string | null>(null);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   // Unset preference shows the service default voice, not a placeholder:
   // the dropdown always reflects the voice interviews will actually use.
   const [voice, setVoice] = useState<string>(() => loadVoicePreference() ?? DEFAULT_VOICE);
@@ -97,6 +102,17 @@ export function SettingsScreen({
             {deletingAll ? "Deleting…" : "Delete interviews"}
           </DangerButton>
         </div>
+        <div className="setting-row">
+          <span>
+            Learning state{" "}
+            <span className="hint">
+              Reset recommendations, skill levels, and progress. Interviews stay.
+            </span>
+          </span>
+          <DangerButton onClick={() => setConfirmingReset(true)} disabled={resettingAll || deletingAll}>
+            {resettingAll ? "Resetting…" : "Reset learning state"}
+          </DangerButton>
+        </div>
         {exportError !== null && (
           <p className="error" role="alert">
             {exportError}
@@ -124,6 +140,30 @@ export function SettingsScreen({
           <p>
             This permanently clears your interview history, including scores, feedback, and progress. This
             cannot be undone.
+          </p>
+        </Dialog>
+      )}
+      {confirmingReset && (
+        <Dialog
+          title="Reset learning state?"
+          onClose={() => setConfirmingReset(false)}
+          actions={
+            <>
+              <GhostButton onClick={() => setConfirmingReset(false)}>Keep learning state</GhostButton>
+              <DangerButton
+                onClick={() => {
+                  setConfirmingReset(false);
+                  onResetAll();
+                }}
+              >
+                Reset learning state
+              </DangerButton>
+            </>
+          }
+        >
+          <p>
+            This permanently clears your recommendations, skill levels, and curriculum progress, and the
+            dashboard starts fresh. Your interview history is untouched. This cannot be undone.
           </p>
         </Dialog>
       )}

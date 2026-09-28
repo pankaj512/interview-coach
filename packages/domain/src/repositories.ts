@@ -379,6 +379,8 @@ export interface UserSkillStateRepository {
     curriculumId: CurriculumId,
     topicId: TopicId,
   ): Promise<UserSkillState | null>;
+  /** Reset support: delete every row for the user, returning the count. */
+  deleteByUser(userId: UserId): Promise<number>;
 }
 
 // One progress pointer per (user, curriculum).
@@ -388,6 +390,8 @@ export interface UserCurriculumProgressRepository {
     userId: UserId,
     curriculumId: CurriculumId,
   ): Promise<UserCurriculumProgress | null>;
+  /** Reset support: delete every row for the user, returning the count. */
+  deleteByUser(userId: UserId): Promise<number>;
 }
 
 // Learning-loop Phase 4: persisted recommendations. `findCurrentByUser` is the
@@ -404,6 +408,8 @@ export interface RecommendationRepository {
     userId: UserId,
     curriculumId?: CurriculumId,
   ): Promise<readonly Recommendation[]>;
+  /** Reset support: delete every row for the user, returning the count. */
+  deleteByUser(userId: UserId): Promise<number>;
 }
 
 export class InMemoryUserRepository implements UserRepository {
@@ -513,6 +519,18 @@ export class InMemoryUserSkillStateRepository
   ): Promise<UserSkillState | null> {
     return this.store.get(this.key(userId, curriculumId, topicId)) ?? null;
   }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const prefix = `${userId}\u0000`;
+    let removed = 0;
+    for (const key of this.store.keys()) {
+      if (key.startsWith(prefix)) {
+        this.store.delete(key);
+        removed += 1;
+      }
+    }
+    return removed;
+  }
 }
 
 export class InMemoryUserCurriculumProgressRepository
@@ -533,6 +551,18 @@ export class InMemoryUserCurriculumProgressRepository
     curriculumId: CurriculumId,
   ): Promise<UserCurriculumProgress | null> {
     return this.store.get(this.key(userId, curriculumId)) ?? null;
+  }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const prefix = `${userId}\u0000`;
+    let removed = 0;
+    for (const key of this.store.keys()) {
+      if (key.startsWith(prefix)) {
+        this.store.delete(key);
+        removed += 1;
+      }
+    }
+    return removed;
   }
 }
 
@@ -576,6 +606,12 @@ export class InMemoryRecommendationRepository implements RecommendationRepositor
     curriculumId?: CurriculumId,
   ): Promise<readonly Recommendation[]> {
     return this.byUser(userId, curriculumId);
+  }
+
+  async deleteByUser(userId: UserId): Promise<number> {
+    const owned = [...this.store.values()].filter((r) => r.userId === userId);
+    for (const recommendation of owned) this.store.delete(recommendation.id);
+    return owned.length;
   }
 }
 

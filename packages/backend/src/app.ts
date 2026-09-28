@@ -800,6 +800,34 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, recommendation: serializeRecommendation(accepted.value) });
   });
 
+  // Settings "Reset learning state": wipe the caller's learning-loop state
+  // (recommendations, skill states, curriculum progress) without touching
+  // interviews, profile, catalog, or account. App-only; the dashboard's
+  // current-or-generate path rebuilds a fresh recommendation on next load.
+  app.delete("/api/learning-state", async (request, reply) => {
+    const caller = request.caller;
+    if (caller === undefined || caller.kind !== "user") {
+      return sendApiError(reply, 401, "UNAUTHORIZED", "Sign in to reset learning state", false);
+    }
+    const [recommendationsDeleted, skillStatesDeleted, progressDeleted] = await Promise.all([
+      deps.repos.recommendations.deleteByUser(caller.userId),
+      deps.repos.skillStates.deleteByUser(caller.userId),
+      deps.repos.curriculumProgress.deleteByUser(caller.userId),
+    ]);
+    request.log.info(
+      { userId: caller.userId, recommendationsDeleted, skillStatesDeleted, progressDeleted },
+      "learning-state.reset",
+    );
+    return reply.send({
+      ok: true,
+      deleted: {
+        recommendations: recommendationsDeleted,
+        skillStates: skillStatesDeleted,
+        curriculumProgress: progressDeleted,
+      },
+    });
+  });
+
   app.post("/api/interviews", async (request, reply) => {
     const parsed = createInterviewSchema.safeParse(request.body);
     if (!parsed.success) {

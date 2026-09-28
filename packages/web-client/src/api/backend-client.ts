@@ -212,6 +212,20 @@ export class BackendClient {
     return body.recommendation;
   }
 
+  // Settings "Reset learning state": wipe the caller's recommendations,
+  // skill states, and curriculum progress. Interviews are untouched.
+  async resetLearningState(): Promise<{
+    recommendations: number;
+    skillStates: number;
+    curriculumProgress: number;
+  }> {
+    const body = await this.request<{
+      ok: true;
+      deleted: { recommendations: number; skillStates: number; curriculumProgress: number };
+    }>("DELETE", "/api/learning-state");
+    return body.deleted;
+  }
+
   // Phase 3 curriculum + skills: server-owned config and per-user mastery.
   // Both are read-only views; the Dashboard (Phase 5) consumes them.
   async listCurriculum(interviewType?: string): Promise<readonly SerializedCurriculum[]> {

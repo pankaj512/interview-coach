@@ -411,6 +411,23 @@ export function App() {
     setDeletingAll(false);
   }, [backend, historyLimit, refreshHistory]);
 
+  // Settings "Reset learning state": wipe recommendations, skill states, and
+  // curriculum progress, then reload the dashboard (which auto-creates a
+  // fresh recommendation). Interviews and history are untouched. Copy is
+  // curated like delete-all: no ids or codes.
+  const [resettingAll, setResettingAll] = useState(false);
+  const resetAllLearningState = useCallback(async () => {
+    setResettingAll(true);
+    setHistoryError(null);
+    try {
+      await backend.resetLearningState();
+    } catch {
+      setHistoryError("Could not reset learning state. Your dashboard was refreshed.");
+    }
+    await dashboardData.reload();
+    setResettingAll(false);
+  }, [backend, dashboardData]);
+
   // "New practice" now routes to the Dashboard, whose recommendation CTA is the
   // only entry into a session (roadmap Phase 6: Setup retired).
   function startNew() {
@@ -602,6 +619,8 @@ export function App() {
             entries={entries}
             deletingAll={deletingAll}
             onDeleteAll={() => void deleteAllHistory()}
+            resettingAll={resettingAll}
+            onResetAll={() => void resetAllLearningState()}
             onSignIn={() => goAuth("signin")}
             onCreateAccount={() => goAuth("signup")}
             onSignOut={handleSignOut}
