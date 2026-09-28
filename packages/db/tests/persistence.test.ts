@@ -9,6 +9,7 @@ import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { eq } from "drizzle-orm";
 import {
+  CODE_LANGUAGES,
   DSA_CURRICULUM_ID,
   InterviewService,
   SubmissionService,
@@ -29,6 +30,7 @@ import {
   importCurriculum,
   supersedeRecommendation,
   updateUserProfile,
+  type CodeLanguage,
   type CurriculumRaw,
   type Problem,
 } from "@interview-coach/domain";
@@ -255,6 +257,52 @@ describe("postgres persistence", () => {
     const reconnected = await connectTestDb();
     if (reconnected === null) throw new Error("DB vanished mid-test");
     ctx.current = reconnected;
+  }));
+
+  it("persists submissions in every domain language, including cpp (stale language CHECK)", withDb(ctx, async (t) => {
+    const service = new InterviewService({ ...t.repos });
+    const submissions = new SubmissionService({
+      interviews: service,
+      submissions: t.repos.submissions,
+      runs: t.repos.runs,
+      events: t.repos.events,
+      executor: {
+        execute: async (_sub, cases) => ({
+          status: "completed",
+          results: cases.map((c) => ({
+            name: c.name,
+            passed: true,
+            actual: c.expected,
+          })),
+          durationMs: 1,
+        }),
+      },
+    });
+    const created = await service.createInterview({
+      candidateId: asUserId("user_languages"),
+      configuration: { interviewType: "dsa" },
+    });
+    if (!created.ok) throw new Error(created.error.message);
+    const id = created.value.id;
+    for (const step of [
+      () => service.markReady(id),
+      () => service.start(id),
+    ] as const) {
+      const r = await step();
+      if (!r.ok) throw new Error(r.error.message);
+    }
+    const snippets: Record<CodeLanguage, string> = {
+      javascript: "function solve(nums) { return nums[0]; }",
+      python: "def solve(nums):\n    return nums[0]",
+      cpp: "class Solution { public: int solve() { return 0; } };",
+    };
+    for (const language of CODE_LANGUAGES) {
+      const sub = await submissions.submit(id, { language, code: snippets[language] });
+      if (!sub.ok) throw new Error(`${language}: ${sub.error.message}`);
+    }
+    expect((await t.repos.submissions.listByInterview(id)).map((s) => s.language).sort()).toEqual(
+      [...CODE_LANGUAGES].sort(),
+    );
   }));
 
   it("hard-deletes an interview with all scoped artefacts cascading", withDb(ctx, async (t) => {
