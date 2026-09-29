@@ -598,6 +598,13 @@ h4 {
   margin-bottom: 0;
 }
 
+/* Dashboard-only: .wrap renders inside .shell-content, so their two 48px
+   top paddings stack into a dead band above the greeting. Halve the inner
+   one; .wrap is used only by DashboardScreen. */
+.shell-content > .wrap {
+  padding-top: var(--space-lg);
+}
+
 .wrap > h1 {
   font-family: var(--font-display);
   font-weight: 500;
@@ -619,7 +626,7 @@ h4 {
   color: var(--on-dark);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow);
-  padding: var(--space-lg) var(--space-xl);
+  padding: 32px var(--space-xl);
   margin-bottom: var(--space-lg);
 }
 
@@ -627,7 +634,7 @@ h4 {
   font-family: var(--font-display);
   font-weight: 500;
   font-size: 26px;
-  margin: var(--space-sm) 0;
+  margin: var(--space-md) 0;
   color: var(--on-dark-bright);
 }
 
@@ -664,7 +671,7 @@ h4 {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-sm);
-  margin-top: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .rec .btn-primary {
