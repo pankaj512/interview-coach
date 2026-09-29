@@ -15,10 +15,10 @@ import { asTopicId } from "../src/ids.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const curriculumJson = JSON.parse(
-  readFileSync(resolve(here, "../../../dsa-interview-curriculum.json"), "utf8"),
+  readFileSync(resolve(here, "../../../content/dsa/curriculum/dsa-interview-curriculum.json"), "utf8"),
 ) as CurriculumRaw;
 const catalogJson = JSON.parse(
-  readFileSync(resolve(here, "../../../dsa-problem-catalog.json"), "utf8"),
+  readFileSync(resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"), "utf8"),
 ) as { topics: { topic: string; problems: { title: string }[] }[] };
 
 function catalogTitles(): ReadonlySet<string> {

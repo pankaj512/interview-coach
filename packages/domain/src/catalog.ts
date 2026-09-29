@@ -6,7 +6,7 @@ import type { Result } from "./result.js";
 import { err } from "./result.js";
 import { domainError } from "./errors.js";
 
-// Pure import of the canonical catalog (dsa-problem-catalog.json:
+// Pure import of the canonical catalog (raw_content/dsa/dsa-problem-catalog.json:
 // 59 topics / 300 problems, fields title/difficulty/DSA/leetcode) into
 // Problem entities. Deterministic stable IDs (slug-based) so S2 seeding is
 // repeatable across restarts. No I/O here; callers read the JSON file.

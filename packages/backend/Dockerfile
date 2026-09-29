@@ -37,7 +37,7 @@ COPY packages/domain/src packages/domain/src
 COPY packages/db/src packages/db/src
 COPY packages/db/drizzle packages/db/drizzle
 COPY packages/backend/src packages/backend/src
-COPY dsa-problem-catalog.json ./dsa-problem-catalog.json
+COPY raw_content/dsa/dsa-problem-catalog.json ./raw_content/dsa/dsa-problem-catalog.json
 RUN chown -R app:app /app
 USER app
 

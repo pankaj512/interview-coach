@@ -1,6 +1,6 @@
-// Seeds the canonical DSA catalog (repo-root dsa-problem-catalog.json,
+// Seeds the canonical DSA catalog (raw_content/dsa/dsa-problem-catalog.json,
 // 59 topics / 300 problems) and the server-owned curriculum
-// (dsa-interview-curriculum.json: 12 modules / 59 topics / 300 problems)
+// (content/dsa/curriculum/dsa-interview-curriculum.json: 12 modules / 59 topics / 300 problems)
 // into Postgres.
 // Idempotent: ProblemRepository.save upserts on stable slug IDs
 // (prob_<slug>), and CurriculumRepository.save replaces the curriculum tree,
@@ -25,8 +25,8 @@ import { createDatabase } from "./client.js";
 import { DrizzleCurriculumRepository, DrizzleProblemRepository } from "./repositories.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const catalogPath = resolve(here, "../../../dsa-problem-catalog.json");
-const curriculumPath = resolve(here, "../../../dsa-interview-curriculum.json");
+const catalogPath = resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json");
+const curriculumPath = resolve(here, "../../../content/dsa/curriculum/dsa-interview-curriculum.json");
 // Feature 18b: cleaned 18a dataset (verbatim starters + runner links).
 const datasetPath = resolve(here, "../../../problem-content-enrichment.json");
 

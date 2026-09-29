@@ -1,7 +1,7 @@
 // @interview-coach/domain — server-owned curriculum (learning-loop Phase 3).
 //
 // The curriculum is the pedagogical ordering over the canonical problem
-// catalog (dsa-interview-curriculum.json: 12 modules / 59 topics / 300
+// catalog (content/dsa/curriculum/dsa-interview-curriculum.json: 12 modules / 59 topics / 300
 // problems). It is backend-owned static configuration, not browser state:
 // recommendation reads it server-side and the client never bundles it.
 //

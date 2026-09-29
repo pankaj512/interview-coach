@@ -6,6 +6,7 @@ logs/
 *.tsbuildinfo
 content/
 scripts/
+raw_content/
 blueprint/references
 opencode.jsonc
 opencode.json

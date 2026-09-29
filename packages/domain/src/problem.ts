@@ -5,7 +5,7 @@ import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
 
 // Canonical problem owned by the backend (HLD 5.4). Catalog entries
-// (dsa-problem-catalog.json: title/difficulty/DSA/leetcode) import into
+// (raw_content/dsa/dsa-problem-catalog.json: title/difficulty/DSA/leetcode) import into
 // this shape via catalog.ts; description/constraints/examples accrue later.
 export type ProblemDifficulty = "Easy" | "Medium" | "Hard";
 
