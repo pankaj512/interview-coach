@@ -65,6 +65,21 @@ export function shouldAutoFinish(
   return status === "completing" && !finished && !scheduled;
 }
 
+/** Derive whether a "closed" socket needs one fresh snapshot: only an
+ *  unexpected post-join drop with no finish in flight. The snapshot poll
+ *  runs while connected, so without this a socket that closes right after
+ *  the model ends the interview strands the room on "Session closed".
+ *  Pure for unit tests; the hook owns the refresh. */
+export function shouldRefreshOnClose(
+  connection: VoiceConnectionState,
+  hasJoined: boolean,
+  finished: boolean,
+  scheduled: boolean,
+  suspending: boolean,
+): boolean {
+  return connection === "closed" && hasJoined && !finished && !scheduled && !suspending;
+}
+
 // HLD 4.2: realtime interview screen state — connection, speakers, timer,
 // polled backend snapshot, tool/transcript activity, plus the S6.1 mute/pause
 // controls and the text-fallback path.
@@ -394,6 +409,25 @@ export function useLiveInterview(
     }, AUTO_FINISH_DELAY_MS);
     return () => clearTimeout(timer);
   }, [snapshot, finished, finish, log]);
+
+  // Model-end drop: refresh once on an unexpected post-join close so the
+  // auto-finish effect above can observe "completing" and schedule finish().
+  // A blip during another status refreshes to that status, stays quiet, and
+  // keeps today's Rejoin path; a failed refresh returns null and no-ops.
+  useEffect(() => {
+    if (
+      !shouldRefreshOnClose(
+        connection,
+        joinedRef.current,
+        finished,
+        autoFinishRef.current,
+        suspendingRef.current,
+      )
+    ) {
+      return;
+    }
+    void refreshSnapshot();
+  }, [connection, finished, refreshSnapshot]);
 
   // Release the session when the room unmounts (navigation, tab close).
   const hangupRef = useRef(hangup);

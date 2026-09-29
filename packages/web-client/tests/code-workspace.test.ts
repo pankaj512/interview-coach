@@ -8,8 +8,8 @@ import {
   sampleCaseFor,
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
-import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability } from "../src/screens/LiveScreen.js";
-import { AUTO_FINISH_DELAY_MS, shouldAutoFinish } from "../src/state/use-interview.js";
+import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
+import { AUTO_FINISH_DELAY_MS, shouldAutoFinish, shouldRefreshOnClose } from "../src/state/use-interview.js";
 import type { Problem, ProblemStarterSet } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
@@ -144,5 +144,39 @@ describe("shouldAutoFinish", () => {
     expect(shouldAutoFinish("in_progress", false, false)).toBe(false);
     expect(shouldAutoFinish("paused", false, false)).toBe(false);
     expect(shouldAutoFinish("completed", false, false)).toBe(false);
+  });
+});
+
+describe("shouldRefreshOnClose", () => {
+  it("refreshes once on an unexpected post-join drop", () => {
+    expect(shouldRefreshOnClose("closed", true, false, false, false)).toBe(true);
+  });
+
+  it("stays quiet for non-closed connections", () => {
+    for (const connection of ["idle", "connecting", "connected", "reconnecting", "failed"] as const) {
+      expect(shouldRefreshOnClose(connection, true, false, false, false)).toBe(false);
+    }
+  });
+
+  it("stays quiet pre-join, after finish, when scheduled, or while suspending", () => {
+    expect(shouldRefreshOnClose("closed", false, false, false, false)).toBe(false);
+    expect(shouldRefreshOnClose("closed", true, true, false, false)).toBe(false);
+    expect(shouldRefreshOnClose("closed", true, false, true, false)).toBe(false);
+    expect(shouldRefreshOnClose("closed", true, false, false, true)).toBe(false);
+  });
+});
+
+describe("shouldNotifyFinished", () => {
+  it("notifies once when the auto path flips finished", () => {
+    expect(shouldNotifyFinished(true, false)).toBe(true);
+  });
+
+  it("stays quiet after the manual path already notified", () => {
+    expect(shouldNotifyFinished(true, true)).toBe(false);
+  });
+
+  it("stays quiet while the interview is still live", () => {
+    expect(shouldNotifyFinished(false, false)).toBe(false);
+    expect(shouldNotifyFinished(false, true)).toBe(false);
   });
 });

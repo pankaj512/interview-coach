@@ -52,6 +52,15 @@ export function isRoomVisible(connection: VoiceConnectionState, hasJoined: boole
   return false;
 }
 
+/** Notify the app exactly once when the interview finishes. The manual End
+ *  button notifies directly, so this predicate covers the auto-finish path
+ *  (model-ended interview), which flips `finished` without touching the
+ *  room's callbacks. Without the notify the room strands after the backend
+ *  completes. */
+export function shouldNotifyFinished(finished: boolean, notified: boolean): boolean {
+  return finished && !notified;
+}
+
 export function LiveScreen({
   backend,
   interview,
@@ -143,11 +152,25 @@ export function LiveScreen({
     }
   }
 
+  // Auto-finish notify guard: the manual path marks itself notified around
+  // its direct onFinished call; the effect below marks the auto path.
+  const finishedNotifiedRef = useRef(false);
+
   async function handleConfirmEnd() {
     setConfirmEnd(false);
+    finishedNotifiedRef.current = true;
     const final = await live.finish();
     onFinished(final, live.events, live.elapsedSec);
   }
+
+  // Auto-finish notify: the auto path flips live.finished without calling
+  // onFinished, so observe it here and notify exactly once. The ref also
+  // covers StrictMode's double-effect invocation.
+  useEffect(() => {
+    if (!shouldNotifyFinished(live.finished, finishedNotifiedRef.current)) return;
+    finishedNotifiedRef.current = true;
+    onFinished(live.snapshot, live.events, live.elapsedSec);
+  }, [live.finished, live.snapshot, live.events, live.elapsedSec, onFinished]);
 
   const statusChip = micBlocked ? (
     <StatusChip connection={live.connection} micBlocked />
