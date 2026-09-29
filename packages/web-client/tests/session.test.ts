@@ -168,6 +168,7 @@ describe("session wire format", () => {
     });
     expect(update.session["input_audio_echo_cancellation"]).toEqual({ type: "server_echo_cancellation" });
     expect(update.session["input_audio_noise_reduction"]).toEqual({ type: "azure_deep_noise_suppression" });
+    expect(update.session["input_audio_transcription"]).toEqual({ model: "whisper-1" });
     expect(update.session["tool_choice"]).toBe("auto");
     expect((update.session["tools"] as unknown[]).length).toBe(6);
   });

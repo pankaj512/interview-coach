@@ -132,6 +132,9 @@ export function buildSessionUpdate(
       },
       input_audio_echo_cancellation: { type: cfg.echoCancellation },
       input_audio_noise_reduction: { type: cfg.noiseReduction },
+      // The server only emits input transcription events when asked; without
+      // this the candidate's turns never reach onTranscript or the transcript.
+      input_audio_transcription: { model: "whisper-1" },
       tools: [...REALTIME_TOOL_DEFINITIONS],
       tool_choice: "auto",
     },
