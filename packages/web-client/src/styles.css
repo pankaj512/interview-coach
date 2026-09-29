@@ -2318,6 +2318,76 @@ textarea.code {
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
 }
 
+.result-heading {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  margin: var(--space-sm) 0 0;
+}
+
+.case-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--space-sm);
+  font-size: 12px;
+}
+
+.case-table th,
+.case-table td {
+  text-align: left;
+  padding: 4px 8px 4px 0;
+  border-bottom: 1px solid var(--border-strong);
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.case-table th {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
+
+/* Circular (i) affordance inside the action buttons: hover/focus shows a
+   wrapping multi-line tooltip from data-tip. */
+.info-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: 6px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  font-style: normal;
+  cursor: help;
+  flex: none;
+}
+
+.info-icon:hover::after,
+.test-row button:focus-visible .info-icon::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: 240px;
+  white-space: normal;
+  text-align: left;
+  font-weight: 400;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  padding: var(--space-sm);
+  z-index: 5;
+}
+
 .verdict {
   margin-top: var(--space-md);
   padding-top: var(--space-md);

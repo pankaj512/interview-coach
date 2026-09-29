@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
-import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, TestCaseInput } from "../api/types.js";
+import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, SerializedTestResult, TestCaseInput } from "../api/types.js";
 import type { LiveCodeReader } from "../voice/session.js";
 import { buildVerdictPushSummary } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
@@ -59,6 +59,55 @@ export function sampleCaseFor(problem: Problem | null): TestCaseInput | null {
     args: Array.isArray(args) ? args : [args],
     expected: tryJson(example.output),
   };
+}
+
+/** Render a case value (input/expected/actual) as compact text. */
+export function formatCaseValue(value: unknown): string {
+  if (value === undefined) return "—";
+  if (typeof value === "string") return value;
+  try {
+    const json = JSON.stringify(value);
+    return json === undefined ? String(value) : json;
+  } catch {
+    return String(value);
+  }
+}
+
+/** One sample-case row: the client-side sample joined with its run result. */
+export interface SampleResultRow {
+  readonly name: string;
+  readonly input: string;
+  readonly expected: string;
+  readonly actual: string;
+  readonly passed: boolean;
+  readonly error?: string;
+}
+
+function toSampleRow(input: string, expected: string, result: SerializedTestResult): SampleResultRow {
+  return {
+    name: result.name,
+    input,
+    expected,
+    actual: formatCaseValue(result.actual),
+    passed: result.passed,
+    ...(result.error === undefined || result.error === "" ? {} : { error: result.error }),
+  };
+}
+
+/** Pair a run's results with the sample that produced them: match by case
+ *  name, falling back to the single result (Test always sends `[sample]`).
+ *  Results with no matching sample keep the run data with unknown
+ *  input/expected so the tab never renders a bare `0/0`. */
+export function sampleResultRows(sample: TestCaseInput | null, run: SerializedRun): SampleResultRow[] {
+  const input = sample === null ? "—" : formatCaseValue(sample.args);
+  const expected = sample === null ? "—" : formatCaseValue(sample.expected);
+  const match =
+    sample === null
+      ? undefined
+      : (run.results.find((result) => result.name === sample.name) ??
+        (run.results.length === 1 ? run.results[0] : undefined));
+  if (match !== undefined) return [toSampleRow(input, expected, match)];
+  return run.results.map((result) => toSampleRow(input, expected, result));
 }
 
 /** Verbatim starter for the active language, or null when the problem is a
@@ -226,6 +275,12 @@ export function CodeWorkspace({
   }, [language]);
 
   const sample = sampleCaseFor(problem);
+  const sampleHint =
+    sample === null
+      ? "No sample case is available for this problem, so there is nothing to run."
+      : "Runs your code against the sample test case in the isolated sandbox.";
+  const reviewHint =
+    "Asks the AI judge for a correctness and optimality verdict and saves your code as a submission.";
 
   async function testCode() {
     if (sample === null) return;
@@ -300,24 +355,83 @@ export function CodeWorkspace({
       </div>
       <div className="actions test-row" ref={actionsRef}>
         <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
-          {busy ? "Testing…" : "Test sample cases"}
+          {busy ? "Testing…" : "Test"}
+          <span className="info-icon" data-tip={sampleHint} aria-label={sampleHint}>
+            i
+          </span>
         </PrimaryButton>
         <PrimaryButton onClick={() => void submitForVerdict()} disabled={busy || code.trim() === ""}>
-          {busy ? "Submitting…" : "Submit for AI verdict"}
+          {busy ? "Submitting…" : "Submit for Review"}
+          <span className="info-icon" data-tip={reviewHint} aria-label={reviewHint}>
+            i
+          </span>
         </PrimaryButton>
-        <span className="hint test-hint">
-          {sample === null ? "No sample test case available for this problem." : "Runs your code against the sample test case."}
-        </span>
       </div>
       {error !== null && <p className="error">{error}</p>}
-      {verdict !== null && (
-        <div className="verdict" aria-label="Submit verdict">
+      <div className="verdict">
+        <h4 className="result-heading">Sample tests</h4>
+          {run === null ? (
+            <p className="note">Run the sample cases to see per-case input, expected, actual, and pass/fail here.</p>
+          ) : (
+            <>
+              <strong className={run.status === "passed" ? "accent-good" : "accent-warn"}>
+                {run.totalCount === 0
+                  ? `${run.status} — no cases executed`
+                  : run.passedCount === run.totalCount
+                    ? `${run.passedCount} passed of ${run.totalCount}`
+                    : `${run.passedCount} passed · ${run.totalCount - run.passedCount} failed of ${run.totalCount}`}
+              </strong>
+              <span className="hint"> in {run.durationMs}ms</span>
+              {run.results.length === 0 ? (
+                <p className="note">The run could not execute — no case results were returned. See the error above.</p>
+              ) : (
+                <table className="case-table" aria-label="Sample case results">
+                  <thead>
+                    <tr>
+                      <th scope="col">Case</th>
+                      <th scope="col">Input</th>
+                      <th scope="col">Expected</th>
+                      <th scope="col">Actual</th>
+                      <th scope="col">Result</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sampleResultRows(sample, run).map((row) => (
+                      <tr key={row.name}>
+                        <td>{row.name}</td>
+                        <td className="mono">{row.input}</td>
+                        <td className="mono">{row.expected}</td>
+                        <td className="mono">{row.actual}</td>
+                        <td>
+                          <span className={row.passed ? "accent-good" : "accent-warn"}>
+                            {row.passed ? "pass" : "fail"}
+                          </span>
+                          {row.error !== undefined && <span className="note"> — {row.error}</span>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </>
+          )}
+        </div>
+      <div className="verdict">
+        <h4 className="result-heading">AI review</h4>
+      {verdict === null ? (
+        <p className="note">Submit your code for review to see the AI judge&apos;s correctness and optimality verdict here.</p>
+      ) : (
+        <div aria-label="Review">
           <strong className={verdict.correctness === "correct" ? "accent-good" : "accent-warn"}>
             {verdict.correctness}
           </strong>
           <span className="hint"> · {verdict.optimality} optimality</span>
-          {verdict.correctnessNotes !== "" && <p className="note">{verdict.correctnessNotes}</p>}
-          {verdict.optimalityNotes !== "" && <p className="note">{verdict.optimalityNotes}</p>}
+          {verdict.correctnessNotes !== "" && (
+            <p className="note"><strong>Correctness</strong> — {verdict.correctnessNotes}</p>
+          )}
+          {verdict.optimalityNotes !== "" && (
+            <p className="note"><strong>Optimality</strong> — {verdict.optimalityNotes}</p>
+          )}
           {verdict.breakPoints.length > 0 && (
             <>
               <strong>Break-points</strong>
@@ -338,26 +452,12 @@ export function CodeWorkspace({
               </ul>
             </>
           )}
-          {verdict.summary !== "" && <p className="note">{verdict.summary}</p>}
+          {verdict.summary !== "" && (
+            <p className="note"><strong>Summary</strong> — {verdict.summary}</p>
+          )}
         </div>
       )}
-      {run !== null && (
-        <div className="verdict" aria-label="Sample verdict">
-          <strong className={run.status === "passed" ? "accent-good" : "accent-warn"}>
-            {run.status} {run.passedCount}/{run.totalCount}
-          </strong>
-          <span className="hint"> in {run.durationMs}ms</span>
-          <ul className="event-log">
-            {run.results.map((result) => (
-              <li key={result.name}>
-                <span className="event-kind">{result.passed ? "pass" : "fail"}</span> {result.name}
-                {result.error !== undefined && result.error !== "" && ` — ${result.error}`}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-      <p className="note test-note">Submit asks the AI judge for a correctness and optimality verdict and persists nothing. Runs execute in the isolated sandbox.</p>
+      </div>
     </section>
   );
 }

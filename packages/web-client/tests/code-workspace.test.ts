@@ -5,12 +5,14 @@ import { describe, expect, it } from "vitest";
 import {
   EDITOR_MIN_HEIGHT,
   clampEditorHeight,
+  formatCaseValue,
   sampleCaseFor,
+  sampleResultRows,
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
 import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
 import { AUTO_FINISH_DELAY_MS, shouldAutoFinish, shouldRefreshOnClose } from "../src/state/use-interview.js";
-import type { Problem, ProblemStarterSet } from "../src/api/types.js";
+import type { Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../src/api/types.js";
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
 
@@ -178,5 +180,48 @@ describe("shouldNotifyFinished", () => {
   it("stays quiet while the interview is still live", () => {
     expect(shouldNotifyFinished(false, false)).toBe(false);
     expect(shouldNotifyFinished(false, true)).toBe(false);
+  });
+});
+
+describe("formatCaseValue", () => {
+  it("renders missing values as an em dash and strings verbatim", () => {
+    expect(formatCaseValue(undefined)).toBe("—");
+    expect(formatCaseValue("3")).toBe("3");
+  });
+
+  it("renders values as compact JSON", () => {
+    expect(formatCaseValue([3, 2, 3])).toBe("[3,2,3]");
+    expect(formatCaseValue(null)).toBe("null");
+  });
+});
+
+describe("sampleResultRows", () => {
+  const sample: TestCaseInput = { name: "sample", args: [[3, 2, 3]], expected: 3 };
+  const runFor = (results: SerializedRun["results"]): SerializedRun => ({
+    id: "run_1",
+    submissionId: "sub_1",
+    interviewId: "iv_1",
+    createdAt: "2026-09-29T00:00:00.000Z",
+    status: "passed",
+    passedCount: 1,
+    totalCount: 1,
+    durationMs: 709,
+    results,
+  });
+
+  it("pairs the sample with its matching result", () => {
+    const rows = sampleResultRows(sample, runFor([{ name: "sample", passed: true, hidden: false, actual: 3 }]));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name: "sample", input: "[[3,2,3]]", expected: "3", actual: "3", passed: true });
+  });
+
+  it("falls back to the single result when names differ", () => {
+    const rows = sampleResultRows(sample, runFor([{ name: "case-0", passed: false, hidden: false, actual: 2, error: "boom" }]));
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ name: "case-0", expected: "3", passed: false, error: "boom" });
+  });
+
+  it("renders zero-result error runs as an empty table, never a bare count", () => {
+    expect(sampleResultRows(sample, { ...runFor([]), status: "error", passedCount: 0, totalCount: 0 })).toEqual([]);
   });
 });
