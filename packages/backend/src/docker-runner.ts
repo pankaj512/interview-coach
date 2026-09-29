@@ -14,6 +14,7 @@
 // pre-pulled or pullable (lazy ensure-once per runner instance).
 
 import { execFile } from "node:child_process";
+import { readFileSync } from "node:fs";
 import { chmod, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -22,6 +23,7 @@ import type {
   CodeSubmission,
   ExecutorOutcome,
   RunLimits,
+  RunProblemContext,
   RunTestCase,
 } from "@interview-coach/domain";
 import {
@@ -29,6 +31,19 @@ import {
   CPP_MAIN_FILE,
   CPP_SUBMISSION_FILE,
 } from "./cpp-harness.js";
+import {
+  assembleCppRun,
+  type CppSample,
+  type CppShapeMeta,
+} from "./shape-runners/cpp/assemble.js";
+import {
+  assembleJSRun,
+  type JSLink,
+} from "./shape-runners/javascript/assemble.js";
+import {
+  assemblePythonRun,
+  type PythonLink,
+} from "./shape-runners/python/assemble.js";
 
 export interface DockerRunnerImages {
   readonly javascript: string;
@@ -299,6 +314,7 @@ export class DockerCodeRunner implements CodeExecutor {
     submission: CodeSubmission,
     testCases: readonly RunTestCase[],
     limits: RunLimits,
+    context?: RunProblemContext,
   ): Promise<ExecutorOutcome> {
     const startedAt = Date.now();
     const language = submission.language;
@@ -316,7 +332,7 @@ export class DockerCodeRunner implements CodeExecutor {
     // the read-only mount is traversable (files are written 0644).
     await chmod(dir, 0o755).catch(() => undefined);
     try {
-      const command = await this.writeFiles(language, dir, submission, testCases);
+      const command = await this.writeFiles(language, dir, submission, testCases, context);
       return await this.runContainer(image, dir, command, limits, startedAt, testCases);
     } catch (error) {
       return this.fail(startedAt, error instanceof Error ? error.message : String(error));
@@ -362,6 +378,7 @@ export class DockerCodeRunner implements CodeExecutor {
     dir: string,
     submission: CodeSubmission,
     testCases: readonly RunTestCase[],
+    context?: RunProblemContext,
   ): Promise<readonly string[]> {
     const payload = testCases.map((t) => ({
       name: t.name,
@@ -369,16 +386,25 @@ export class DockerCodeRunner implements CodeExecutor {
       expected: t.expected,
     }));
     if (language === "javascript") {
+      if (context?.link !== undefined) {
+        return this.writeAssembledJs(dir, submission, testCases, context.link, context);
+      }
       await writeFile(join(dir, "submission.js"), submission.code + JS_EXPORT_SHIM, "utf8");
       await writeFile(join(dir, "harness.js"), JS_HARNESS, "utf8");
       await writeFile(join(dir, "cases.json"), JSON.stringify(payload), "utf8");
       return ["node", join("/work", "harness.js"), join("/work", "cases.json")];
     }
     if (language === "python") {
+      if (context?.link !== undefined) {
+        return this.writeAssembledPython(dir, submission, testCases, context.link, context);
+      }
       await writeFile(join(dir, "submission.py"), submission.code, "utf8");
       await writeFile(join(dir, "harness.py"), PY_HARNESS, "utf8");
       await writeFile(join(dir, "cases.json"), JSON.stringify(payload), "utf8");
       return ["python3", join("/work", "harness.py"), join("/work", "cases.json")];
+    }
+    if (context?.link !== undefined) {
+      return this.writeAssembledCpp(dir, submission, testCases, context.link, context);
     }
     await writeFile(join(dir, CPP_SUBMISSION_FILE), submission.code, "utf8");
     await writeFile(
@@ -387,6 +413,184 @@ export class DockerCodeRunner implements CodeExecutor {
       "utf8",
     );
     return ["sh", "-c", CPP_SH];
+  }
+
+  /**
+   * Shape-runner C++ assembly for linked problems: bakes the candidate code
+   * against the problem's runner link (class entry, not the legacy free
+   * `solve`), so verbatim LeetCode-style starters compile. Sources load from
+   * the sibling `shape-runners/cpp/` tree (import.meta-relative, prod-safe
+   * under tsx). Throws a descriptive error — surfaced as an `error` outcome
+   * by execute() — when samples, shape meta, or the dispatch fragment cannot
+   * be resolved.
+   */
+  private async writeAssembledCpp(
+    dir: string,
+    submission: CodeSubmission,
+    testCases: readonly RunTestCase[],
+    link: NonNullable<RunProblemContext["link"]>,
+    context: RunProblemContext,
+  ): Promise<readonly string[]> {
+    const cppDir = new URL("./shape-runners/cpp/", import.meta.url);
+    const source = (name: string): string =>
+      readFileSync(new URL(name, cppDir), "utf8");
+    const isMethodSequence = link.actualRule === "method-sequence";
+    const examples = context.examples ?? [];
+    const samples: CppSample[] = testCases.map((t, i) => {
+      const input = examples[i]?.input;
+      if (input === undefined) {
+        throw new Error(`missing sample input for case ${t.name}`);
+      }
+      return { name: t.name, input };
+    });
+    let shapeMeta: CppShapeMeta | undefined;
+    let dispatchFragment: string | undefined;
+    let repairEntries: { readonly name: string; readonly returnsVoid: boolean }[] | undefined;
+    if (isMethodSequence) {
+      const dispatch = JSON.parse(source("method_dispatch.json")) as Record<
+        string,
+        { fragment: string; methods: Record<string, { ret: string }> }
+      >;
+      const problemId = context.problemId;
+      const entry = problemId === undefined ? undefined : dispatch[problemId];
+      if (entry === undefined) {
+        throw new Error(
+          `missing dispatch fragment for ${problemId ?? "unknown problem"}`,
+        );
+      }
+      dispatchFragment = entry.fragment;
+      repairEntries = Object.entries(entry.methods).map(([name, m]) => ({
+        name,
+        returnsVoid: m.ret === "void",
+      }));
+    } else {
+      const allMeta = JSON.parse(source("shape_meta.json")) as Record<string, CppShapeMeta>;
+      const meta = allMeta[link.runnerId];
+      if (meta === undefined) {
+        throw new Error(`missing shape meta for ${link.runnerId}`);
+      }
+      shapeMeta = meta;
+      repairEntries =
+        link.entry === "" ? [] : [{ name: link.entry, returnsVoid: meta.ret === "void" }];
+    }
+    const assembled = assembleCppRun({
+      starterCpp: submission.code,
+      link: {
+        runnerId: link.runnerId,
+        entry: link.entry,
+        className: link.className,
+        actualRule: link.actualRule,
+      },
+      runnerSource: source(isMethodSequence ? "method_sequence.cpp" : "main.cpp"),
+      nodesSource: source("nodes.h"),
+      samples,
+      ...(shapeMeta === undefined ? {} : { shapeMeta }),
+      ...(dispatchFragment === undefined ? {} : { dispatchFragment }),
+      ...(repairEntries === undefined ? {} : { repairEntries }),
+    });
+    for (const [name, fileSource] of Object.entries(assembled.files)) {
+      await writeFile(join(dir, name), fileSource, "utf8");
+    }
+    return ["sh", "-c", CPP_SH];
+  }
+
+  /**
+   * Shape-runner JS assembly for linked problems: exposes the candidate's
+   * class entry (not the legacy free `solve`) to the problem's runner.
+   * Sources load from the sibling `shape-runners/javascript/` tree
+   * (import.meta-relative, prod-safe under tsx). Throws a descriptive error
+   * — surfaced as an `error` outcome by execute() — when sample inputs
+   * cannot be resolved.
+   */
+  private async writeAssembledJs(
+    dir: string,
+    submission: CodeSubmission,
+    testCases: readonly RunTestCase[],
+    link: NonNullable<RunProblemContext["link"]>,
+    context: RunProblemContext,
+  ): Promise<readonly string[]> {
+    const jsDir = new URL("./shape-runners/javascript/", import.meta.url);
+    const runnerFile =
+      link.actualRule === "method-sequence" ? "method_sequence.js" : `runners/${link.runnerId}.js`;
+    const runnerSource = readFileSync(new URL(runnerFile, jsDir), "utf8");
+    const jsLink: JSLink = {
+      runnerId: link.runnerId,
+      entry: link.entry,
+      className: link.className,
+      actualRule: link.actualRule,
+    };
+    const assembled = assembleJSRun({
+      starterJs: submission.code,
+      link: jsLink,
+      runnerSource,
+    });
+    await writeFile(
+      join(dir, "cases.json"),
+      JSON.stringify(this.rawCases(testCases, context)),
+      "utf8",
+    );
+    for (const [name, fileSource] of Object.entries(assembled.files)) {
+      await writeFile(join(dir, name), fileSource, "utf8");
+    }
+    return ["node", join("/work", "runner.js")];
+  }
+
+  /**
+   * Shape-runner Python assembly for linked problems: same contract as the
+   * JS branch — the candidate's class entry drives the problem's runner.
+   * Throws a descriptive error (surfaced as an `error` outcome) when sample
+   * inputs cannot be resolved.
+   */
+  private async writeAssembledPython(
+    dir: string,
+    submission: CodeSubmission,
+    testCases: readonly RunTestCase[],
+    link: NonNullable<RunProblemContext["link"]>,
+    context: RunProblemContext,
+  ): Promise<readonly string[]> {
+    const pythonDir = new URL("./shape-runners/python/", import.meta.url);
+    const runnerFile =
+      link.actualRule === "method-sequence" ? "method_sequence.py" : `runners/${link.runnerId}.py`;
+    const runnerSource = readFileSync(new URL(runnerFile, pythonDir), "utf8");
+    const pythonLink: PythonLink = {
+      runnerId: link.runnerId,
+      entry: link.entry,
+      className: link.className,
+      actualRule: link.actualRule,
+    };
+    const assembled = assemblePythonRun({
+      starterPython: submission.code,
+      link: pythonLink,
+      runnerSource,
+    });
+    await writeFile(
+      join(dir, "cases.json"),
+      JSON.stringify(this.rawCases(testCases, context)),
+      "utf8",
+    );
+    for (const [name, fileSource] of Object.entries(assembled.files)) {
+      await writeFile(join(dir, name), fileSource, "utf8");
+    }
+    return ["python3", join("/work", "runner.py")];
+  }
+
+  /**
+   * Raw `{name, input}` cases for the assembled JS/Python runners, pairing
+   * each run case with its problem example by index. Throws when an example
+   * is missing so the run fails loudly instead of executing the wrong input.
+   */
+  private rawCases(
+    testCases: readonly RunTestCase[],
+    context: RunProblemContext,
+  ): readonly { name: string; input: string }[] {
+    const examples = context.examples ?? [];
+    return testCases.map((t, i) => {
+      const input = examples[i]?.input;
+      if (input === undefined) {
+        throw new Error(`missing sample input for case ${t.name}`);
+      }
+      return { name: t.name, input };
+    });
   }
 
   private async runContainer(

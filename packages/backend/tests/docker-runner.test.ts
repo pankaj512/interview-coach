@@ -130,6 +130,105 @@ describe("DockerCodeRunner with stubbed spawn", () => {
     expect(failed.error).toContain("expected initializer");
   });
 
+  it("assembles linked C++ problems through the shape runner", async () => {
+    const cppSubmission: CodeSubmission = {
+      ...SUBMISSION,
+      language: "cpp",
+      code: "class Solution {\npublic:\n    int majorityElement(vector<int>& nums) {\n        return nums[0];\n    }\n};",
+    };
+    const sampleCases = [
+      { name: "sample", args: [[[3, 2, 3]]], expected: 3, hidden: false },
+    ] as const;
+    const runner = new DockerCodeRunner({
+      spawn: stub(okSequence('{"name":"sample","actual":3}')),
+    });
+    const outcome = await runner.execute({ ...cppSubmission }, [...sampleCases], { timeoutMs: 5000 }, {
+      link: {
+        runnerId: "shape-065",
+        entry: "majorityElement",
+        className: "Solution",
+        actualRule: "pure",
+      },
+      examples: [{ input: "nums = [3,2,3]", output: "3" }],
+    });
+    expect(outcome.status).toBe("completed");
+    expect(outcome.results).toEqual([{ name: "sample", passed: true, actual: 3 }]);
+  });
+
+  it("fails linked C++ runs with missing sample inputs", async () => {
+    const cppSubmission: CodeSubmission = {
+      ...SUBMISSION,
+      language: "cpp",
+      code: "class Solution {};",
+    };
+    const runner = new DockerCodeRunner({ spawn: stub(okSequence()) });
+    const outcome = await runner.execute(
+      { ...cppSubmission },
+      [...CASES],
+      { timeoutMs: 5000 },
+      {
+        link: {
+          runnerId: "shape-065",
+          entry: "majorityElement",
+          className: "Solution",
+          actualRule: "pure",
+        },
+      },
+    );
+    expect(outcome).toMatchObject({ status: "error", results: [] });
+    expect(outcome.error).toContain("missing sample input");
+  });
+
+  it("assembles linked JavaScript problems through the shape runner", async () => {
+    const jsSubmission: CodeSubmission = {
+      ...SUBMISSION,
+      language: "javascript",
+      code: "function majorityElement(nums) {\n    return nums[0];\n}",
+    };
+    const sampleCases = [
+      { name: "sample", args: [[[3, 2, 3]]], expected: 3, hidden: false },
+    ] as const;
+    const runner = new DockerCodeRunner({
+      spawn: stub(okSequence('{"name":"sample","actual":3}')),
+    });
+    const outcome = await runner.execute({ ...jsSubmission }, [...sampleCases], { timeoutMs: 5000 }, {
+      link: {
+        runnerId: "shape-001",
+        entry: "majorityElement",
+        className: "Solution",
+        actualRule: "pure",
+      },
+      examples: [{ input: "nums = [3,2,3]", output: "3" }],
+    });
+    expect(outcome.status).toBe("completed");
+    expect(outcome.results).toEqual([{ name: "sample", passed: true, actual: 3 }]);
+  });
+
+  it("assembles linked Python problems through the shape runner", async () => {
+    const pySubmission: CodeSubmission = {
+      ...SUBMISSION,
+      language: "python",
+      code: "def majorityElement(nums):\n    return nums[0]\n",
+    };
+    const sampleCases = [
+      { name: "sample", args: [[[3, 2, 3]]], expected: 3, hidden: false },
+    ] as const;
+    const runner = new DockerCodeRunner({
+      spawn: stub(okSequence('{"name":"sample","actual":3}')),
+    });
+    const outcome = await runner.execute({ ...pySubmission }, [...sampleCases], { timeoutMs: 5000 }, {
+      link: {
+        runnerId: "shape-001",
+        entry: "majorityElement",
+        className: "Solution",
+        actualRule: "pure",
+      },
+      examples: [{ input: "nums = [3,2,3]", output: "3" }],
+    });
+    expect(outcome.status).toBe("completed");
+    expect(outcome.results).toEqual([{ name: "sample", passed: true, actual: 3 }]);
+  });
+
   it("kills and removes the container on timeout", async () => {
     const seen: { bin: string; args: readonly string[] }[] = [];
     const runner = new DockerCodeRunner({

@@ -6,6 +6,7 @@ import type {
   CodeSubmission,
   ExecutionSummary,
   RunLimits,
+  RunProblemContext,
   RunTestCase,
 } from "./submission.js";
 import {
@@ -164,6 +165,7 @@ export class SubmissionService {
     submissionId: SubmissionId,
     testCasesRaw: unknown,
     timeoutMsRaw?: unknown,
+    context?: RunProblemContext,
   ): Promise<Result<CodeRun>> {
     const submission = await this.submissions.findById(submissionId);
     if (submission === null) {
@@ -211,6 +213,7 @@ export class SubmissionService {
         submission,
         cases.value,
         limits.value,
+        ...(context === undefined ? [] : [context]),
       );
       run = assembleRun(submission, cases.value, outcome, this.clock.now());
     } catch (error) {

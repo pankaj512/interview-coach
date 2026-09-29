@@ -80,6 +80,7 @@ import {
   type RecommendationId,
   type RecommendationModel,
   type RepositorySet,
+  type RunProblemContext,
   type SubmitVerdict,
   type SubmitVerdictModel,
   type SubmitVerdictProblem,
@@ -1510,7 +1511,21 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
         );
       }
       // F6-3: concurrency is enforced in SubmissionService (shared with the
-      // model tool path).
+      // model tool path). Resolve the shape-runner link for the submission
+      // language when the submission names a known problem; absent problem or
+      // link keeps the legacy harnesses.
+      let runContext: RunProblemContext | undefined;
+      if (submission.problemId !== undefined) {
+        const problem = await deps.repos.problems.findById(submission.problemId);
+        if (problem !== null) {
+          const link = problem.runnerLinks?.[submission.language];
+          runContext = {
+            problemId: problem.id,
+            ...(link === undefined ? {} : { link }),
+            ...(problem.examples === undefined ? {} : { examples: problem.examples }),
+          };
+        }
+      }
       const run = await submissions.runTests(
         submissionId,
         parsed.data.testCases.map((t) => ({
@@ -1520,6 +1535,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
           ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
         })),
         parsed.data.timeoutMs,
+        runContext,
       );
       if (!run.ok) return sendDomainError(reply, run.error);
       request.log.info(

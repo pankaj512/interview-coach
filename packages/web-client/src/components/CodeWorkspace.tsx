@@ -49,16 +49,18 @@ export function fitEditorHeight(container: HTMLDivElement, contentHeight: number
   container.style.height = `${clampEditorHeight(contentHeight, max)}px`;
 }
 
-/** First problem example as a runner case, or null when none exists. */
-export function sampleCaseFor(problem: Problem | null): TestCaseInput | null {
-  const example = problem?.examples?.[0];
-  if (example === undefined) return null;
-  const args = tryJson(example.input);
-  return {
-    name: "sample",
-    args: Array.isArray(args) ? args : [args],
-    expected: tryJson(example.output),
-  };
+/** Every problem example as a runner case (named `sample 1`, `sample 2`, …
+ *  to match the problem pane), or [] when none exists. */
+export function sampleCasesFor(problem: Problem | null): TestCaseInput[] {
+  const examples = problem?.examples ?? [];
+  return examples.map((example, i) => {
+    const args = tryJson(example.input);
+    return {
+      name: `sample ${i + 1}`,
+      args: Array.isArray(args) ? args : [args],
+      expected: tryJson(example.output),
+    };
+  });
 }
 
 /** Render a case value (input/expected/actual) as compact text. */
@@ -71,6 +73,13 @@ export function formatCaseValue(value: unknown): string {
   } catch {
     return String(value);
   }
+}
+
+/** Render a case's args: a lone string arg (LeetCode-style raw input like
+ *  `nums = [3,2,3]`) shows as itself instead of a one-element JSON array. */
+export function formatCaseInput(args: readonly unknown[]): string {
+  if (args.length === 1 && typeof args[0] === "string") return args[0];
+  return formatCaseValue(args);
 }
 
 /** One sample-case row: the client-side sample joined with its run result. */
@@ -94,20 +103,32 @@ function toSampleRow(input: string, expected: string, result: SerializedTestResu
   };
 }
 
-/** Pair a run's results with the sample that produced them: match by case
- *  name, falling back to the single result (Test always sends `[sample]`).
- *  Results with no matching sample keep the run data with unknown
- *  input/expected so the tab never renders a bare `0/0`. */
-export function sampleResultRows(sample: TestCaseInput | null, run: SerializedRun): SampleResultRow[] {
-  const input = sample === null ? "—" : formatCaseValue(sample.args);
-  const expected = sample === null ? "—" : formatCaseValue(sample.expected);
-  const match =
-    sample === null
-      ? undefined
-      : (run.results.find((result) => result.name === sample.name) ??
-        (run.results.length === 1 ? run.results[0] : undefined));
-  if (match !== undefined) return [toSampleRow(input, expected, match)];
-  return run.results.map((result) => toSampleRow(input, expected, result));
+/** Pair a run's results with the samples that produced them: match by case
+ *  name (Test sends one case per example, `sample 1`, `sample 2`, …). A lone
+ *  sample still pairs with a lone result when names differ; results with no
+ *  matching sample keep the run data with unknown input/expected, and samples
+ *  with no result render with unknown actual, so the table never goes bare. */
+export function sampleResultRows(samples: readonly TestCaseInput[], run: SerializedRun): SampleResultRow[] {
+  if (run.results.length === 0) return [];
+  const loneFallback = samples.length === 1 && run.results.length === 1;
+  const sampleByName = new Map(samples.map((sample) => [sample.name, sample]));
+  const rows = samples.map((sample) => {
+    const input = formatCaseInput(sample.args);
+    const expected = formatCaseValue(sample.expected);
+    const match =
+      run.results.find((result) => result.name === sample.name) ??
+      (loneFallback ? run.results[0] : undefined);
+    if (match === undefined) {
+      return { name: sample.name, input, expected, actual: "—", passed: false };
+    }
+    return toSampleRow(input, expected, match);
+  });
+  if (!loneFallback) {
+    for (const result of run.results) {
+      if (!sampleByName.has(result.name)) rows.push(toSampleRow("—", "—", result));
+    }
+  }
+  return rows;
 }
 
 /** Verbatim starter for the active language, or null when the problem is a
@@ -274,16 +295,16 @@ export function CodeWorkspace({
     if (model !== null) monacoNs.editor.setModelLanguage(model, language);
   }, [language]);
 
-  const sample = sampleCaseFor(problem);
+  const samples = sampleCasesFor(problem);
   const sampleHint =
-    sample === null
-      ? "No sample case is available for this problem, so there is nothing to run."
-      : "Runs your code against the sample test case in the isolated sandbox.";
+    samples.length === 0
+      ? "No sample cases are available for this problem, so there is nothing to run."
+      : "Runs your code against the sample test cases in the isolated sandbox.";
   const reviewHint =
     "Asks the AI judge for a correctness and optimality verdict and saves your code as a submission.";
 
   async function testCode() {
-    if (sample === null) return;
+    if (samples.length === 0) return;
     if (code.trim() === "") {
       setError("Write code before testing.");
       return;
@@ -297,7 +318,7 @@ export function CodeWorkspace({
         ...(problem === null ? {} : { problemId: problem.id }),
       });
       const executed = await backend.runSubmission(interviewId, submission.id, {
-        testCases: [sample],
+        testCases: samples,
       });
       setRun(executed);
       onActivity(`sample test ${executed.status} (${executed.passedCount}/${executed.totalCount})`);
@@ -354,7 +375,7 @@ export function CodeWorkspace({
         {!editorReady && <div className="note">Loading editor…</div>}
       </div>
       <div className="actions test-row" ref={actionsRef}>
-        <PrimaryButton onClick={() => void testCode()} disabled={busy || sample === null}>
+        <PrimaryButton onClick={() => void testCode()} disabled={busy || samples.length === 0}>
           {busy ? "Testing…" : "Test"}
           <span className="info-icon" data-tip={sampleHint} aria-label={sampleHint}>
             i
@@ -396,7 +417,7 @@ export function CodeWorkspace({
                     </tr>
                   </thead>
                   <tbody>
-                    {sampleResultRows(sample, run).map((row) => (
+                    {sampleResultRows(samples, run).map((row) => (
                       <tr key={row.name}>
                         <td>{row.name}</td>
                         <td className="mono">{row.input}</td>

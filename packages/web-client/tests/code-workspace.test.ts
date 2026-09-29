@@ -5,8 +5,9 @@ import { describe, expect, it } from "vitest";
 import {
   EDITOR_MIN_HEIGHT,
   clampEditorHeight,
+  formatCaseInput,
   formatCaseValue,
-  sampleCaseFor,
+  sampleCasesFor,
   sampleResultRows,
   starterForLanguage,
 } from "../src/components/CodeWorkspace.js";
@@ -16,10 +17,10 @@ import type { Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from ".
 
 const base: Problem = { id: "p1", title: "Example", difficulty: "Easy" };
 
-describe("sampleCaseFor", () => {
-  it("returns null when the problem has no examples", () => {
-    expect(sampleCaseFor(null)).toBeNull();
-    expect(sampleCaseFor(base)).toBeNull();
+describe("sampleCasesFor", () => {
+  it("returns [] when the problem has no examples", () => {
+    expect(sampleCasesFor(null)).toEqual([]);
+    expect(sampleCasesFor(base)).toEqual([]);
   });
 
   it("parses JSON args and expected", () => {
@@ -27,7 +28,7 @@ describe("sampleCaseFor", () => {
       ...base,
       examples: [{ input: "[2,7,11,15]", output: "[0,1]" }],
     };
-    expect(sampleCaseFor(problem)).toEqual({ name: "sample", args: [2, 7, 11, 15], expected: [0, 1] });
+    expect(sampleCasesFor(problem)).toEqual([{ name: "sample 1", args: [2, 7, 11, 15], expected: [0, 1] }]);
   });
 
   it("wraps non-JSON input as a single string arg", () => {
@@ -36,7 +37,20 @@ describe("sampleCaseFor", () => {
       examples: [{ input: "mat = [[0]]", output: "[[0]]" }],
     };
     // input is not JSON (has a prefix) so it stays a string arg; output parses.
-    expect(sampleCaseFor(problem)).toEqual({ name: "sample", args: ["mat = [[0]]"], expected: [[0]] });
+    expect(sampleCasesFor(problem)).toEqual([{ name: "sample 1", args: ["mat = [[0]]"], expected: [[0]] }]);
+  });
+
+  it("returns one case per example named to match the problem pane", () => {
+    const problem: Problem = {
+      ...base,
+      examples: [
+        { input: "nums = [3,2,3]", output: "3" },
+        { input: "nums = [2,2,1,1,1,2,2]", output: "2" },
+      ],
+    };
+    const cases = sampleCasesFor(problem);
+    expect(cases.map((c) => c.name)).toEqual(["sample 1", "sample 2"]);
+    expect(cases).toHaveLength(2);
   });
 });
 
@@ -195,8 +209,19 @@ describe("formatCaseValue", () => {
   });
 });
 
+describe("formatCaseInput", () => {
+  it("renders a lone string arg unwrapped", () => {
+    expect(formatCaseInput(["nums = [3,2,3]"])).toBe("nums = [3,2,3]");
+  });
+
+  it("renders multi-arg cases as compact JSON", () => {
+    expect(formatCaseInput([3, 2, 3])).toBe("[3,2,3]");
+    expect(formatCaseInput([])).toBe("[]");
+  });
+});
+
 describe("sampleResultRows", () => {
-  const sample: TestCaseInput = { name: "sample", args: [[3, 2, 3]], expected: 3 };
+  const sample: TestCaseInput = { name: "sample 1", args: ["nums = [3,2,3]"], expected: 3 };
   const runFor = (results: SerializedRun["results"]): SerializedRun => ({
     id: "run_1",
     submissionId: "sub_1",
@@ -210,18 +235,32 @@ describe("sampleResultRows", () => {
   });
 
   it("pairs the sample with its matching result", () => {
-    const rows = sampleResultRows(sample, runFor([{ name: "sample", passed: true, hidden: false, actual: 3 }]));
+    const rows = sampleResultRows([sample], runFor([{ name: "sample 1", passed: true, hidden: false, actual: 3 }]));
     expect(rows).toHaveLength(1);
-    expect(rows[0]).toMatchObject({ name: "sample", input: "[[3,2,3]]", expected: "3", actual: "3", passed: true });
+    expect(rows[0]).toMatchObject({ name: "sample 1", input: "nums = [3,2,3]", expected: "3", actual: "3", passed: true });
+  });
+
+  it("pairs every sample of a multi-sample run", () => {
+    const second: TestCaseInput = { name: "sample 2", args: ["nums = [2,2,1,1,1,2,2]"], expected: 2 };
+    const rows = sampleResultRows(
+      [sample, second],
+      runFor([
+        { name: "sample 1", passed: true, hidden: false, actual: 3 },
+        { name: "sample 2", passed: true, hidden: false, actual: 2 },
+      ]),
+    );
+    expect(rows).toHaveLength(2);
+    expect(rows[0]).toMatchObject({ name: "sample 1", input: "nums = [3,2,3]", actual: "3", passed: true });
+    expect(rows[1]).toMatchObject({ name: "sample 2", input: "nums = [2,2,1,1,1,2,2]", actual: "2", passed: true });
   });
 
   it("falls back to the single result when names differ", () => {
-    const rows = sampleResultRows(sample, runFor([{ name: "case-0", passed: false, hidden: false, actual: 2, error: "boom" }]));
+    const rows = sampleResultRows([sample], runFor([{ name: "case-0", passed: false, hidden: false, actual: 2, error: "boom" }]));
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ name: "case-0", expected: "3", passed: false, error: "boom" });
   });
 
   it("renders zero-result error runs as an empty table, never a bare count", () => {
-    expect(sampleResultRows(sample, { ...runFor([]), status: "error", passedCount: 0, totalCount: 0 })).toEqual([]);
+    expect(sampleResultRows([sample], { ...runFor([]), status: "error", passedCount: 0, totalCount: 0 })).toEqual([]);
   });
 });

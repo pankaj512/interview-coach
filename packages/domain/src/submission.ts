@@ -5,6 +5,7 @@ import type {
   SubmissionId,
 } from "./ids.js";
 import { newRunId, newSubmissionId } from "./ids.js";
+import type { ProblemActualRule, ProblemExample } from "./problem.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
@@ -245,7 +246,27 @@ export interface CodeExecutor {
     submission: CodeSubmission,
     testCases: readonly RunTestCase[],
     limits: RunLimits,
+    context?: RunProblemContext,
   ): Promise<ExecutorOutcome>;
+}
+
+/**
+ * Optional problem context for shape-runner assembly. Resolved by the caller
+ * (the route owns the problems repo; the service does not). Absent context
+ * means the legacy free-`solve` harnesses, unchanged.
+ */
+export interface RunProblemContext {
+  /** Problem id; method-sequence dispatch is keyed by it. */
+  readonly problemId?: ProblemId;
+  /** Runner link for the submission language, if the problem defines one. */
+  readonly link?: {
+    readonly runnerId: string;
+    readonly entry: string;
+    readonly className: string;
+    readonly actualRule: ProblemActualRule;
+  };
+  /** Raw problem examples; assemblers need the original input strings. */
+  readonly examples?: readonly ProblemExample[];
 }
 
 /**
@@ -272,13 +293,27 @@ export function assembleRun(
       ...(r.error === undefined ? {} : { error: truncate(r.error, 2000) }),
     };
   });
-  const passedCount = results.filter((r) => r.passed).length;
+  // Zero-row error/timeout outcomes (compile failure, harness load failure)
+  // otherwise persist as bare 0/0 with the message lost: map the message onto
+  // per-case rows so the room always shows what failed.
+  const effectiveResults =
+    results.length === 0 &&
+    (outcome.status === "error" || outcome.status === "timeout") &&
+    outcome.error !== undefined
+      ? testCases.map((t) => ({
+          name: t.name,
+          hidden: t.hidden ?? false,
+          passed: false,
+          error: truncate(outcome.error as string, 2000),
+        }))
+      : results;
+  const passedCount = effectiveResults.filter((r) => r.passed).length;
   const status: RunStatus =
     outcome.status === "timeout"
       ? "timeout"
       : outcome.status === "error"
         ? "error"
-        : passedCount === results.length
+        : passedCount === effectiveResults.length
           ? "passed"
           : "failed";
   return {
@@ -286,9 +321,9 @@ export function assembleRun(
     submissionId: submission.id,
     interviewId: submission.interviewId,
     status,
-    results,
+    results: effectiveResults,
     passedCount,
-    totalCount: results.length,
+    totalCount: effectiveResults.length,
     durationMs: Math.max(0, Math.round(outcome.durationMs)),
     createdAt: now ?? new Date(),
   };

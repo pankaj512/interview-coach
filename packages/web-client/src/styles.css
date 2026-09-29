@@ -2339,6 +2339,8 @@ textarea.code {
   border-bottom: 1px solid var(--border-strong);
   vertical-align: top;
   overflow-wrap: anywhere;
+  /* Multi-line sample inputs render line-per-line; long lines still wrap. */
+  white-space: pre-wrap;
 }
 
 .case-table th {

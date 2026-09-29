@@ -161,4 +161,31 @@ describe("assembleRun", () => {
     });
     expect(errored.status).toBe("error");
   });
+
+  it("maps a zero-row error message onto per-case rows", () => {
+    const errored = assembleRun(sub, cases, {
+      status: "error",
+      results: [],
+      durationMs: 3,
+      error: "harness crashed",
+    });
+    expect(errored.status).toBe("error");
+    expect(errored.totalCount).toBe(2);
+    expect(errored.passedCount).toBe(0);
+    expect(errored.results).toMatchObject([
+      { name: "visible", passed: false, error: "harness crashed" },
+      { name: "secret", passed: false, error: "harness crashed" },
+    ]);
+  });
+
+  it("keeps zero-row outcomes without a message as bare zero rows", () => {
+    const timedOut = assembleRun(sub, cases, {
+      status: "timeout",
+      results: [],
+      durationMs: 5000,
+    });
+    expect(timedOut.status).toBe("timeout");
+    expect(timedOut.totalCount).toBe(0);
+    expect(timedOut.results).toEqual([]);
+  });
 });
