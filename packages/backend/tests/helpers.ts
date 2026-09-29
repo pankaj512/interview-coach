@@ -76,7 +76,7 @@ export async function seedCurriculum(repos: RepositorySet): Promise<void> {
     readFileSync(resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"), "utf8"),
   ) as { topics: { topic: string; problems: { title: string; difficulty: string }[] }[] };
   const raw = JSON.parse(
-    readFileSync(resolve(here, "../../../content/dsa/curriculum/dsa-interview-curriculum.json"), "utf8"),
+    readFileSync(resolve(here, "../../../content/dsa/dsa-interview-curriculum.json"), "utf8"),
   ) as CurriculumRaw;
   const { problems } = importCatalogTopics(catalog.topics);
   for (const problem of problems) await repos.problems.save(problem);

@@ -21,7 +21,7 @@ import {
 const execFileAsync = promisify(execFile);
 const here = dirname(fileURLToPath(import.meta.url));
 const datasetPath =
-  process.env.PROBLEM_CONTENT_PATH ?? resolve(here, "../../../problem-content-enrichment.json");
+  process.env.PROBLEM_CONTENT_PATH ?? resolve(here, "../../../content/dsa/problem-content-enrichment.json");
 const cppRoot = resolve(here, "../src/shape-runners/cpp");
 // Single shared main template for every pure/in-place shape; per-shape logic
 // lives in the embedded case bodies built from shape_meta.json.

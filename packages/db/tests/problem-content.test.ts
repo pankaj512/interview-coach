@@ -12,7 +12,7 @@ import { slugifyTitle } from "@interview-coach/domain";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const datasetPath =
-  process.env.PROBLEM_CONTENT_PATH ?? resolve(here, "../../../problem-content-enrichment.json");
+  process.env.PROBLEM_CONTENT_PATH ?? resolve(here, "../../../content/dsa/problem-content-enrichment.json");
 const catalogPath = resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json");
 const runnersDir = resolve(
   here,

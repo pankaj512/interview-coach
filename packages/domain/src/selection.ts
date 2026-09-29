@@ -3,7 +3,7 @@
 // Pure function over backend-owned problems. No I/O, no randomness: the same
 // catalog + configuration always yields the same ordered selection, so
 // auto-select is replay-safe and testable. Curriculum order is an optional
-// pedagogical bias (content/dsa/curriculum/dsa-interview-curriculum.json title order); unknown
+// pedagogical bias (content/dsa/dsa-interview-curriculum.json title order); unknown
 // titles fall back to a stable (difficulty, title) sort.
 
 import type { ProblemId } from "./ids.js";
