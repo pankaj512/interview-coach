@@ -131,6 +131,26 @@ export function sampleResultRows(samples: readonly TestCaseInput[], run: Seriali
   return rows;
 }
 
+/** Saved per-language buffers: the outgoing language keeps the code being
+ *  replaced so switching back restores it. */
+export type SavedCodeByLanguage = Partial<Record<CodeLanguage, string>>;
+
+/** Language switch in one place: stash the outgoing code, resolve the
+ *  incoming code (saved buffer, else starter, else empty). Pure for tests. */
+export function switchLanguageCode(
+  saved: SavedCodeByLanguage,
+  starters: ProblemStarterSet | null | undefined,
+  from: CodeLanguage,
+  to: CodeLanguage,
+  currentCode: string,
+): { saved: SavedCodeByLanguage; code: string } {
+  if (from === to) return { saved, code: currentCode };
+  return {
+    saved: { ...saved, [from]: currentCode },
+    code: saved[to] ?? starters?.[to] ?? "",
+  };
+}
+
 /** Verbatim starter for the active language, or null when the problem is a
  *  title-only gap (or content has not loaded yet). */
 export function starterForLanguage(
@@ -188,6 +208,9 @@ export function CodeWorkspace({
   languageRef.current = language;
   const startersRef = useRef(starters);
   startersRef.current = starters;
+  // One saved buffer per language, seeded from starters; the select swaps
+  // these instead of dropping the outgoing language's code.
+  const savedCodeRef = useRef<SavedCodeByLanguage>({});
 
   function pushValue(editor: monaco.editor.IStandaloneCodeEditor, value: string): void {
     suppressRef.current = true;
@@ -276,6 +299,25 @@ export function CodeWorkspace({
     };
   }, [codeReaderRef]);
 
+  // A new problem starts with fresh buffers so the previous problem's code
+  // can never leak into its language slots.
+  useEffect(() => {
+    savedCodeRef.current = {};
+  }, [problem?.id]);
+
+  // Seed one buffer per language as soon as starters arrive; never overwrite
+  // a buffer the candidate already saved by switching. The visible language
+  // still loads through the prefill effect / changeLanguage below.
+  useEffect(() => {
+    if (starters === null || starters === undefined) return;
+    const saved = savedCodeRef.current;
+    for (const lang of ["python", "javascript", "cpp"] as const) {
+      if (saved[lang] === undefined && starters[lang] !== undefined) {
+        saved[lang] = starters[lang];
+      }
+    }
+  }, [starters]);
+
   // Verbatim-starter prefill while untouched; refill on problem/language
   // change while untouched; never clobber edits.
   useEffect(() => {
@@ -294,6 +336,25 @@ export function CodeWorkspace({
     const model = editor.getModel();
     if (model !== null) monacoNs.editor.setModelLanguage(model, language);
   }, [language]);
+
+  // Explicit language switch: stash the outgoing code, load the incoming
+  // language's buffer (or its starter on first visit). Runs through
+  // pushValue so the swap never marks edits; dirtyRef is left untouched.
+  function changeLanguage(next: CodeLanguage): void {
+    const { saved, code: nextCode } = switchLanguageCode(
+      savedCodeRef.current,
+      startersRef.current,
+      languageRef.current,
+      next,
+      codeRef.current,
+    );
+    savedCodeRef.current = saved;
+    const editor = editorRef.current;
+    if (editor !== null) pushValue(editor, nextCode);
+    else setCode(nextCode);
+    setLanguage(next);
+    saveEditorLanguage(next);
+  }
 
   const samples = sampleCasesFor(problem);
   const sampleHint =
@@ -359,9 +420,7 @@ export function CodeWorkspace({
         <select
           value={language}
           onChange={(e) => {
-            const next = e.target.value as CodeLanguage;
-            setLanguage(next);
-            saveEditorLanguage(next);
+            changeLanguage(e.target.value as CodeLanguage);
           }}
           aria-label="Language"
         >

@@ -10,6 +10,7 @@ import {
   sampleCasesFor,
   sampleResultRows,
   starterForLanguage,
+  switchLanguageCode,
 } from "../src/components/CodeWorkspace.js";
 import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
 import { AUTO_FINISH_DELAY_MS, shouldAutoFinish, shouldRefreshOnClose } from "../src/state/use-interview.js";
@@ -54,8 +55,40 @@ describe("sampleCasesFor", () => {
   });
 });
 
-describe("starterForLanguage", () => {
+describe("switchLanguageCode", () => {
   const starters: ProblemStarterSet = {
+    cpp: "class Solution {};",
+    javascript: "var solve = function() {};",
+    python: "class Solution:",
+  };
+
+  it("stashes the outgoing code and restores the saved incoming buffer", () => {
+    const saved = { python: "print(1)" };
+    const { saved: next, code } = switchLanguageCode(saved, starters, "cpp", "python", "int main() {}");
+    expect(next).toEqual({ python: "print(1)", cpp: "int main() {}" });
+    expect(code).toBe("print(1)");
+  });
+
+  it("falls back to the starter on first visit", () => {
+    const { saved, code } = switchLanguageCode({}, starters, "cpp", "python", "int main() {}");
+    expect(saved).toEqual({ cpp: "int main() {}" });
+    expect(code).toBe("class Solution:");
+  });
+
+  it("falls back to empty with no starters", () => {
+    const { code } = switchLanguageCode({}, null, "cpp", "python", "int main() {}");
+    expect(code).toBe("");
+  });
+
+  it("leaves everything alone when the language is unchanged", () => {
+    const saved = { cpp: "old" };
+    const { saved: next, code } = switchLanguageCode(saved, starters, "cpp", "cpp", "current");
+    expect(next).toBe(saved);
+    expect(code).toBe("current");
+  });
+});
+
+describe("starterForLanguage", () => {  const starters: ProblemStarterSet = {
     cpp: "class Solution {};",
     javascript: "var solve = function() {};",
     python: "class Solution:",
