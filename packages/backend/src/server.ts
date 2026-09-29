@@ -21,7 +21,10 @@ const database = createDatabase();
 const { app } = buildApp({
   repos: createDrizzleRepositories(database.db),
   config,
-  voiceProvider: createVoiceSessionProviderFromEnv(),
+  voiceProvider: createVoiceSessionProviderFromEnv(
+    process.env,
+    config.voice.ephemeralTtlSeconds,
+  ),
   logger: true,
 });
 

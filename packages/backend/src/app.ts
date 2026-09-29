@@ -370,7 +370,9 @@ class RateLimitedToolError extends Error {
 
 export function buildApp(deps: BuildAppDeps): BuiltBackend {
   const config = deps.config ?? loadConfig();
-  const voiceProvider = deps.voiceProvider ?? createVoiceSessionProviderFromEnv();
+  const voiceProvider =
+    deps.voiceProvider ??
+    createVoiceSessionProviderFromEnv(process.env, config.voice.ephemeralTtlSeconds);
   // S8a: explicit body cap (code 50k + cases fit comfortably); oversized
   // payloads 413 via the error handler instead of consuming the runner.
   const app = Fastify({ logger: deps.logger ?? true, bodyLimit: 256 * 1024, forceCloseConnections: true });

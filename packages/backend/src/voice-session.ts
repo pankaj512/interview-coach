@@ -109,10 +109,8 @@ export class FakeVoiceSessionProvider implements VoiceSessionProvider {
 
 export function createVoiceSessionProviderFromEnv(
   env: NodeJS.ProcessEnv = process.env,
+  ttlSeconds: number,
 ): VoiceSessionProvider {
-  const ttlRaw = env["VOICE_EPHEMERAL_TTL_SECONDS"];
-  const ttlSeconds =
-    ttlRaw === undefined || ttlRaw.trim() === "" ? 600 : Number(ttlRaw);
   const apiKey = env["AZURE_VOICE_API_KEY"]?.trim();
   if (apiKey !== undefined && apiKey !== "") {
     // V3-5: api-key mode returns the long-lived server key verbatim, so it is

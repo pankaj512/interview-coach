@@ -150,13 +150,28 @@ describe("voice-session", () => {
   it("V3-5: api-key voice mode refuses production without explicit opt-in", () => {
     const prod = { ...process.env, NODE_ENV: "production", AZURE_VOICE_API_KEY: "sk-prod" };
     delete (prod as Record<string, string | undefined>)["ALLOW_INSECURE_VOICE_API_KEY"];
-    expect(() => createVoiceSessionProviderFromEnv(prod)).toThrow(/local-dev only/);
+    expect(() => createVoiceSessionProviderFromEnv(prod, 600)).toThrow(/local-dev only/);
     expect(
-      createVoiceSessionProviderFromEnv({ ...prod, ALLOW_INSECURE_VOICE_API_KEY: "true" }),
+      createVoiceSessionProviderFromEnv({ ...prod, ALLOW_INSECURE_VOICE_API_KEY: "true" }, 600),
     ).toBeInstanceOf(ApiKeyLocalDevVoiceSessionProvider);
     expect(
-      createVoiceSessionProviderFromEnv({ ...prod, NODE_ENV: "development" }),
+      createVoiceSessionProviderFromEnv({ ...prod, NODE_ENV: "development" }, 600),
     ).toBeInstanceOf(ApiKeyLocalDevVoiceSessionProvider);
+  });
+
+  it("uses the validated config TTL instead of re-parsing env", async () => {
+    const prod = {
+      ...process.env,
+      NODE_ENV: "development",
+      AZURE_VOICE_API_KEY: "sk-test",
+      VOICE_EPHEMERAL_TTL_SECONDS: "garbage",
+    };
+    const config = loadConfig({ ...process.env, VOICE_EPHEMERAL_TTL_SECONDS: "42" });
+    const provider = createVoiceSessionProviderFromEnv(prod, config.voice.ephemeralTtlSeconds);
+    const mint = await provider.mint("int_test" as never);
+    expect(mint.ttlSeconds).toBe(42);
+    expect(mint.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(() => loadConfig(prod)).toThrow(/Invalid VOICE_EPHEMERAL_TTL_SECONDS/);
   });
 
   it("never leaks the server-side api key outside local-dev mode", async () => {

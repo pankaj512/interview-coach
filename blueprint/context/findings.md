@@ -62,3 +62,59 @@
 **Why it matters:** The test never exercises the spec-noted method-sequence `entry: ""` verbatim path nor the `javascript`/`cpp` keys, and there is no domain-level `createProblem` passthrough test. Low risk (`toRunnerLink` accepts `""`, mapping is a shallow spread) but unproven.
 **Suggested fix:** Extend the round-trip test with a method-sequence-link problem and all three language keys, plus a domain unit test for the starters/runnerLinks passthrough.
 **Resolution:**
+
+### F-08 [P2] open - Balanced-JSON extraction triplicated across three model parsers
+
+**File:** packages/backend/src/recommendation-model.ts:91-113 (also evaluation-model.ts:86-110, submit-verdict-model.ts:70-92)
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** The same ~20-line scanner (find first `{`, track brace depth while ignoring braces inside strings, slice, `JSON.parse`) is copied verbatim into `parseRecommendationProposal`, `parseEvaluationProposal`, and `parseSubmitVerdictProposal`. A parser correctness fix (escaping, string handling, pathological nesting) must be applied in three places or the parsers diverge.
+**Suggested fix:** Add one `extractFirstJsonObject(content: string): string | null` to `packages/backend/src/llm-transport.ts` (already imported by all three) and have each parser call it before `JSON.parse`.
+**Resolution:**
+
+### F-09 [P2] open - Dead manual-answer components and primitive remain in the client
+
+**File:** packages/web-client/src/components/AnswerForm.tsx:12 (also HintPanel.tsx:22, ds/primitives.tsx:331)
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** `AnswerForm`, `HintPanel`, and `ProgressChecklist` are exported but never imported anywhere outside their own definitions, so they ship dead code. They are leftovers from the retired manual-answer / text-mode path the overview says is gone (MVP is voice-only).
+**Suggested fix:** Delete `AnswerForm.tsx` and `HintPanel.tsx`, remove the `ProgressChecklist` export, and drop any import that becomes unused.
+**Resolution:**
+
+### F-10 [P3] open - Unused exported domain helpers
+
+**File:** packages/domain/src/result.ts:17 (also tool-service.ts:98,102; evaluation-job.ts:24; hints.ts:11; curriculum.ts:27; skill-update.ts:43; submission-service.ts:272,276; ids.ts:83,99,107,111)
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** These exports have no callers in source or tests: `isOk`, `mapResult`, `andThen`; `isCanonicalToolName`, `isDeprecatedToolAlias`; `isEvaluationJobStatus`; `MIN_HINT_LEVEL`; `curriculumIdForInterviewType`; `isSkillDecision`; `parseTestCasesForRun`, `parseLimitsForRun`; `asResponseId`, `asEventId`, `asMessageId`, `asEvaluationJobId`. Dead surface costs maintenance and misleads readers about the API. (`isErr`, `ok`, `err`, and the other branded-ID helpers are used and must stay.)
+**Suggested fix:** Delete the unused exports; re-add each when a real caller appears.
+**Resolution:**
+
+### F-11 [P2] fixed - Config field dead, and same env var re-parsed without validation
+
+**File:** packages/backend/src/voice-session.ts:113-115 (and config.ts:15,144)
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** `VoiceConfig.ephemeralTtlSeconds` is populated by the validating `num()` helper but never read. `createVoiceSessionProviderFromEnv` instead re-reads `VOICE_EPHEMERAL_TTL_SECONDS` directly with `Number(ttlRaw)` and no finite/positive check, so a garbage value yields `NaN` and an invalid `expiresAt`. Two sources of truth where only the unused one validates.
+**Suggested fix:** Read the loaded config value in `createVoiceSessionProviderFromEnv` (or delete the config field and keep a single validated parse); remove the unvalidated duplicate.
+**Resolution:** Fixed on `fix/voice-session-ttl-config`: the factory now takes the validated `config.voice.ephemeralTtlSeconds` as a required parameter (both `app.ts` and `server.ts` call sites pass it); the duplicate `Number()` env parse is deleted, so garbage TTL fails fast in `loadConfig`. Covered by a new unit case.
+
+### F-12 [P2] open - app.ts is one 1880-line module with inlined handlers far over the function-size guideline
+
+**File:** packages/backend/src/app.ts:371-1845
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** `buildApp` spans roughly 1473 lines with every route handler inlined; individual handlers (for example `POST /api/interviews/:id/voice-session` at 1698-1828, `POST /api/interviews/:id/tool-exec` at ~1698-1830) run ~130 lines each. The standards ask to keep functions under 50 lines when possible. Size at this level makes navigation, review, and isolated testing hard.
+**Suggested fix:** Extract route handlers (at least the largest) into per-concern modules that `buildApp` registers.
+**Resolution:**
+
+### F-13 [P3] open - Stale hand-maintained route map in app.ts header, itself a banner block
+
+**File:** packages/backend/src/app.ts:1-54
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** The 54-line header comment enumerates routes but already omits at least `DELETE /api/learning-state` (registered at app.ts:808) and `POST /api/interviews/:id/submit-verdict` (app.ts:1384), so it is misleading. It also conflicts with the standard banning banner/header blocks. (Related niche duplication: `siblingSource` is copied verbatim in shape-runners/javascript/assemble.ts:53 and shape-runners/python/assemble.ts:61; `sandboxTestCaseSchema` at app.ts:309 is misformatted.)
+**Suggested fix:** Remove the route enumeration and rely on the registrations; optionally share `siblingSource`. Reformat `sandboxTestCaseSchema`.
+**Resolution:**
+
+### F-14 [P2] open - Pervasive em dashes violate the Writing standard
+
+**File:** packages/backend/src/app.ts:1865 (also many files across backend, domain, web-client, and tests)
+**Found:** 2026-09-29 by /audit (scope: full; lens: quality)
+**Why it matters:** The Writing standard bans em dashes (U+2014) in generated content, including code comments. They appear in source comments and user-facing copy across dozens of files (for example app.ts:1865, voice-session.ts:187,226, evaluation-model.ts:1, llm-transport.ts:1, auth.ts:1,4,5,112, domain/evaluation-model.ts:1, and client screens such as CodeWorkspace.tsx:459,466,510,513,536, LobbyScreen.tsx:209). The rule is enforced in intent: `packages/web-client/tests/render-smoke.test.tsx:352` asserts rendered HTML contains no `—`. Only the deliberate empty-value placeholder glyph may be legitimate.
+**Suggested fix:** Replace prose em dashes with hyphens or commas; keep the deliberate placeholder glyph only if the user confirms it.
+**Resolution:**
