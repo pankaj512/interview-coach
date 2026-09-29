@@ -39,7 +39,7 @@
 **Suggested fix:** Add `"--security-opt", "no-new-privileges"` in `buildRunArgs` and extend the `buildRunArgs` unit assertion.
 **Resolution:**
 
-### F-05 [P2] open - Missing/corrupt dataset file triggers destructive title-only reseed
+### F-05 [P2] fixed - Missing/corrupt dataset file triggers destructive title-only reseed
 
 **File:** packages/db/src/seed.ts:91-97
 **Found:** 2026-09-23 by independent review of 18b (target 85e673e)
@@ -47,7 +47,7 @@
 **Suggested fix:** Abort the seed (non-zero exit, no upserts) when the dataset file is missing/unparseable or yields zero records, instead of reseeding title-only.
 **Resolution:**
 
-### F-06 [P3] open - Malformed runner link is silent in the gap report
+### F-06 [P3] fixed - Malformed runner link is silent in the gap report
 
 **File:** packages/db/src/seed.ts:58-75
 **Found:** 2026-09-23 by independent review of 18b (target 85e673e)
@@ -55,7 +55,7 @@
 **Suggested fix:** `console.warn` each malformed link with its problem id and reason, per the existing `seed skip` stdout precedent.
 **Resolution:**
 
-### F-07 [P3] open - Round-trip test covers only the python link
+### F-07 [P3] fixed - Round-trip test covers only the python link
 
 **File:** packages/db/tests/persistence.test.ts:70-92
 **Found:** 2026-09-23 by independent review of 18b (target 85e673e)

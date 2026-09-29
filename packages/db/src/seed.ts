@@ -59,7 +59,11 @@ interface DatasetProblem {
 
 const ACTUAL_RULES = new Set(["pure", "in-place", "method-sequence"]);
 
-function toRunnerLink(raw: DatasetRunnerLink | undefined): ProblemRunnerLinks[keyof ProblemRunnerLinks] | undefined {
+function toRunnerLink(
+  raw: DatasetRunnerLink | undefined,
+  problemId: string,
+  language: string,
+): ProblemRunnerLinks[keyof ProblemRunnerLinks] | undefined {
   if (raw === undefined) return undefined;
   if (
     typeof raw.runnerId !== "string" ||
@@ -68,6 +72,10 @@ function toRunnerLink(raw: DatasetRunnerLink | undefined): ProblemRunnerLinks[ke
     typeof raw.actualRule !== "string" ||
     !ACTUAL_RULES.has(raw.actualRule)
   ) {
+    console.warn(
+      `seed skip link [${problemId}] ${language}: malformed runner link ` +
+        `(expected string runnerId/entry/className and pure|in-place|method-sequence actualRule)`,
+    );
     return undefined;
   }
   return {
@@ -125,13 +133,17 @@ async function mergeDataset(problems: readonly Problem[]): Promise<{
     const raw = JSON.parse(await readFile(datasetPath, "utf8")) as {
       problems?: readonly DatasetProblem[];
     };
-    records = raw.problems ?? [];
-  } catch {
-    return {
-      merged: [...problems],
-      enriched: 0,
-      gaps: problems.map((p) => `${p.id} (no dataset file)`),
-    };
+    if (!Array.isArray(raw.problems) || raw.problems.length === 0) {
+      throw new Error("dataset file holds zero problem records");
+    }
+    records = raw.problems;
+  } catch (error) {
+    // F-05: a missing/unparseable/empty dataset must abort before any upsert.
+    // Falling through here would reseed all 300 catalog rows title-only and,
+    // via onConflictDoUpdate, wipe existing enrichment.
+    throw new Error(
+      `seed abort: cannot load dataset ${datasetPath}: ${(error as Error).message}`,
+    );
   }
   const byId = new Map<string, DatasetProblem>();
   for (const r of records) {
@@ -153,9 +165,9 @@ async function mergeDataset(problems: readonly Problem[]): Promise<{
             python: record.starters.python,
           } satisfies ProblemStarters)
         : undefined;
-    const pythonLink = toRunnerLink(record?.python);
-    const javascriptLink = toRunnerLink(record?.javascript);
-    const cppLink = toRunnerLink(record?.cpp);
+    const pythonLink = toRunnerLink(record?.python, problem.id, "python");
+    const javascriptLink = toRunnerLink(record?.javascript, problem.id, "javascript");
+    const cppLink = toRunnerLink(record?.cpp, problem.id, "cpp");
     const runnerLinks: ProblemRunnerLinks = {
       ...(pythonLink === undefined ? {} : { python: pythonLink }),
       ...(javascriptLink === undefined ? {} : { javascript: javascriptLink }),
@@ -216,12 +228,18 @@ for (const e of curriculumErrors) {
 
 const handle = createDatabase();
 // Problems first: curriculum_topic_problems references problems(id).
-// Enrich with the cleaned 18a dataset; gaps seed title-only.
-const {
-  merged: seedProblems,
-  enriched,
-  gaps,
-} = await mergeDataset(problems);
+// Enrich with the cleaned 18a dataset; gaps seed title-only. A missing or
+// empty dataset aborts before any upsert (F-05) to protect enrichment.
+let seedProblems: Problem[];
+let enriched: number;
+let gaps: string[];
+try {
+  ({ merged: seedProblems, enriched, gaps } = await mergeDataset(problems));
+} catch (error) {
+  console.error(error instanceof Error ? error.message : String(error));
+  await handle.close();
+  process.exit(1);
+}
 const problemRepo = new DrizzleProblemRepository(handle.db);
 for (const problem of seedProblems) await problemRepo.save(problem);
 const curriculumRepo = new DrizzleCurriculumRepository(handle.db);

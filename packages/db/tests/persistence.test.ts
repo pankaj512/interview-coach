@@ -84,11 +84,40 @@ describe("postgres persistence", () => {
       },
     });
     if (!enriched.ok) throw new Error("fixture problem invalid");
+    const methodSequence = createProblem({
+      title: "LRU Cache Persisted",
+      difficulty: "Medium",
+      starters: { cpp: "cpp-stub", javascript: "js-stub", python: "py-stub" },
+      runnerLinks: {
+        // Method-sequence links store entry verbatim as "" (dispatch is per-op).
+        python: {
+          runnerId: "method-sequence",
+          entry: "",
+          className: "LRUCache",
+          actualRule: "method-sequence",
+        },
+        javascript: {
+          runnerId: "shape-001",
+          entry: "solve",
+          className: "Solution",
+          actualRule: "pure",
+        },
+        cpp: {
+          runnerId: "shape-001",
+          entry: "solve",
+          className: "Solution",
+          actualRule: "pure",
+        },
+      },
+    });
+    if (!methodSequence.ok) throw new Error("fixture problem invalid");
     const plain = mustProblem("Plain Persisted");
     await t.repos.problems.save(enriched.value);
+    await t.repos.problems.save(methodSequence.value);
     await t.repos.problems.save(plain);
 
     expect(await t.repos.problems.findById(enriched.value.id)).toEqual(enriched.value);
+    expect(await t.repos.problems.findById(methodSequence.value.id)).toEqual(methodSequence.value);
     // Gap problems stay title-only: absent fields read back as undefined.
     expect(await t.repos.problems.findById(plain.id)).toEqual(plain);
   }));
