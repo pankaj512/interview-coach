@@ -20,7 +20,6 @@ import { App } from "../src/App.js";
 import type { SessionPlan } from "../src/flow.js";
 import { DashboardScreen } from "../src/screens/DashboardScreen.js";
 import { EvaluatingScreen } from "../src/screens/EvaluatingScreen.js";
-import { FeedbackDetailScreen } from "../src/screens/FeedbackDetailScreen.js";
 import { HistoryScreen } from "../src/screens/HistoryScreen.js";
 import { LandingScreen } from "../src/screens/LandingScreen.js";
 import { LiveScreen } from "../src/screens/LiveScreen.js";
@@ -71,6 +70,7 @@ const evaluation: SerializedEvaluation = {
   dimensions: {
     coding: { score: 4, notes: "Clean loop, in-place as required." },
     communication: { score: 3, notes: "Narrated the happy path; went quiet on edge cases." },
+    testing_debugging: { score: 4, notes: "Ran the sample suite." },
   },
   hintsUsed: 1,
   strengths: ["Clear API reasoning"],
@@ -273,7 +273,7 @@ describe("screen render smoke", () => {
   });
   it("ResultsScreen renders scores", () => {
     const html = renderToString(
-      <ResultsScreen backend={backend} snapshot={snapshot} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
+      <ResultsScreen backend={backend} snapshot={snapshot} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} />,
     );
     expect(html).toContain("Interview Results");
     expect(html).toContain("81");
@@ -281,31 +281,21 @@ describe("screen render smoke", () => {
     expect(html).toContain("Solid");
     expect(html).toContain("lean hire");
     expect(html).toContain("Coding accuracy");
+    expect(html).toContain("Testing &amp; debugging");
+    expect(html).not.toContain(">testing_debugging<");
+    expect(html).toContain("data-dim-key=\"coding\"");
+    expect(html).toContain("aria-expanded=\"false\"");
+    expect(html).toContain("dim-chev");
+    expect(html).not.toContain("responses");
     expect(html).toContain("/ 5");
-    expect(html).toContain("Clean loop, in-place as required.");
     expect(html).toContain("aria-label=\"Coding accuracy, 4 out of 5, show feedback\"");
   });
   it("ResultsScreen handles a null snapshot", () => {
     expect(
       renderToString(
-        <ResultsScreen backend={backend} snapshot={null} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} onFeedback={noop} />,
+        <ResultsScreen backend={backend} snapshot={null} onHistory={noop} onNew={noop} onTranscript={noop} onWeakAreas={noop} />,
       ),
     ).toContain("Results");
-  });
-  it("FeedbackDetailScreen renders the selected dimension", () => {
-    const html = renderToString(
-      <FeedbackDetailScreen evaluation={evaluation} selected="communication" onSelect={noop} onBack={noop} />,
-    );
-    expect(html).toContain("Communication");
-    expect(html).toContain("/ 5");
-    expect(html).toContain("(overall 81 / 100)");
-    expect(html).toContain("Narrated the happy path");
-    expect(html).toContain("Example improvement");
-  });
-  it("FeedbackDetailScreen handles missing feedback", () => {
-    expect(
-      renderToString(<FeedbackDetailScreen evaluation={null} selected={null} onSelect={noop} onBack={noop} />),
-    ).toContain("No structured feedback yet");
   });
   it("TranscriptReviewScreen renders live turns", () => {
     const html = renderToString(

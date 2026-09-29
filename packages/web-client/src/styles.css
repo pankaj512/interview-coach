@@ -1066,6 +1066,7 @@ button.brand {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--s-12);
+  margin-bottom: var(--s-16);
 }
 
 .inline-controls {
@@ -2508,6 +2509,7 @@ textarea.code {
   display: flex;
   flex-direction: column;
   gap: var(--s-12);
+  margin-bottom: var(--s-16);
 }
 
 .dim-row {
@@ -2559,6 +2561,21 @@ textarea.code {
   font-size: var(--fs-small);
   color: var(--ink-muted);
   margin: 0;
+}
+
+.dim-chev {
+  display: inline-block;
+  color: var(--ink-muted);
+  font-size: var(--fs-small);
+  transition: transform 0.15s ease-in-out;
+}
+
+.dim-row[aria-expanded="true"] {
+  border-color: var(--primary);
+}
+
+.dim-row[aria-expanded="true"] .dim-chev {
+  transform: rotate(90deg);
 }
 
 /* ---------- Transcript ---------- */

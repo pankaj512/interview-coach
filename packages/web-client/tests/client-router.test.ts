@@ -68,7 +68,7 @@ describe("resolvePath", () => {
 
   it("requires a snapshot for results and an interview for the transcript", () => {
     expect(resolvePath("/results", signedInReady)).toEqual({ nav: null, flow: "results" });
-    expect(resolvePath("/feedback", signedInReady)).toEqual({ nav: null, flow: "feedback" });
+    expect(resolvePath("/feedback", signedInReady)).toEqual({ redirect: "/dashboard" });
     expect(resolvePath("/weakareas", signedInReady)).toEqual({ nav: null, flow: "weakareas" });
     expect(resolvePath("/results", signedInBare)).toEqual({ redirect: "/dashboard" });
     expect(resolvePath("/transcript", signedInReady)).toEqual({ nav: null, flow: "transcript" });

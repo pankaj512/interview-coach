@@ -7,7 +7,7 @@
 // progress" until a validated result (or a failure) arrives. Scores render in
 // canonical units: overall x/100, dimensions x/5 (ux-spec §23).
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type { SerializedEvaluation, SerializedStateSnapshot } from "../api/types.js";
 import { ExecutionPanel } from "../components/ExecutionPanel.js";
@@ -20,6 +20,12 @@ function hasDimensions(evaluation: SerializedEvaluation | null): boolean {
   return evaluation !== null && Object.keys(evaluation.dimensions).length > 0;
 }
 
+// Single-open accordion toggle: clicking the open row collapses it,
+// clicking any other row opens that one instead.
+export function nextOpenDimension(current: string | null, clicked: string): string | null {
+  return current === clicked ? null : clicked;
+}
+
 export function ResultsScreen({
   backend,
   snapshot,
@@ -28,7 +34,6 @@ export function ResultsScreen({
   onNew,
   onTranscript,
   onWeakAreas,
-  onFeedback,
 }: {
   readonly backend: BackendClient;
   readonly snapshot: SerializedStateSnapshot | null;
@@ -37,7 +42,6 @@ export function ResultsScreen({
   readonly onNew: () => void;
   readonly onTranscript: () => void;
   readonly onWeakAreas: () => void;
-  readonly onFeedback: (dimensionKey: string) => void;
 }) {
   const [evaluation, setEvaluation] = useState<SerializedEvaluation | null>(
     snapshot?.evaluation ?? null,
@@ -46,6 +50,18 @@ export function ResultsScreen({
     snapshot?.interview.evaluationStatus ?? "none",
   );
   const interviewId = snapshot?.interview.id;
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
+  // One delegated handler for every dimension row (present and future):
+  // the clicked row reports its key via data-dim-key.
+  const onDimensionsClick = (event: MouseEvent<HTMLDivElement>) => {
+    const target = event.target as Element | null;
+    const row = target?.closest?.("[data-dim-key]") ?? null;
+    const key = row?.getAttribute("data-dim-key");
+    if (key !== null && key !== undefined && key !== "") {
+      setOpenKey((current) => nextOpenDimension(current, key));
+    }
+  };
 
   // Poll the async evaluation until a real result or a failure arrives.
   useEffect(() => {
@@ -105,7 +121,6 @@ export function ResultsScreen({
         Interview Results · {interviewType}
         {snapshot.interview.configuration.difficulty !== undefined &&
           ` · ${snapshot.interview.configuration.difficulty}`}
-        {` · ${snapshot.responseCount} responses`}
       </p>
       <h1 className="page-title">
         {problemTitle === null ? "Interview results" : `${problemTitle}, reviewed`}
@@ -141,7 +156,7 @@ export function ResultsScreen({
               Recommendation: <strong>{formatRecommendation(evaluation?.recommendation)}</strong>
             </p>
             <p className="hint">
-              Hints used: {evaluation?.hintsUsed ?? 0} · Responses: {snapshot.responseCount}
+              Hints used: {evaluation?.hintsUsed ?? 0}
               {evaluation?.source === "fallback" && " · heuristic review"}
             </p>
           </div>
@@ -150,30 +165,41 @@ export function ResultsScreen({
 
       <h2 className="section-title">Dimension scores</h2>
       {dimensions.length > 0 ? (
-        <div className="dim-list">
-          {dimensions.map(([key, value]) => (
-            <button
-              key={key}
-              type="button"
-              className="card dim-row"
-              onClick={() => onFeedback(key)}
-              aria-label={`${dimensionLabel(key)}, ${value.score} out of 5, show feedback`}
-            >
-              <div className="dim-top">
-                <code className="dim-name">{key}</code>
-                <span className="dim-val">{value.score} / 5</span>
-              </div>
-              <div className="dim-track" aria-hidden="true">
-                <div
-                  className={value.score < 3 ? "dim-fill low" : "dim-fill"}
-                  style={{ width: `${Math.min(100, Math.max(0, (value.score / 5) * 100))}%` }}
-                />
-              </div>
-              {value.notes !== undefined && value.notes !== "" && (
-                <p className="dim-ev">{value.notes}</p>
-              )}
-            </button>
-          ))}
+        <div className="dim-list" onClick={onDimensionsClick}>
+          {dimensions.map(([key, value]) => {
+            const open = openKey === key;
+            const panelId = `dim-panel-${key}`;
+            const notes =
+              value.notes === undefined || value.notes === "" ? undefined : value.notes;
+            return (
+              <button
+                key={key}
+                type="button"
+                className="card dim-row"
+                data-dim-key={key}
+                aria-expanded={open}
+                aria-controls={panelId}
+                aria-label={`${dimensionLabel(key)}, ${value.score} out of 5, show feedback`}
+              >
+                <div className="dim-top">
+                  <span className="dim-name">{dimensionLabel(key)}</span>
+                  <span className="dim-val">{value.score} / 5</span>
+                  <span className="dim-chev" aria-hidden="true">›</span>
+                </div>
+                <div className="dim-track" aria-hidden="true">
+                  <div
+                    className={value.score < 3 ? "dim-fill low" : "dim-fill"}
+                    style={{ width: `${Math.min(100, Math.max(0, (value.score / 5) * 100))}%` }}
+                  />
+                </div>
+                {open && (
+                  <span className="dim-ev" id={panelId}>
+                    {notes ?? "No coach notes for this dimension."}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       ) : evalStatus === "failed" ? (
         <Card>

@@ -13,6 +13,7 @@ import {
   switchLanguageCode,
 } from "../src/components/CodeWorkspace.js";
 import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
+import { nextOpenDimension } from "../src/screens/ResultsScreen.js";
 import { AUTO_FINISH_DELAY_MS, shouldAutoFinish, shouldRefreshOnClose } from "../src/state/use-interview.js";
 import type { Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../src/api/types.js";
 
@@ -227,6 +228,20 @@ describe("shouldNotifyFinished", () => {
   it("stays quiet while the interview is still live", () => {
     expect(shouldNotifyFinished(false, false)).toBe(false);
     expect(shouldNotifyFinished(false, true)).toBe(false);
+  });
+});
+
+describe("nextOpenDimension", () => {
+  it("opens a closed row", () => {
+    expect(nextOpenDimension(null, "coding")).toBe("coding");
+  });
+
+  it("switches straight from one open row to another", () => {
+    expect(nextOpenDimension("coding", "communication")).toBe("communication");
+  });
+
+  it("collapses the open row when it is clicked again", () => {
+    expect(nextOpenDimension("coding", "coding")).toBeNull();
   });
 });
 

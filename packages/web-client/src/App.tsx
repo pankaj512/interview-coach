@@ -21,7 +21,6 @@ import type { Difficulty, Interaction, InterviewMode, SessionPlan } from "./flow
 import { deleteAllInterviews, deleteHistoryEntry, historyEntriesFromSummaries, type HistoryEntry } from "./history.js";
 import { DashboardScreen } from "./screens/DashboardScreen.js";
 import { EvaluatingScreen } from "./screens/EvaluatingScreen.js";
-import { FeedbackDetailScreen } from "./screens/FeedbackDetailScreen.js";
 import { LandingScreen } from "./screens/LandingScreen.js";
 import { HistoryScreen } from "./screens/HistoryScreen.js";
 import { LiveScreen } from "./screens/LiveScreen.js";
@@ -53,7 +52,6 @@ type Flow =
   | "live"
   | "evaluating"
   | "results"
-  | "feedback"
   | "transcript"
   | "weakareas"
   | "signin"
@@ -116,7 +114,6 @@ export function App() {
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
   const [stale, setStale] = useState(false);
-  const [feedbackDimension, setFeedbackDimension] = useState<string | null>(null);
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([]);
   const [historyLimit, setHistoryLimit] = useState(20);
   const [historyHasMore, setHistoryHasMore] = useState(false);
@@ -724,29 +721,10 @@ export function App() {
               setFlow("weakareas");
               pushPath("/weakareas");
             }}
-            onFeedback={(dimensionKey) => {
-              setFeedbackDimension(dimensionKey);
-              setFlow("feedback");
-              pushPath("/feedback");
-            }}
           />
           {historyError !== null && <p className="error">{historyError}</p>}
           </div>
         </AppShell>
-      )}
-      {flow === "feedback" && (
-        <div className="shell-content standalone">
-          <FeedbackDetailScreen
-            evaluation={finalSnapshot?.evaluation ?? null}
-            selected={feedbackDimension}
-            onSelect={setFeedbackDimension}
-            onBack={() => {
-              setFeedbackDimension(null);
-              setFlow("results");
-              pushPath("/results");
-            }}
-          />
-        </div>
       )}
       {flow === "transcript" && interview !== null && (
         <div className="shell-content standalone">

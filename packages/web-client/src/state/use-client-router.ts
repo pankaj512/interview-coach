@@ -12,7 +12,6 @@ export type RouterFlow =
   | "live"
   | "evaluating"
   | "results"
-  | "feedback"
   | "transcript"
   | "weakareas"
   | "signin"
@@ -45,7 +44,6 @@ const FLOW_PATHS: Record<string, RouterFlow> = {
   "/live": "live",
   "/evaluating": "evaluating",
   "/results": "results",
-  "/feedback": "feedback",
   "/transcript": "transcript",
   "/weakareas": "weakareas",
   "/signin": "signin",
