@@ -22,6 +22,7 @@ import {
   buildChatRequest,
   defaultFetch,
   extractChatContent,
+  extractFirstJsonObject,
   isProviderConfigured,
   postChatCompletions,
   resolveLlmProvider,
@@ -89,25 +90,11 @@ export function buildRecommendationMessages(
 // Robustly extracts the first JSON object from model text: tolerates markdown
 // fences and surrounding prose, then checks the four required string fields.
 export function parseRecommendationProposal(content: string): RecommendationProposal | null {
-  const start = content.indexOf("{");
-  if (start === -1) return null;
-  let depth = 0;
-  let end = -1;
-  for (let i = start; i < content.length; i += 1) {
-    const ch = content[i];
-    if (ch === "{") depth += 1;
-    else if (ch === "}") {
-      depth -= 1;
-      if (depth === 0) {
-        end = i;
-        break;
-      }
-    }
-  }
-  if (end === -1) return null;
+  const json = extractFirstJsonObject(content);
+  if (json === null) return null;
   let parsed: unknown;
   try {
-    parsed = JSON.parse(content.slice(start, end + 1));
+    parsed = JSON.parse(json);
   } catch {
     return null;
   }

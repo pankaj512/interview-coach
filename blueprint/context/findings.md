@@ -63,13 +63,13 @@
 **Suggested fix:** Extend the round-trip test with a method-sequence-link problem and all three language keys, plus a domain unit test for the starters/runnerLinks passthrough.
 **Resolution:**
 
-### F-08 [P2] open - Balanced-JSON extraction triplicated across three model parsers
+### F-08 [P2] fixed - Balanced-JSON extraction triplicated across three model parsers
 
 **File:** packages/backend/src/recommendation-model.ts:91-113 (also evaluation-model.ts:86-110, submit-verdict-model.ts:70-92)
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** The same ~20-line scanner (find first `{`, track brace depth while ignoring braces inside strings, slice, `JSON.parse`) is copied verbatim into `parseRecommendationProposal`, `parseEvaluationProposal`, and `parseSubmitVerdictProposal`. A parser correctness fix (escaping, string handling, pathological nesting) must be applied in three places or the parsers diverge.
 **Suggested fix:** Add one `extractFirstJsonObject(content: string): string | null` to `packages/backend/src/llm-transport.ts` (already imported by all three) and have each parser call it before `JSON.parse`.
-**Resolution:**
+**Resolution:** Fixed on `fix/shared-json-extraction-helper`: the scanner lives once as `extractFirstJsonObject` in `llm-transport.ts` (same semantics, no behavior change); all three parsers call it and keep only their own `JSON.parse` + contract validation. Existing parser tests pass unchanged; full gates green (typecheck, 1248 tests, build).
 
 ### F-09 [P2] open - Dead manual-answer components and primitive remain in the client
 

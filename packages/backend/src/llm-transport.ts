@@ -50,6 +50,29 @@ export function extractChatContent(raw: string): string | null {
   return typeof message?.content === "string" ? message.content : null;
 }
 
+// Slices the first balanced `{...}` object out of model text (tolerates
+// markdown fences and surrounding prose). Returns null when there is no `{`
+// or the braces never balance. Callers `JSON.parse` the slice themselves.
+export function extractFirstJsonObject(content: string): string | null {
+  const start = content.indexOf("{");
+  if (start === -1) return null;
+  let depth = 0;
+  let end = -1;
+  for (let i = start; i < content.length; i += 1) {
+    const ch = content[i];
+    if (ch === "{") depth += 1;
+    else if (ch === "}") {
+      depth -= 1;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+  if (end === -1) return null;
+  return content.slice(start, end + 1);
+}
+
 export function defaultFetch(modelLabel: string): LlmFetch {
   const impl = (globalThis as { fetch?: unknown })["fetch"];
   if (typeof impl !== "function") {
