@@ -21,7 +21,7 @@ import {
   buildSkillSummary,
   findTopicForProblem,
 } from "../src/session-context.js";
-import { seedCurriculum } from "./helpers.js";
+import { seedCurriculum, seedDataAvailable } from "./helpers.js";
 
 const USER = asUserId("user_ctx");
 
@@ -62,7 +62,7 @@ function skillState(): UserSkillState {
 }
 
 describe("phase 7 session context", () => {
-  it("resolves the curriculum topic + module for a problem", async () => {
+  it.skipIf(!seedDataAvailable())("resolves the curriculum topic + module for a problem", async () => {
     const curriculum = await loadCurriculum();
     const problem = { id: asProblemId("prob_move-zeroes"), title: "Move Zeroes", difficulty: "Easy" } as Problem;
     const lookup = findTopicForProblem(curriculum, problem);
@@ -70,7 +70,7 @@ describe("phase 7 session context", () => {
     expect(lookup?.module?.name).toBeTruthy();
   });
 
-  it("returns null for a missing problem or curriculum", async () => {
+  it.skipIf(!seedDataAvailable())("returns null for a missing problem or curriculum", async () => {
     const curriculum = await loadCurriculum();
     expect(findTopicForProblem(curriculum, null)).toBeNull();
     expect(findTopicForProblem(null, null)).toBeNull();
@@ -89,7 +89,7 @@ describe("phase 7 session context", () => {
     expect(buildSkillSummary(null)).toBeUndefined();
   });
 
-  it("assembles profile + topic + objective + skill context", async () => {
+  it.skipIf(!seedDataAvailable())("assembles profile + topic + objective + skill context", async () => {
     const curriculum = await loadCurriculum();
     const context = assembleSessionContext({
       profile: profile(),

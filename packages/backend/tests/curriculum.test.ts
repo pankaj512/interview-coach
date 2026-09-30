@@ -9,7 +9,7 @@ import {
   createUserCurriculumProgress,
   createUserSkillState,
 } from "@interview-coach/domain";
-import { buildTestBackend, seedCurriculum, type TestBackend } from "./helpers.js";
+import { buildTestBackend, seedCurriculum, seedDataAvailable, type TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -36,7 +36,7 @@ async function register(
   return { token: body.session.token, userId: body.user.id };
 }
 
-describe("phase 3 curriculum routes", () => {
+describe.skipIf(!seedDataAvailable())("phase 3 curriculum routes", () => {
   it("serves the server-owned curriculum", async () => {
     backend = buildTestBackend();
     await seedCurriculum(backend.repos);

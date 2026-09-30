@@ -15,7 +15,7 @@ import {
   type RecommendationModelInput,
   type RecommendationModelResult,
 } from "@interview-coach/domain";
-import { buildTestBackend, seedCurriculum, type TestBackend } from "./helpers.js";
+import { buildTestBackend, seedCurriculum, seedDataAvailable, type TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -142,7 +142,7 @@ function loopBackend(evaluationScore: number): TestBackend {
   });
 }
 
-describe("phase 12 adaptive learning loop", () => {
+describe.skipIf(!seedDataAvailable())("phase 12 adaptive learning loop", () => {
   it("supersedes the current recommendation and regenerates after an evaluation", async () => {
     backend = loopBackend(5);
     const tb = backend;

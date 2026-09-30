@@ -2,7 +2,7 @@
 // In-memory repos; no DB needed.
 
 import { afterEach, describe, expect, it } from "vitest";
-import { buildTestBackend, seedCurriculum, type TestBackend } from "./helpers.js";
+import { buildTestBackend, seedCurriculum, seedDataAvailable, type TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -153,7 +153,7 @@ describe("phase 9 history listing", () => {
   });
 });
 
-describe("phase 9 interview linkage", () => {
+describe.skipIf(!seedDataAvailable())("phase 9 interview linkage", () => {
   it("binds recommendation + topic on create and rejects a foreign recommendation", async () => {
     backend = buildTestBackend();
     const tb = backend;

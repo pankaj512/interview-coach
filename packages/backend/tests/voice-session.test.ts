@@ -11,7 +11,7 @@ import {
   createVoiceSessionProviderFromEnv,
 } from "../src/voice-session.js";
 import { createInMemoryRepositories } from "@interview-coach/domain";
-import { buildTestBackend, createStartedInterview, seedCurriculum } from "./helpers.js";
+import { buildTestBackend, createStartedInterview, seedCurriculum, seedDataAvailable } from "./helpers.js";
 import type { TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
@@ -245,7 +245,7 @@ describe("voice-session", () => {
 
   // Phase 7: a user-session mint loads the server-owned profile + curriculum +
   // skill state and injects them; the service/anonymous path stays generic.
-  it("phase 7: injects server-owned context for a signed-in user", async () => {
+  it.skipIf(!seedDataAvailable())("phase 7: injects server-owned context for a signed-in user", async () => {
     backend = buildTestBackend();
     await seedCurriculum(backend.repos);
     const registered = await backend.app.inject({

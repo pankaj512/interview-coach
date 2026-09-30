@@ -32,12 +32,14 @@ COPY packages/db/package.json packages/db/package.json
 COPY packages/backend/package.json packages/backend/package.json
 RUN pnpm install --prod --frozen-lockfile
 
-# Runtime sources: backend + linked workspaces, migrations, seed catalog.
+# Runtime sources: backend + linked workspaces and migrations. The seed JSONs
+# (raw_content/, content/) are gitignored and live outside the image: seed
+# from a host checkout that has them with DATABASE_URL pointed at the stack DB:
+#   pnpm --filter @interview-coach/db db:seed
 COPY packages/domain/src packages/domain/src
 COPY packages/db/src packages/db/src
 COPY packages/db/drizzle packages/db/drizzle
 COPY packages/backend/src packages/backend/src
-COPY raw_content/dsa/dsa-problem-catalog.json ./raw_content/dsa/dsa-problem-catalog.json
 RUN chown -R app:app /app
 USER app
 

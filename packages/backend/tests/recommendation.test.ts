@@ -9,7 +9,7 @@ import type {
   RecommendationModelResult,
 } from "@interview-coach/domain";
 import { asUserId } from "@interview-coach/domain";
-import { buildTestBackend, seedCurriculum, type TestBackend } from "./helpers.js";
+import { buildTestBackend, seedCurriculum, seedDataAvailable, type TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -55,7 +55,7 @@ const firstCandidateProposal = (input: RecommendationModelInput) => {
   };
 };
 
-describe("phase 4 recommendation routes", () => {
+describe.skipIf(!seedDataAvailable())("phase 4 recommendation routes", () => {
   it("generates from the LLM proposal, persists it, and returns current", async () => {
     const model = new FakeRecommendationModel(firstCandidateProposal);
     backend = buildTestBackend({ recommendationModel: model });

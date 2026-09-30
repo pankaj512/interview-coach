@@ -1,7 +1,7 @@
 // Shared S3 backend test harness: in-memory repos + fake voice provider.
 // No DB required, so `pnpm test` stays green without Postgres.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {
@@ -69,21 +69,39 @@ export async function seedProblem(
 }
 
 // Phase 3: load the real catalog + curriculum into in-memory repos so the
-// curriculum routes serve the same data Postgres seeds.
-export async function seedCurriculum(repos: RepositorySet): Promise<void> {
-  const here = dirname(fileURLToPath(import.meta.url));
-  const catalog = JSON.parse(
-    readFileSync(resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"), "utf8"),
-  ) as { topics: { topic: string; problems: { title: string; difficulty: string }[] }[] };
-  const raw = JSON.parse(
-    readFileSync(resolve(here, "../../../content/dsa/dsa-interview-curriculum.json"), "utf8"),
-  ) as CurriculumRaw;
+// curriculum routes serve the same data Postgres seeds. The seed JSONs are
+// gitignored, so product-only checkouts (CI included) lack them: callers
+// guard with seedDataAvailable() and skip, mirroring the DB warn-and-pass.
+const testsHere = dirname(fileURLToPath(import.meta.url));
+export const seedCatalogPath = resolve(
+  testsHere,
+  "../../../raw_content/dsa/dsa-problem-catalog.json",
+);
+export const seedCurriculumPath = resolve(
+  testsHere,
+  "../../../content/dsa/dsa-interview-curriculum.json",
+);
+
+export function seedDataAvailable(): boolean {
+  return existsSync(seedCatalogPath) && existsSync(seedCurriculumPath);
+}
+
+export async function seedCurriculum(repos: RepositorySet): Promise<boolean> {
+  if (!seedDataAvailable()) {
+    console.warn(`Seed JSONs absent (${seedCatalogPath}) - skipping curriculum seed`);
+    return false;
+  }
+  const catalog = JSON.parse(readFileSync(seedCatalogPath, "utf8")) as {
+    topics: { topic: string; problems: { title: string; difficulty: string }[] }[];
+  };
+  const raw = JSON.parse(readFileSync(seedCurriculumPath, "utf8")) as CurriculumRaw;
   const { problems } = importCatalogTopics(catalog.topics);
   for (const problem of problems) await repos.problems.save(problem);
   const { curriculum } = importCurriculum(raw, {
     knownProblemTitles: new Set(problems.map((p) => p.title)),
   });
   await repos.curricula.save(curriculum);
+  return true;
 }
 
 export interface StartedInterview {

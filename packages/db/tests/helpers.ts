@@ -5,6 +5,9 @@
 
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
+import { existsSync } from "node:fs";
+import { fileURLToPath } from "node:url";
+import { dirname, resolve } from "node:path";
 import { createDatabase, type Database } from "../src/client.js";
 import * as schema from "../src/schema.js";
 import { createDrizzleRepositories } from "../src/repositories.js";
@@ -65,6 +68,24 @@ export async function connectTestDb(): Promise<TestContext | null> {
     return null;
   }
   return { handle, db: handle.db, repos: createDrizzleRepositories(handle.db) };
+}
+
+// The seed JSONs are gitignored, so product-only checkouts (CI included)
+// lack them: file-backed tests warn and skip instead of throwing ENOENT,
+// mirroring the withDb warn-and-pass below.
+const testsHere = dirname(fileURLToPath(import.meta.url));
+export const seedCatalogPath = resolve(testsHere, "../../../raw_content/dsa/dsa-problem-catalog.json");
+export const seedCurriculumPath = resolve(
+  testsHere,
+  "../../../content/dsa/dsa-interview-curriculum.json",
+);
+export const seedDatasetPath = resolve(
+  testsHere,
+  "../../../content/dsa/problem-content-enrichment.json",
+);
+
+export function seedDataAvailable(): boolean {
+  return existsSync(seedCatalogPath) && existsSync(seedCurriculumPath);
 }
 
 // Wrap a test body: skips with a warning when Postgres is unavailable, or

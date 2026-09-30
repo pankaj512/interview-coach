@@ -12,7 +12,7 @@ import {
   type EvaluationModelInput,
   type EvaluationModelResult,
 } from "@interview-coach/domain";
-import { buildTestBackend, seedCurriculum, type TestBackend } from "./helpers.js";
+import { buildTestBackend, seedCurriculum, seedDataAvailable, type TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
 afterEach(async () => {
@@ -74,7 +74,7 @@ async function skillOf(tb: TestBackend, topicId = TOPIC) {
   return tb.repos.skillStates.findByTopic(USER, CURRICULUM, topicId);
 }
 
-describe("phase 11 skill update", () => {
+describe.skipIf(!seedDataAvailable())("phase 11 skill update", () => {
   it("applies the fallback evaluation to skill state and progress", async () => {
     backend = buildTestBackend();
     const tb = backend;

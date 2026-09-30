@@ -37,7 +37,7 @@ import {
 import { createDatabase } from "../src/client.js";
 import { createDrizzleRepositories } from "../src/repositories.js";
 import * as schema from "../src/schema.js";
-import { connectTestDb, withDb, type TestContext } from "./helpers.js";
+import { connectTestDb, seedDataAvailable, withDb, type TestContext } from "./helpers.js";
 
 const ctx: { current: TestContext | null } = { current: null };
 
@@ -551,6 +551,10 @@ describe("postgres persistence", () => {
   }));
 
   it("persists the imported curriculum tree and survives restart", withDb(ctx, async (t) => {
+    if (!seedDataAvailable()) {
+      console.warn("Seed JSONs absent - skipping curriculum persistence test");
+      return;
+    }
     const here = dirname(fileURLToPath(import.meta.url));
     const catalogJson = JSON.parse(
       readFileSync(resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"), "utf8"),

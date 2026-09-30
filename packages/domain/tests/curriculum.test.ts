@@ -14,40 +14,57 @@ import { importCatalogTopics, topicIdForName } from "../src/catalog.js";
 import { asTopicId } from "../src/ids.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
-const curriculumJson = JSON.parse(
-  readFileSync(resolve(here, "../../../content/dsa/dsa-interview-curriculum.json"), "utf8"),
-) as CurriculumRaw;
-const catalogJson = JSON.parse(
-  readFileSync(resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"), "utf8"),
-) as { topics: { topic: string; problems: { title: string }[] }[] };
+
+// Product-only checkouts (CI included) lack the gitignored seed JSONs: load
+//-or-null so file-backed tests skip instead of failing collection.
+function loadJson<T>(path: string, label: string): T | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf8")) as T;
+  } catch {
+    console.warn(`Seed file absent (${label}) - skipping curriculum import gate`);
+    return null;
+  }
+}
+
+const curriculumJson = loadJson<CurriculumRaw>(
+  resolve(here, "../../../content/dsa/dsa-interview-curriculum.json"),
+  "dsa-interview-curriculum.json",
+);
+const catalogJson = loadJson<{ topics: { topic: string; problems: { title: string }[] }[] }>(
+  resolve(here, "../../../raw_content/dsa/dsa-problem-catalog.json"),
+  "dsa-problem-catalog.json",
+);
 
 function catalogTitles(): ReadonlySet<string> {
   const titles = new Set<string>();
-  for (const topic of catalogJson.topics) {
+  for (const topic of catalogJson?.topics ?? []) {
     for (const problem of topic.problems) titles.add(problem.title);
   }
   return titles;
 }
 
 describe("importCurriculum", () => {
-  it("imports the canonical curriculum (12 modules / 59 topics / 300 problems)", () => {
-    const { curriculum, errors } = importCurriculum(curriculumJson, {
-      knownProblemTitles: catalogTitles(),
-    });
-    expect(errors).toEqual([]);
-    expect(curriculum.id).toBe(DSA_CURRICULUM_ID);
-    expect(curriculum.interviewType).toBe("dsa");
-    expect(curriculum.modules).toHaveLength(12);
-    expect(curriculum.topics).toHaveLength(59);
-    const problemCount = curriculum.topics.reduce(
-      (sum, t) => sum + t.problemIds.length,
-      0,
-    );
-    expect(problemCount).toBe(300);
-  });
+  it.skipIf(curriculumJson === null)(
+    "imports the canonical curriculum (12 modules / 59 topics / 300 problems)",
+    () => {
+      const { curriculum, errors } = importCurriculum(curriculumJson!, {
+        knownProblemTitles: catalogTitles(),
+      });
+      expect(errors).toEqual([]);
+      expect(curriculum.id).toBe(DSA_CURRICULUM_ID);
+      expect(curriculum.interviewType).toBe("dsa");
+      expect(curriculum.modules).toHaveLength(12);
+      expect(curriculum.topics).toHaveLength(59);
+      const problemCount = curriculum.topics.reduce(
+        (sum, t) => sum + t.problemIds.length,
+        0,
+      );
+      expect(problemCount).toBe(300);
+    },
+  );
 
-  it("orders modules and topics deterministically", () => {
-    const { curriculum } = importCurriculum(curriculumJson);
+  it.skipIf(curriculumJson === null)("orders modules and topics deterministically", () => {
+    const { curriculum } = importCurriculum(curriculumJson!);
     expect(curriculum.modules.map((m) => m.order)).toEqual(
       Array.from({ length: 12 }, (_, i) => i + 1),
     );
@@ -61,32 +78,38 @@ describe("importCurriculum", () => {
     }
   });
 
-  it("maps problem titles to the same stable IDs the catalog seed uses", () => {
-    const { curriculum } = importCurriculum(curriculumJson);
+  it.skipIf(curriculumJson === null)(
+    "maps problem titles to the same stable IDs the catalog seed uses",
+    () => {
+      const { curriculum } = importCurriculum(curriculumJson!);
     const arrays = findCurriculumTopic(curriculum, topicIdForName("Arrays"));
     expect(arrays).not.toBeNull();
     expect(arrays?.name).toBe("Arrays");
     expect(arrays?.problemIds[0]).toBe("prob_move-zeroes");
     expect(moduleIdFor(DSA_CURRICULUM_ID, "01")).toBe("module_dsa_01");
-  });
+    },
+  );
 
-  it("covers every catalog problem exactly once", () => {
-    const { curriculum } = importCurriculum(curriculumJson);
-    const seeded = importCatalogTopics(
-      catalogJson.topics.map((t) => ({
-        topic: t.topic,
-        problems: t.problems.map((p) => ({
-          title: p.title,
-          difficulty: "Easy",
+  it.skipIf(curriculumJson === null || catalogJson === null)(
+    "covers every catalog problem exactly once",
+    () => {
+      const { curriculum } = importCurriculum(curriculumJson!);
+      const seeded = importCatalogTopics(
+        catalogJson!.topics.map((t) => ({
+          topic: t.topic,
+          problems: t.problems.map((p) => ({
+            title: p.title,
+            difficulty: "Easy",
+          })),
         })),
-      })),
-    ).problems;
-    const curriculumIds = new Set(
-      curriculum.topics.flatMap((t) => [...t.problemIds]),
-    );
-    expect(curriculumIds.size).toBe(seeded.length);
-    for (const problem of seeded) expect(curriculumIds.has(problem.id)).toBe(true);
-  });
+      ).problems;
+      const curriculumIds = new Set(
+        curriculum.topics.flatMap((t) => [...t.problemIds]),
+      );
+      expect(curriculumIds.size).toBe(seeded.length);
+      for (const problem of seeded) expect(curriculumIds.has(problem.id)).toBe(true);
+    },
+  );
 
   it("reports unknown titles and duplicates without throwing", () => {
     const { curriculum, errors } = importCurriculum(
@@ -113,14 +136,14 @@ describe("importCurriculum", () => {
     expect(errors[1]?.message).toContain("Duplicate topic");
   });
 
-  it("is deterministic across repeated imports", () => {
-    const a = importCurriculum(curriculumJson).curriculum;
-    const b = importCurriculum(curriculumJson).curriculum;
+  it.skipIf(curriculumJson === null)("is deterministic across repeated imports", () => {
+    const a = importCurriculum(curriculumJson!).curriculum;
+    const b = importCurriculum(curriculumJson!).curriculum;
     expect(a).toEqual(b);
   });
 
-  it("returns null for a missing topic lookup", () => {
-    const { curriculum } = importCurriculum(curriculumJson);
+  it.skipIf(curriculumJson === null)("returns null for a missing topic lookup", () => {
+    const { curriculum } = importCurriculum(curriculumJson!);
     expect(findCurriculumTopic(curriculum, asTopicId("topic_nope"))).toBeNull();
   });
 });

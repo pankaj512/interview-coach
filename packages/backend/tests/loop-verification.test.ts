@@ -25,7 +25,7 @@ import { createDatabase, createDrizzleRepositories, type Database } from "@inter
 import { buildApp, type BuiltBackend } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import { FakeVoiceSessionProvider } from "../src/voice-session.js";
-import { seedCurriculum } from "./helpers.js";
+import { seedCurriculum, seedDataAvailable } from "./helpers.js";
 
 let app: BuiltBackend | null = null;
 let dbHandle: Database | null = null;
@@ -140,7 +140,7 @@ async function seedLoopProblem(repos: RepositorySet): Promise<void> {
 }
 
 describe("feature 19 loop verification", () => {
-  it("walks dashboard -> lobby -> live -> evaluating -> results -> history/progress", async () => {
+  it.skipIf(!seedDataAvailable())("walks dashboard -> lobby -> live -> evaluating -> results -> history/progress", async () => {
     const { repos, mode } = await resolveRepos();
     console.info(`loop verification running against ${mode} repos`);
     const built = buildApp({

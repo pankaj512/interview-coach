@@ -9,7 +9,6 @@ import { execFile, execFileSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
-import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
 import {
@@ -36,9 +35,27 @@ interface DatasetRecord {
   };
 }
 
-const dataset = JSON.parse(await readFile(datasetPath, "utf8")) as {
-  problems: readonly DatasetRecord[];
-};
+// Product-only checkouts (CI included) lack the gitignored seed dataset:
+// warn and skip the gate instead of failing collection. An explicit
+// PROBLEM_CONTENT_PATH still loads loudly so the gate rejects a broken
+// dataset when one is pointed at it.
+function loadDataset(): { problems: readonly DatasetRecord[] } | null {
+  if (process.env.PROBLEM_CONTENT_PATH !== undefined) {
+    return JSON.parse(readFileSync(datasetPath, "utf8")) as {
+      problems: readonly DatasetRecord[];
+    };
+  }
+  try {
+    return JSON.parse(readFileSync(datasetPath, "utf8")) as {
+      problems: readonly DatasetRecord[];
+    };
+  } catch {
+    console.warn(`Seed dataset absent (${datasetPath}) - skipping javascript runner gate`);
+    return null;
+  }
+}
+
+const dataset = loadDataset();
 
 const scratchDirs: string[] = [];
 afterAll(() => {
@@ -120,7 +137,7 @@ async function runLinkedProblem(
   return { verdicts, executionOnly };
 }
 
-const runnable = dataset.problems.filter(
+const runnable = (dataset?.problems ?? []).filter(
   (
     p,
   ): p is DatasetRecord & {
@@ -129,7 +146,7 @@ const runnable = dataset.problems.filter(
   } => p.javascript !== undefined && Array.isArray(p.examples) && p.examples.length > 0,
 );
 
-describe("javascript shape runners execute every linked problem (feature 18a.2)", () => {
+describe.skipIf(dataset === null)("javascript shape runners execute every linked problem (feature 18a.2)", () => {
   beforeAll(() => {
     // Gate dependency: host node (vitest itself runs on node, so this is a
     // loud precondition rather than an environment probe).
