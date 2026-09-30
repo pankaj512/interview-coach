@@ -95,14 +95,6 @@ export const TOOL_NAMES: readonly ToolName[] = [
   ...DEPRECATED_TOOL_ALIASES,
 ];
 
-export function isCanonicalToolName(raw: string): raw is CanonicalToolName {
-  return (CANONICAL_TOOL_NAMES as readonly string[]).includes(raw);
-}
-
-export function isDeprecatedToolAlias(raw: string): raw is DeprecatedToolAlias {
-  return (DEPRECATED_TOOL_ALIASES as readonly string[]).includes(raw);
-}
-
 export function isToolName(raw: string): raw is ToolName {
   return (TOOL_NAMES as readonly string[]).includes(raw);
 }

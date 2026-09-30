@@ -21,10 +21,6 @@ export const EVALUATION_JOB_STATUSES: readonly EvaluationJobStatus[] = [
   "failed",
 ];
 
-export function isEvaluationJobStatus(value: string): value is EvaluationJobStatus {
-  return (EVALUATION_JOB_STATUSES as readonly string[]).includes(value);
-}
-
 export const MAX_EVALUATION_JOB_ATTEMPTS = 3;
 
 export interface EvaluationJob {

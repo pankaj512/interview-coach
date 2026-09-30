@@ -80,10 +80,6 @@ export function asProblemId(raw: string): ProblemId {
   return raw as ProblemId;
 }
 
-export function asResponseId(raw: string): ResponseId {
-  return raw as ResponseId;
-}
-
 export function asSubmissionId(raw: string): SubmissionId {
   return raw as SubmissionId;
 }
@@ -96,20 +92,8 @@ export function asEvaluationId(raw: string): EvaluationId {
   return raw as EvaluationId;
 }
 
-export function asEventId(raw: string): EventId {
-  return raw as EventId;
-}
-
 export function asRecommendationId(raw: string): RecommendationId {
   return raw as RecommendationId;
-}
-
-export function asMessageId(raw: string): MessageId {
-  return raw as MessageId;
-}
-
-export function asEvaluationJobId(raw: string): EvaluationJobId {
-  return raw as EvaluationJobId;
 }
 
 export function asCurriculumId(raw: string): CurriculumId {

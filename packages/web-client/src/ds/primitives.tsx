@@ -328,16 +328,6 @@ export function ProgressItem({ label, state }: { readonly label: string; readonl
   );
 }
 
-export function ProgressChecklist({ items }: { readonly items: readonly { label: string; state: ProgressState }[] }) {
-  return (
-    <ul className="progress-list">
-      {items.map((item, i) => (
-        <ProgressItem key={`${i}-${item.label}`} label={item.label} state={item.state} />
-      ))}
-    </ul>
-  );
-}
-
 export function Wave({ active = false, live = false, bars = 24 }: { readonly active?: boolean; readonly live?: boolean; readonly bars?: number }) {
   const cls = active ? "wave wave-active" : live ? "wave wave-live" : "wave wave-idle";
   return (

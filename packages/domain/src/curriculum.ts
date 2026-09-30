@@ -24,10 +24,6 @@ import { slugifyTitle } from "./problem.js";
 // v1: exactly one curriculum, one-to-one with the only interview type.
 export const DSA_CURRICULUM_ID: CurriculumId = asCurriculumId("dsa");
 
-export function curriculumIdForInterviewType(type: InterviewType): CurriculumId {
-  return asCurriculumId(type);
-}
-
 export function moduleIdFor(
   curriculumId: CurriculumId,
   rawModuleId: string,

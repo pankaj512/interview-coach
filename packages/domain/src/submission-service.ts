@@ -269,14 +269,6 @@ export class SubmissionService {
   }
 }
 
-export function parseTestCasesForRun(raw: unknown): Result<RunTestCase[]> {
-  return parseTestCases(raw);
-}
-
-export function parseLimitsForRun(raw: unknown): Result<RunLimits> {
-  return parseRunLimits(raw);
-}
-
 function runnerMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "Runner failed";
   return message.length <= 2000 ? message : `${message.slice(0, 2000)}...`;

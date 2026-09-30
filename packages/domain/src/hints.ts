@@ -8,7 +8,6 @@
 
 import type { Problem } from "./problem.js";
 
-export const MIN_HINT_LEVEL = 1 as const;
 export const MAX_HINT_LEVEL = 3 as const;
 export type HintLevel = 1 | 2 | 3;
 

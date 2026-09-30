@@ -71,21 +71,21 @@
 **Suggested fix:** Add one `extractFirstJsonObject(content: string): string | null` to `packages/backend/src/llm-transport.ts` (already imported by all three) and have each parser call it before `JSON.parse`.
 **Resolution:** Fixed on `fix/shared-json-extraction-helper`: the scanner lives once as `extractFirstJsonObject` in `llm-transport.ts` (same semantics, no behavior change); all three parsers call it and keep only their own `JSON.parse` + contract validation. Existing parser tests pass unchanged; full gates green (typecheck, 1248 tests, build).
 
-### F-09 [P2] open - Dead manual-answer components and primitive remain in the client
+### F-09 [P2] fixed - Dead manual-answer components and primitive remain in the client
 
 **File:** packages/web-client/src/components/AnswerForm.tsx:12 (also HintPanel.tsx:22, ds/primitives.tsx:331)
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** `AnswerForm`, `HintPanel`, and `ProgressChecklist` are exported but never imported anywhere outside their own definitions, so they ship dead code. They are leftovers from the retired manual-answer / text-mode path the overview says is gone (MVP is voice-only).
 **Suggested fix:** Delete `AnswerForm.tsx` and `HintPanel.tsx`, remove the `ProgressChecklist` export, and drop any import that becomes unused.
-**Resolution:**
+**Resolution:** Fixed on `fix/remove-dead-client-and-domain-code`: both component files deleted, `ProgressChecklist` export removed from `ds/primitives.tsx`; names occur nowhere under `packages/web-client/src`. Web-client typecheck clean, no test changes.
 
-### F-10 [P3] open - Unused exported domain helpers
+### F-10 [P3] fixed - Unused exported domain helpers
 
 **File:** packages/domain/src/result.ts:17 (also tool-service.ts:98,102; evaluation-job.ts:24; hints.ts:11; curriculum.ts:27; skill-update.ts:43; submission-service.ts:272,276; ids.ts:83,99,107,111)
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** These exports have no callers in source or tests: `isOk`, `mapResult`, `andThen`; `isCanonicalToolName`, `isDeprecatedToolAlias`; `isEvaluationJobStatus`; `MIN_HINT_LEVEL`; `curriculumIdForInterviewType`; `isSkillDecision`; `parseTestCasesForRun`, `parseLimitsForRun`; `asResponseId`, `asEventId`, `asMessageId`, `asEvaluationJobId`. Dead surface costs maintenance and misleads readers about the API. (`isErr`, `ok`, `err`, and the other branded-ID helpers are used and must stay.)
 **Suggested fix:** Delete the unused exports; re-add each when a real caller appears.
-**Resolution:**
+**Resolution:** Fixed on `fix/remove-dead-client-and-domain-code`: all 15 listed exports deleted across the eight domain files; `isErr`, `ok`, `err`, and the used branded-ID helpers remain. Repo typecheck clean, full suite green with no test changes.
 
 ### F-11 [P2] fixed - Config field dead, and same env var re-parsed without validation
 

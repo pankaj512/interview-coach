@@ -40,10 +40,6 @@ export const SKILL_DECISIONS: readonly SkillDecision[] = [
   "advance",
 ];
 
-export function isSkillDecision(value: string): value is SkillDecision {
-  return (SKILL_DECISIONS as readonly string[]).includes(value);
-}
-
 // Configurable decision policy. Defaults are documented, not tuned here.
 export interface SkillUpdatePolicy {
   /** At/above this overall score (0..100) the attempt is a success. */
