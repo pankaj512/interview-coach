@@ -1,4 +1,4 @@
-// @interview-coach/web-client — profile taxonomy mirror (Phase 2).
+// @interview-coach/web-client - profile taxonomy mirror (Phase 2).
 //
 // The client cannot import @interview-coach/domain (it pulls node:crypto), so
 // this is the single client-side source for the taxonomy. Keep it in sync with

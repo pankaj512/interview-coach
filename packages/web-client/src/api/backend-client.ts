@@ -1,9 +1,9 @@
-// @interview-coach/web-client — control-plane HTTP client (S4).
+// @interview-coach/web-client - control-plane HTTP client (S4).
 //
 // Control plane (frozen section 2): Browser<->Fastify over HTTPS. Every
 // method maps 1:1 to an S3 route; error envelopes surface as
 // BackendApiError. Tool-exec is special: 4xx permanent failures are returned
-// as data (ToolExecFailure — model-facing, forwarded to Voice Live), while
+// as data (ToolExecFailure - model-facing, forwarded to Voice Live), while
 // transport/5xx failures throw so the forwarder can retry them.
 
 import type {

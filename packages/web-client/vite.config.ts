@@ -1,4 +1,4 @@
-// @interview-coach/web-client — Vite + React (HLD Phase 4 / S4).
+// @interview-coach/web-client - Vite + React (HLD Phase 4 / S4).
 //
 // Frozen section 7: no `VITE_AZURE_*` vars, no Azure SDK in the client. The
 // only env the bundle reads is `VITE_BACKEND_URL`. Voice Live credentials

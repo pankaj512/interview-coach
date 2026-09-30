@@ -86,7 +86,7 @@ export function ProgressScreen({
           <Card>
             <h2 className="section-title">Curriculum progress</h2>
             {curriculumProgress === null ? (
-              <p className="hint">Loading your curriculum…</p>
+              <p className="hint">Loading your curriculum...</p>
             ) : (
               <>
                 <div className="hero-score">

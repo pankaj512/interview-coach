@@ -100,7 +100,7 @@ export function ResultsScreen({
     return (
       <Card>
         <h1 className="page-title">Results</h1>
-        <p className="hint">Final state is loading…</p>
+        <p className="hint">Final state is loading...</p>
       </Card>
     );
   }
@@ -127,7 +127,7 @@ export function ResultsScreen({
       </h1>
       {stale && (
         <Card className="state-card state-reconnecting" role="note">
-          <p>Saved history entry — live state unavailable. Scores below may be stale.</p>
+          <p>Saved history entry - live state unavailable. Scores below may be stale.</p>
         </Card>
       )}
 
@@ -139,15 +139,15 @@ export function ResultsScreen({
           <div className="hero-meta">
             <span className="band-chip">Evaluation in progress</span>
             <p className="hint">
-              Your interview is saved. The coach is reviewing the transcript, code, and approach —
-              this usually takes a few seconds.
+              Your interview is saved. The coach is reviewing the transcript, code, and approach.
+              This usually takes a few seconds.
             </p>
           </div>
         </Card>
       ) : (
         <Card className="hero-card">
           <div className="hero-score">
-            <span className="hero-number">{overall === null ? "—" : overall}</span>
+            <span className="hero-number">{overall === null ? "-" : overall}</span>
             <span className="hero-den">/ 100</span>
           </div>
           <div className="hero-meta">
@@ -204,7 +204,7 @@ export function ResultsScreen({
       ) : evalStatus === "failed" ? (
         <Card>
           <p className="hint">
-            The evaluation could not be completed. Your interview and transcript are saved — you can
+            The evaluation could not be completed. Your interview and transcript are saved - you can
             review it from History and try again later.
           </p>
         </Card>

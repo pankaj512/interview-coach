@@ -1,4 +1,4 @@
-// @interview-coach/domain — UserProfile (learning-loop Phase 2).
+// @interview-coach/domain - UserProfile (learning-loop Phase 2).
 //
 // The profile is the starting context for recommendation + evaluation: what
 // the candidate is preparing for (interview types), their role and level, and
@@ -18,7 +18,7 @@ import { err, ok } from "./result.js";
 import type { InterviewType } from "./interview.js";
 
 // Interview types: DSA only for v1; extensible to System Design, Behavioral,
-// AI/ML, … (roadmap locked decision 13/14).
+// AI/ML, ... (roadmap locked decision 13/14).
 export const INTERVIEW_TYPES = ["dsa"] as const;
 
 export function isInterviewType(value: string): value is InterviewType {

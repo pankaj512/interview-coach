@@ -27,7 +27,7 @@ export function ProblemPanel({
       <section className="card" aria-label="Problem">
         <h2>Problem</h2>
         <p className="note">
-          {snapshot === null ? "Loading interview state…" : "No problem attached yet."}
+          {snapshot === null ? "Loading interview state..." : "No problem attached yet."}
         </p>
       </section>
     );
@@ -44,7 +44,7 @@ export function ProblemPanel({
         <p>{description}</p>
       ) : (
         <p className="note">
-          {loadingContent ? "Loading full statement…" : "No description available for this problem yet."}
+          {loadingContent ? "Loading full statement..." : "No description available for this problem yet."}
         </p>
       )}
       {constraints !== undefined && constraints !== null && constraints.length > 0 && (

@@ -3,7 +3,7 @@
 // Mirrors `voice/voice-prefs.ts`: the language set is closed
 // (`CodeLanguage` in `api/types.ts`), so unknown or empty stored values read
 // back as null and Python stays the default. The stored preference never
-// leaves the client as its own value — it only seeds the editor's initial
+// leaves the client as its own value - it only seeds the editor's initial
 // language; every Test submission still carries the live selector value.
 
 import type { CodeLanguage } from "../api/types.js";

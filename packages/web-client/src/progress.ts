@@ -1,7 +1,7 @@
-// Progress + weak-area derivations (ux-spec §27–§29).
+// Progress + weak-area derivations (ux-spec §27-§29).
 //
 // Pure functions over server-owned state: interview history summaries (Phase 9)
-// plus the skill snapshot/curriculum (Phase 3). No browser-local authority —
+// plus the skill snapshot/curriculum (Phase 3). No browser-local authority:
 // every value here is derived from backend responses.
 
 import type { HistoryEntry } from "./history.js";
@@ -123,6 +123,6 @@ export function overallBand(score: number | null): string {
 }
 
 export function formatRecommendation(recommendation: string | undefined): string {
-  if (recommendation === undefined || recommendation === "") return "—";
+  if (recommendation === undefined || recommendation === "") return "-";
   return recommendation.replace(/_/g, " ");
 }

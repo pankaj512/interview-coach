@@ -1,9 +1,9 @@
-// @interview-coach/web-client — Dashboard data hook (Phase 5).
+// @interview-coach/web-client - Dashboard data hook (Phase 5).
 //
 // Loads the server-owned learning state the Dashboard renders: the current
 // recommendation (generating one deterministically if none exists), the
 // curriculum (for topic/module names), the per-user skill snapshot, and the
-// recommended problem. No localStorage authority — the browser only presents
+// recommended problem. No localStorage authority - the browser only presents
 // backend state. A single in-flight load is shared so React StrictMode's
 // double effect does not generate a recommendation twice.
 

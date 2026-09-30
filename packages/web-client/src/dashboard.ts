@@ -1,9 +1,9 @@
-// @interview-coach/web-client — Dashboard derivations (Phase 5).
+// @interview-coach/web-client - Dashboard derivations (Phase 5).
 //
 // Pure functions over server-owned state (profile, recommendation, curriculum,
 // skill state). The Dashboard renders these; it never derives learning state
 // from browser storage. Every value here is a presentation mapping of a
-// backend response — the backend remains the system of record.
+// backend response - the backend remains the system of record.
 
 import type {
   MasteryLevel,

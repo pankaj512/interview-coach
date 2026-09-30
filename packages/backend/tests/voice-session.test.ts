@@ -229,7 +229,7 @@ describe("voice-session", () => {
       topicSummary: "Arrays (module: Arrays & Hashing)",
       objectiveSummary: "Build fluency with linear scans",
       skillSummary: "mastery Developing; 2/4 successful attempts",
-      problemSummary: "Move Zeroes (Easy) — two pointers",
+      problemSummary: "Move Zeroes (Easy) - two pointers",
     });
     expect(instructions).toContain("Learner: Preparing for Senior Backend Engineer");
     expect(instructions).toContain("Focus topic: Arrays (module: Arrays & Hashing).");

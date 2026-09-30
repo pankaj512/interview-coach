@@ -1,4 +1,4 @@
-// Feature 16: Docker runner units (stubbed spawn — no daemon needed).
+// Feature 16: Docker runner units (stubbed spawn - no daemon needed).
 
 import { describe, expect, it, vi } from "vitest";
 import {

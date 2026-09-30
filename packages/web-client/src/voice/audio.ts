@@ -1,4 +1,4 @@
-// @interview-coach/web-client — PCM audio helpers (frozen section 3).
+// @interview-coach/web-client - PCM audio helpers (frozen section 3).
 //
 // Audio: PCM16 / 24 kHz / mono both directions. The browser captures at the
 // device rate (often 48 kHz stereo) and must downmix + resample before

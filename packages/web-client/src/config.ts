@@ -1,4 +1,4 @@
-// @interview-coach/web-client — runtime config (S4).
+// @interview-coach/web-client - runtime config (S4).
 //
 // Frozen section 7: the bundle reads ONLY `VITE_BACKEND_URL`. There is no
 // `VITE_AZURE_*` and no Azure SDK in the client; Voice Live credentials arrive
@@ -10,7 +10,7 @@ export interface WebClientConfig {
   /**
    * S8a service token, local-dev-only (mirrors the server-side
    * `API_AUTH_TOKEN` gate). Ships in the bundle when set, so never use it
-   * outside local development — production needs per-user identity (S8b).
+   * outside local development - production needs per-user identity (S8b).
    */
   readonly apiToken: string | undefined;
 }

@@ -1,4 +1,4 @@
-// @interview-coach/domain — server-owned curriculum (learning-loop Phase 3).
+// @interview-coach/domain - server-owned curriculum (learning-loop Phase 3).
 //
 // The curriculum is the pedagogical ordering over the canonical problem
 // catalog (content/dsa/dsa-interview-curriculum.json: 12 modules / 59 topics / 300

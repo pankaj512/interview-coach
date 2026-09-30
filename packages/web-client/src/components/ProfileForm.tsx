@@ -1,5 +1,5 @@
 // Shared profile editor (Phase 2): used by onboarding (create) and the
-// profile screen (edit). Presentational — the parent owns the backend call,
+// profile screen (edit). Presentational - the parent owns the backend call,
 // busy/error state, and what happens on success. Taxonomy comes from the
 // single client mirror in ../profile-taxonomy.ts.
 
@@ -142,7 +142,7 @@ export function ProfileForm({
         )}
         {(!hideSubmitUntilDirty || dirty) && (
           <PrimaryButton type="submit" disabled={busy || invalid}>
-            {busy ? "Saving…" : submitLabel}
+            {busy ? "Saving..." : submitLabel}
           </PrimaryButton>
         )}
       </div>

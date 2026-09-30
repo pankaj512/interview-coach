@@ -1,4 +1,4 @@
-// @interview-coach/backend — local account service (HLD 7.1, S8c).
+// @interview-coach/backend - local account service (HLD 7.1, S8c).
 //
 // Self-registered email+password accounts with opaque bearer sessions.
 // Cryptography: scrypt for passwords (N=16384, r=8, p=1), 32-byte random
@@ -7,7 +7,7 @@
 //
 // Seams for S8d (social sign-in): this module owns the *local* credential
 // path only. OIDC/Social arrives as a second issuer that mints the same
-// UserSession rows — routes resolve a session, never an issuer — so no route
+// UserSession rows - routes resolve a session, never an issuer - so no route
 // changes are needed when Google/GitHub/Microsoft land.
 
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";

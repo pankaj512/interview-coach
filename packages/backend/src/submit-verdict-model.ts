@@ -1,10 +1,10 @@
-// @interview-coach/backend — server-side submit-verdict model (feature 18d).
+// @interview-coach/backend - server-side submit-verdict model (feature 18d).
 //
 // The fourth LLM surface: server-side only, never a realtime tool. It reads
 // the problem context plus the candidate's editor code and proposes a
 // structured verdict (correctness, optimality, break-points, edge cases).
 // The model is advisory: the service validates the proposal against the
-// domain contract. There is no deterministic fallback — failures are data,
+// domain contract. There is no deterministic fallback - failures are data,
 // not exceptions, and the caller surfaces an error instead of an invented
 // verdict: timeout/HTTP/unparseable/invalid all yield `{ proposal: null,
 // error }`.

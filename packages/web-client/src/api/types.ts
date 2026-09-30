@@ -1,4 +1,4 @@
-// @interview-coach/web-client — backend API shapes (S4).
+// @interview-coach/web-client - backend API shapes (S4).
 //
 // Structural mirrors of the S3 serializers (packages/backend/src/*.ts). The
 // web client deliberately does NOT depend on @interview-coach/domain: domain
@@ -272,7 +272,7 @@ export interface RecordResponseInput {
 // 6-vs-8 bar question (design spec §8 vs HLD) needs no client change.
 // S7a sandbox (HLD Phase 6): code submissions + test runs. Structural
 // mirrors of the backend serializers; hidden cases arrive masked
-// (pass/fail only — the backend never stores hidden actuals).
+// (pass/fail only - the backend never stores hidden actuals).
 export type CodeLanguage = "javascript" | "python" | "cpp";
 
 export interface SubmitCodeInput {

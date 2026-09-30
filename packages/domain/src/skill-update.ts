@@ -1,8 +1,8 @@
-// @interview-coach/domain — deterministic skill/curriculum update (Phase 11).
+// @interview-coach/domain - deterministic skill/curriculum update (Phase 11).
 //
 // Once an evaluation is persisted ("accepted"), the learning loop updates the
 // user's mastery state and curriculum pointer as a *pure function of persisted
-// state* — no further LLM call (roadmap "The learning loop"). The LLM proposes
+// state* - no further LLM call (roadmap "The learning loop"). The LLM proposes
 // the evaluation; the backend decides what it means for mastery (ADR-002).
 //
 // This module owns the configurable decision rules:

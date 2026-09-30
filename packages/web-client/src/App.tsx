@@ -264,7 +264,7 @@ export function App() {
   // create + assign + ready an interview bound to the recommended problem so
   // practice starts from server state (the persisted recommendation linkage is
   // Phase 9; the app-level binding is Phase 6). The Lobby is the final
-  // pre-interview step — no manual topic/difficulty/problem selection.
+  // pre-interview step - no manual topic/difficulty/problem selection.
   const startRecommended = useCallback(
     async (
       recommendation: SerializedRecommendation,
@@ -518,7 +518,7 @@ export function App() {
       <main className="app">
         <div className="auth-wrap">
           <p className="hint" role="status">
-            Loading your profile…
+            Loading your profile...
           </p>
         </div>
       </main>

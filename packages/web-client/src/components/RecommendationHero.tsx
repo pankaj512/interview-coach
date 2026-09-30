@@ -30,7 +30,7 @@ export function RecommendationHero({
       <p>{view.reason}</p>
       <div className="cta">
         <PrimaryButton onClick={onPrimary} disabled={busy}>
-          {busy ? "Starting…" : primaryLabel}
+          {busy ? "Starting..." : primaryLabel}
         </PrimaryButton>
         <GhostButton onClick={onSecondary} disabled={busy}>
           New suggestion

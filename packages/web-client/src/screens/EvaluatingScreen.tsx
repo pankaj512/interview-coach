@@ -9,7 +9,7 @@ import { Badge, Card } from "../ds/primitives.js";
 
 const STEPS: readonly { label: string; detail: string; state: "done" | "active" | "todo" }[] = [
   { label: "Transcript captured", detail: "saved", state: "done" },
-  { label: "Scoring 7 dimensions", detail: "analyzing…", state: "active" },
+  { label: "Scoring 7 dimensions", detail: "analyzing...", state: "active" },
   { label: "Updating skills", detail: "waiting", state: "todo" },
   { label: "Regenerating recommendation", detail: "waiting", state: "todo" },
 ];

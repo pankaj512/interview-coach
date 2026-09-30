@@ -40,7 +40,7 @@ export async function truncateAll(db: PostgresJsDatabase<typeof schema>): Promis
 
 // Never let these destructive tests wipe a non-test database. A dev DB
 // seeded with the problem catalog is a tempting `DATABASE_URL`, and
-// `truncateAll` deletes `problems` — which silently empties auto-select. Run
+// `truncateAll` deletes `problems` - which silently empties auto-select. Run
 // against a dedicated `*_test` database (TEST_DATABASE_URL), or opt in
 // explicitly for a throwaway DB with ALLOW_DESTRUCTIVE_DB_TESTS=true (CI).
 export function destructiveTestsAllowed(): boolean {
@@ -76,12 +76,12 @@ export function withDb(
   return async () => {
     const t = ctx.current;
     if (t === null) {
-      console.warn("Postgres unavailable — skipping persistence test");
+      console.warn("Postgres unavailable - skipping persistence test");
       return;
     }
     if (!destructiveTestsAllowed()) {
       console.warn(
-        "Refusing to truncate a non-test database — set TEST_DATABASE_URL to a *_test database, or ALLOW_DESTRUCTIVE_DB_TESTS=true. Skipping persistence test",
+        "Refusing to truncate a non-test database - set TEST_DATABASE_URL to a *_test database, or ALLOW_DESTRUCTIVE_DB_TESTS=true. Skipping persistence test",
       );
       return;
     }

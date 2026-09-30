@@ -1,8 +1,8 @@
-// @interview-coach/backend — service auth gate + caller ownership (S8a/S8c).
+// @interview-coach/backend - service auth gate + caller ownership (S8a/S8c).
 //
 // Two credential kinds (HLD 7.1, ADR-001):
-//   service — the shared API_AUTH_TOKEN (CLI/admin; bypasses ownership).
-//   user    — an opaque session token from /api/auth/* (ownership enforced).
+//   service - the shared API_AUTH_TOKEN (CLI/admin; bypasses ownership).
+//   user    - an opaque session token from /api/auth/* (ownership enforced).
 // Open local-dev mode (no API_AUTH_TOKEN) allows anonymous callers with
 // client-supplied candidate IDs, exactly like S7 and earlier; user sessions
 // still resolve there when presented.
@@ -109,7 +109,7 @@ export function registerAuthHook(app: FastifyInstance, gate: AuthGate): void {
 // through; user callers are scoped to their own interviews.
 //
 // F7-6: this re-reads the interview in the hook, and the handler reads it
-// again — an accepted extra round-trip (and a tiny window where the two reads
+// again - an accepted extra round-trip (and a tiny window where the two reads
 // can disagree) in exchange for a single, uniform ownership chokepoint. The
 // resolved entity is not attached to the request; revisit if the read cost
 // matters.

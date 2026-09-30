@@ -1,4 +1,4 @@
-// @interview-coach/web-client — interview lifecycle hooks.
+// @interview-coach/web-client - interview lifecycle hooks.
 //
 // UI state only. Authoritative state lives in the backend; these hooks poll
 // `GET .../state` for display and drive transitions through the control-plane
@@ -80,7 +80,7 @@ export function shouldRefreshOnClose(
   return connection === "closed" && hasJoined && !finished && !scheduled && !suspending;
 }
 
-// HLD 4.2: realtime interview screen state — connection, speakers, timer,
+// HLD 4.2: realtime interview screen state - connection, speakers, timer,
 // polled backend snapshot, tool/transcript activity, plus the S6.1 mute/pause
 // controls and the text-fallback path.
 export interface UseLiveInterviewOptions {
@@ -201,7 +201,7 @@ export function useLiveInterview(
           },
           onAssistantSpeaking: setAssistantSpeaking,
           onCandidateSpeaking: setCandidateSpeaking,
-          onToolStart: (callId, tool) => log("tool", `${tool} started (${callId.slice(0, 8)}…)`),
+          onToolStart: (callId, tool) => log("tool", `${tool} started (${callId.slice(0, 8)}...)`),
           onToolComplete: (callId, tool, elapsedMs, replayed) =>
             log("tool", `${tool} complete in ${elapsedMs}ms${replayed ? " (replayed)" : ""}`),
           onTranscript: (text) => {
@@ -403,7 +403,7 @@ export function useLiveInterview(
   useEffect(() => {
     if (!shouldAutoFinish(snapshot?.interview.status, finished, autoFinishRef.current)) return;
     autoFinishRef.current = true;
-    log("interview", "model ended the interview — auto-finishing");
+    log("interview", "model ended the interview - auto-finishing");
     const timer = setTimeout(() => {
       void finish();
     }, AUTO_FINISH_DELAY_MS);

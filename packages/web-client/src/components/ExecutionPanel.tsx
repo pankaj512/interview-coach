@@ -1,9 +1,9 @@
-// HLD 6.4 — code execution results on the debrief screen (S7b).
+// HLD 6.4 - code execution results on the debrief screen (S7b).
 //
 // Read-only view of backend-owned sandbox state: submission count plus the
 // latest persisted run with per-case verdicts. Mounted above the finalize
 // form so evaluators score with execution evidence in view. Hidden cases
-// arrive masked (pass/fail only) — the panel renders what the server
+// arrive masked (pass/fail only) - the panel renders what the server
 // returns and can leak nothing more.
 
 import { useEffect, useState } from "react";
@@ -50,7 +50,7 @@ export function ExecutionPanel({
       </h3>
       {error !== null && <p className="error">{error}</p>}
       {error === null && submissionCount === null && (
-        <p className="hint">Loading execution history…</p>
+        <p className="hint">Loading execution history...</p>
       )}
       {error === null && submissionCount !== null && submissionCount === 0 && (
         <p className="hint">No code submitted this interview.</p>
@@ -70,7 +70,7 @@ export function ExecutionPanel({
                   <span className="event-kind">{result.passed ? "pass" : "fail"}</span>{" "}
                   {result.name}
                   {result.hidden && " (hidden)"}
-                  {result.error !== undefined && result.error !== "" && ` — ${result.error}`}
+                  {result.error !== undefined && result.error !== "" && ` - ${result.error}`}
                 </li>
               ))}
             </ul>

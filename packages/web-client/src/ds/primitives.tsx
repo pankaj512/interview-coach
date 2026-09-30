@@ -4,7 +4,7 @@
 // Eyebrow, SectionTitle, SectionHead, Badge, Pill, ChipList, Segmented,
 // RadioCard, ProgressItem, ProgressTrack, CtaCard, TableShell, CoachPanel,
 // VoiceRail, TimelineRow, FormCard, Wave, Dialog, StatCard, ScoreRow, Field.
-// Pure UI — no data fetching. Visual language (landed v1.1 Stitch → code):
+// Pure UI - no data fetching. Visual language (landed v1.1 Stitch → code):
 // white cards, 1px #E2E8F0 borders, 8px card radius, 4px controls,
 // Space Grotesk headings + Public Sans body + JetBrains Mono telemetry.
 
@@ -145,7 +145,7 @@ export function TableShell({ children }: { readonly children: ReactNode }) {
 }
 
 // v1.1 shared primitive: coach panel (Guided Coaching Hint/Clarify/Feedback).
-// Hidden or restricted in Realistic mode by the caller — this is pure layout.
+// Hidden or restricted in Realistic mode by the caller - this is pure layout.
 export function CoachPanel({
   title = "Coaching",
   children,

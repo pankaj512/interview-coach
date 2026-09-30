@@ -1,4 +1,4 @@
-// HLD 4.2/5.11 — manual answer capture (S5b).
+// HLD 4.2/5.11 - manual answer capture (S5b).
 //
 // Voice turns are recorded by the model via record_candidate_answer; this
 // form covers typed notes/approaches the candidate wants persisted
@@ -65,13 +65,13 @@ export function AnswerForm({
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Outline your approach, edge cases, complexity…"
+            placeholder="Outline your approach, edge cases, complexity..."
             rows={3}
             maxLength={10_000}
           />
         </label>
         <button type="submit" disabled={busy || content.trim() === ""}>
-          {busy ? "Saving…" : "Save response"}
+          {busy ? "Saving..." : "Save response"}
         </button>
       </form>
       {error !== null && <p className="error">{error}</p>}

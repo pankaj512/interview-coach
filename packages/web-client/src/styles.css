@@ -1,8 +1,8 @@
-/* Interview Coach — application stylesheet (ux-spec §3/§4/§34).
+/* Interview Coach - application stylesheet (ux-spec §3/§4/§34).
  *
  * Every value comes from tokens.css. Voice green (var(--voice-solid)) is
  * reserved for voice activity only; the primary CTA uses brand blue. State is
- * never color-alone — components always render icon + label.
+ * never color-alone - components always render icon + label.
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
@@ -3300,7 +3300,7 @@ textarea.code {
 /* ---------- v1.1 Stitch primitives (Stitch → code, no Penpot) ----------
  * Calm technical engineer system: white cards, 1px #E2E8F0 borders,
  * 8px card radius / 4px controls, mono telemetry chips. Reuses the
- * existing token vars; no one-off CSS per screen — screens compose these.
+ * existing token vars; no one-off CSS per screen - screens compose these.
  */
 .section-head-v11 {
   display: flex;

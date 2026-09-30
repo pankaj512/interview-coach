@@ -1,4 +1,4 @@
-// @interview-coach/domain — EvaluationJob (learning-loop Phase 10).
+// @interview-coach/domain - EvaluationJob (learning-loop Phase 10).
 //
 // The async unit of work that turns a finished interview into a persisted,
 // validated Evaluation. The job row is the durable hand-off: `end` completes

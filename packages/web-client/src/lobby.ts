@@ -1,4 +1,4 @@
-// @interview-coach/web-client — Lobby readiness + gating (Phase 6).
+// @interview-coach/web-client - Lobby readiness + gating (Phase 6).
 //
 // Pure presentation logic for the final pre-interview step. The Lobby shows
 // server-owned state (the recommendation) and gates "Begin interview" on two
@@ -32,7 +32,7 @@ export function micReadyLabel(mic: MicState): string {
     case "ready":
       return "Microphone ready";
     case "checking":
-      return "Checking microphone…";
+      return "Checking microphone...";
     case "denied":
       return "Microphone blocked";
     case "unsupported":
@@ -45,7 +45,7 @@ export function sessionReadyLabel(session: SessionReadiness): string {
     case "ready":
       return "Session ready";
     case "checking":
-      return "Preparing session…";
+      return "Preparing session...";
     case "unconfigured":
       return "Voice unavailable";
     case "error":

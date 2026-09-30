@@ -17,7 +17,7 @@ export type ChipState =
 
 export interface ChipView {
   readonly state: ChipState;
-  /** Icon glyph — always paired with `label`, never color-alone. */
+  /** Icon glyph - always paired with `label`, never color-alone. */
   readonly icon: string;
   readonly label: string;
 }
@@ -53,7 +53,7 @@ export function chipViewFor(connection: VoiceConnectionState, micBlocked: boolea
 }
 
 // ux-spec §12: Connecting, Listening, User speaking, AI thinking, AI
-// speaking, Paused, Error — plus Muted (the candidate muted the mic).
+// speaking, Paused, Error - plus Muted (the candidate muted the mic).
 export type VoicePhase =
   | "connecting"
   | "listening"
@@ -71,10 +71,10 @@ export interface VoiceView {
 }
 
 const VOICE_VIEWS: Record<VoicePhase, VoiceView> = {
-  connecting: { phase: "connecting", icon: "◌", label: "Connecting…" },
+  connecting: { phase: "connecting", icon: "◌", label: "Connecting..." },
   listening: { phase: "listening", icon: "◎", label: "Listening" },
   userSpeaking: { phase: "userSpeaking", icon: "●", label: "You're speaking" },
-  thinking: { phase: "thinking", icon: "◌", label: "Thinking…" },
+  thinking: { phase: "thinking", icon: "◌", label: "Thinking..." },
   speaking: { phase: "speaking", icon: "◉", label: "Interviewer speaking" },
   paused: { phase: "paused", icon: "Ⅱ", label: "Interview paused" },
   muted: { phase: "muted", icon: "⌀", label: "Muted" },

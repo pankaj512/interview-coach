@@ -1,4 +1,4 @@
-// @interview-coach/domain — deterministic problem selection (HLD 5.1 / S5).
+// @interview-coach/domain - deterministic problem selection (HLD 5.1 / S5).
 //
 // Pure function over backend-owned problems. No I/O, no randomness: the same
 // catalog + configuration always yields the same ordered selection, so

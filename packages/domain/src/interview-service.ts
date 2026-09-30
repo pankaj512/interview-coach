@@ -206,8 +206,8 @@ export class InterviewService {
 
   // S8b retention (HLD 7.4): hard erase. Removes the interview row; every
   // repo cascades interview-scoped artefacts (assignments, responses,
-  // evaluations, events, submissions, runs). Live interviews are refused —
-  // end, cancel, or fail first — so a running voice session is never pulled
+  // evaluations, events, submissions, runs). Live interviews are refused unless they
+  // end, cancel, or fail first - so a running voice session is never pulled
   // out from under the model. Returns the pre-delete status for audit logs.
   async deleteInterview(
     id: InterviewId,

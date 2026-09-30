@@ -80,7 +80,7 @@ export interface EventRepository {
 }
 
 // S7a sandbox persistence (HLD 6.1/6.3): submissions + runs are
-// backend-owned artefacts like responses — persisted separately from raw
+// backend-owned artefacts like responses - persisted separately from raw
 // conversation, restart-safe, readable by evaluation (HLD 6.4).
 export interface SubmissionRepository {
   save(submission: CodeSubmission): Promise<void>;
@@ -158,7 +158,7 @@ export class InMemoryResponseRepository implements ResponseRepository {
 
   // Oldest-first by createdAt, matching the Drizzle `asc(created_at)` read
   // (audit P2-3). Array.sort is stable, so equal (injected) timestamps keep
-  // insertion order — the deterministic tie-break Postgres cannot offer.
+  // insertion order - the deterministic tie-break Postgres cannot offer.
   async listByInterview(
     interviewId: InterviewId,
   ): Promise<readonly CandidateResponse[]> {

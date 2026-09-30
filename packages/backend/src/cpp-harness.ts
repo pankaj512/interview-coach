@@ -1,4 +1,4 @@
-// @interview-coach/backend — C++ candidate harness (feature 16).
+// @interview-coach/backend - C++ candidate harness (feature 16).
 //
 // Candidate contract (mirrors the JS/Python "callable named solve" rule):
 // the submission defines `solve` taking/returning `Value`, e.g.

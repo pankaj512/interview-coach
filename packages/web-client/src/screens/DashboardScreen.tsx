@@ -47,7 +47,7 @@ export function DashboardScreen({
     return (
       <div className="wrap">
         <p className="eyebrow">{greeting()}</p>
-        <h1>Loading your learning plan…</h1>
+        <h1>Loading your learning plan...</h1>
       </div>
     );
   }
@@ -88,7 +88,7 @@ export function DashboardScreen({
           <p>No recommendation yet.</p>
           <div className="cta">
             <PrimaryButton onClick={() => void data.regenerate()} disabled={data.busy}>
-              {data.busy ? "Finding…" : "Get a recommendation"}
+              {data.busy ? "Finding..." : "Get a recommendation"}
             </PrimaryButton>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function DashboardScreen({
         <div className="card">
           <h2>Focus areas</h2>
           {weaknesses.length === 0 ? (
-            <p className="hint">No recurring weaknesses yet — keep practising.</p>
+            <p className="hint">No recurring weaknesses yet - keep practising.</p>
           ) : (
             weaknesses.map((item) => (
               <div key={item} className="item">

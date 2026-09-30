@@ -1,6 +1,6 @@
 // Phase 12: the adaptive learning loop. A completed interview is evaluated,
 // the skill state updates, and the current recommendation is superseded +
-// regenerated from the new state — deterministically and without oscillation.
+// regenerated from the new state - deterministically and without oscillation.
 
 import { afterEach, describe, expect, it } from "vitest";
 import {

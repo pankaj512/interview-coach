@@ -2,7 +2,7 @@
 //
 // chip-status, voice-state (Connecting/Listening/You're speaking/Thinking/
 // Interviewer speaking/Paused/Muted/Error), timer, caption, diff-pill,
-// score-bar. All state renders icon + label — never color-alone.
+// score-bar. All state renders icon + label - never color-alone.
 
 import { chipViewFor, formatClock, timerStatus, voiceViewFor, type ChipState } from "./model.js";
 import type { VoiceConnectionState } from "../voice/voice-client.js";

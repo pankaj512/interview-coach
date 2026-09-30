@@ -1,4 +1,4 @@
-// @interview-coach/backend — Fastify product service (HLD Phase 3 / S3).
+// @interview-coach/backend - Fastify product service (HLD Phase 3 / S3).
 //
 // Backend owns truth; the model owns conversation. Every route reads or
 // mutates backend-owned interview state via the S1 domain services (same
@@ -459,7 +459,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       : { runSynchronously: deps.evaluationRunSynchronously }),
   });
   // Feature 18d: AI-only Submit verdict over the same server-side LLM port.
-  // No sandbox run, zero persistence — the verdict is computed and returned.
+  // No sandbox run, zero persistence - the verdict is computed and returned.
   const submitVerdictModel =
     deps.submitVerdictModel ?? createSubmitVerdictModelFromEnv(config.llm);
   // Feature 16 sandbox: Docker-isolated runner (HLD Phase 6). Tests inject
@@ -656,7 +656,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, revoked: true });
   });
 
-  // Phase 2 profile (HLD learning loop): user-only surface — the owner is the
+  // Phase 2 profile (HLD learning loop): user-only surface - the owner is the
   // authenticated session, never a body field. Anonymous local-dev and service
   // callers have no user id, so both get 401. GET returns profile:null for a
   // signed-in user who has not onboarded yet (drives the first-run gate).
@@ -740,7 +740,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   // Phase 4 recommendation (HLD learning loop): user-only, like profile/skills.
   // GET current returns the latest non-superseded proposal, or null before one
   // has been generated. Generation is synchronous (ADR-002) and always yields
-  // a result — the LLM picks from a backend-built candidate set, and an
+  // a result - the LLM picks from a backend-built candidate set, and an
   // unavailable/invalid model falls back deterministically.
   app.get("/api/recommendations/current", async (request, reply) => {
     const caller = request.caller;
@@ -837,7 +837,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
       return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
     }
     // S8c: a user-authenticated caller always owns the interview they
-    // create — identity comes from the session, the body value is ignored.
+    // create - identity comes from the session, the body value is ignored.
     // Anonymous (open local-dev) and service (CLI/admin) callers keep the
     // client-supplied candidateId.
     const caller = request.caller;
@@ -1252,7 +1252,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
 
   // S5: deterministic auto-select (HLD 5.1). Resolves the ordered problem
   // set from configuration + catalog, then assigns via the domain service
-  // (created/ready only — running interviews keep their set).
+  // (created/ready only - running interviews keep their set).
   app.post("/api/interviews/:id/problems/select", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -1330,7 +1330,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
 
   // Phase 10: the interview's evaluation. `null` until the async job finishes;
   // the interview's `evaluationStatus` carries pending/completed/failed. The
-  // manual S5 form path is retired — `end` enqueues automatically.
+  // manual S5 form path is retired - `end` enqueues automatically.
   app.get("/api/interviews/:id/evaluation", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -1344,10 +1344,10 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
-  // S7a sandbox routes (HLD 6.1–6.3). Submissions are backend-owned state;
+  // S7a sandbox routes (HLD 6.1-6.3). Submissions are backend-owned state;
   // runs execute in the local-dev runner with a wall-clock kill. Timeout and
   // harness failures persist as `timeout`/`error` runs (201 with a status
-  // field), never 5xx — the model and UI react to the verdict.
+  // field), never 5xx - the model and UI react to the verdict.
   app.post("/api/interviews/:id/submissions", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -1379,7 +1379,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
     // Feature 18d: AI-only Submit. A second-AI verdict on the candidate's
-    // code with no sandbox run — the verdict is computed and returned, and
+    // code with no sandbox run - the verdict is computed and returned, and
     // the code is stored as a run-less submission (no runs, no verdict row).
     // Failures surface errors, never an invented verdict, and store nothing.
     // Body mirrors submitCodeSchema (submitCode-like guards).
@@ -1864,7 +1864,7 @@ function describeProblem(problem: {
 }): string {
   const concepts =
     problem.expectedConcepts !== undefined && problem.expectedConcepts.length > 0
-      ? ` — ${problem.expectedConcepts.join(", ")}`
+      ? ` - ${problem.expectedConcepts.join(", ")}`
       : "";
   return `${problem.title} (${problem.difficulty})${concepts}`;
 }

@@ -1,5 +1,5 @@
 // Editor-language preference tests: closed-set validation only. No DOM,
-// no network — localStorage is stubbed through the global.
+// no network - localStorage is stubbed through the global.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
   DEFAULT_EDITOR_LANGUAGE,

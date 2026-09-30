@@ -1,9 +1,9 @@
-// @interview-coach/backend — server-side recommendation model (Phase 4).
+// @interview-coach/backend - server-side recommendation model (Phase 4).
 //
 // Implements the domain `RecommendationModel` port against an Azure AI Foundry
 // (Azure OpenAI-compatible) chat-completions deployment. This is the *second*
 // LLM surface (ADR-002): separate from Azure Voice Live, server-side only, and
-// never a realtime tool. The model is advisory — it may only pick a
+// never a realtime tool. The model is advisory - it may only pick a
 // (topicId, problemId) pair from the backend-built candidate set; the service
 // validates and persists the result.
 //

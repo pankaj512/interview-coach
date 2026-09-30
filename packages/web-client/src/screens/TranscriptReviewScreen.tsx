@@ -103,7 +103,7 @@ export function TranscriptReviewScreen({
 
       {loading ? (
         <Card>
-          <p className="hint">Loading transcript…</p>
+          <p className="hint">Loading transcript...</p>
         </Card>
       ) : turns.length === 0 ? (
         <Card>

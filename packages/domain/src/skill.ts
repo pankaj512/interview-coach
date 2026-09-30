@@ -1,4 +1,4 @@
-// @interview-coach/domain — per-user skill + curriculum state (Phase 3).
+// @interview-coach/domain - per-user skill + curriculum state (Phase 3).
 //
 // UserSkillState is the persisted, per-topic mastery record the learning loop
 // reads and updates; UserCurriculumProgress is the pointer into the curriculum
@@ -8,7 +8,7 @@
 //
 // This module owns the mastery *scale* and its configurable thresholds. The
 // mastery *algorithm* (turning an accepted evaluation into a new level) is
-// Phase 10/11 and deliberately absent here — Phase 3 only persists and reads.
+// Phase 10/11 and deliberately absent here - Phase 3 only persists and reads.
 
 import type { CurriculumId, EvaluationId, TopicId, UserId } from "./ids.js";
 import { domainError } from "./errors.js";

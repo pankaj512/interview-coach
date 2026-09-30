@@ -4,7 +4,7 @@
 // languages (Python-literal syntax: single quotes, True/False/None), or the
 // method-call form (a JSON op-name array followed by a JSON arg-array array).
 // Parsing happens TS-side; cases cross into C++ as embedded Value literals
-// via cppLiteral, so no C++ parsing exists. Unparseable inputs throw — the
+// via cppLiteral, so no C++ parsing exists. Unparseable inputs throw - the
 // assembler embeds them as per-case error rows, never drops them.
 
 export type ParsedSample =

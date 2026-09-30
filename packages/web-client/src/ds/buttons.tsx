@@ -35,17 +35,17 @@ function BaseButton({
   );
 }
 
-/** btn-primary — main calls to action. */
+/** btn-primary - main calls to action. */
 export function PrimaryButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-primary" />;
 }
 
-/** btn-danger — guarded destructive actions only. */
+/** btn-danger - guarded destructive actions only. */
 export function DangerButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-danger" />;
 }
 
-/** btn-ghost — secondary actions and navigation. */
+/** btn-ghost - secondary actions and navigation. */
 export function GhostButton(props: ButtonProps) {
   return <BaseButton {...props} className="btn-ghost" />;
 }

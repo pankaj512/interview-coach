@@ -1,4 +1,4 @@
-// DELETE /api/learning-state — Settings "Reset learning state".
+// DELETE /api/learning-state - Settings "Reset learning state".
 // Wipes the caller's recommendations, skill states, and curriculum progress
 // without touching interviews, profile, or other users.
 

@@ -1,4 +1,4 @@
-// @interview-coach/web-client — tool-call forwarder (frozen section 5).
+// @interview-coach/web-client - tool-call forwarder (frozen section 5).
 //
 // Tool path: Voice Live --function_call--> Browser --POST /tool-exec-->
 // Fastify --result--> Browser --function_call_output--> Voice Live.
@@ -8,7 +8,7 @@
 // - 8s request timeout, max 2 retries (3 attempts), same `call_id`.
 // - Backoff ~300ms -> 800ms + jitter between attempts.
 // - Retry ONLY timeout/network/502/503/504/`retryable:true`. Never retry
-//   4xx / `retryable:false` / validation / authz — those are permanent,
+//   4xx / `retryable:false` / validation / authz - those are permanent,
 //   model-facing results.
 // - Exactly-once `function_call_output` per `call_id` (submitted-set).
 // - Reconnect: queue unacked outputs (bounded 20), flush on reconnect
@@ -137,7 +137,7 @@ export async function forwardToolCall(
 }
 
 // Exactly-once submission ledger + bounded unacked queue (frozen section 5).
-// `markSubmitted` returns false when this `call_id` already produced output —
+// `markSubmitted` returns false when this `call_id` already produced output, so
 // the caller must then skip sending a duplicate `function_call_output`.
 export class ToolOutputLedger {
   private readonly submitted = new Set<string>();
@@ -151,7 +151,7 @@ export class ToolOutputLedger {
     return this.submitted.has(callId);
   }
 
-  // Returns false if already submitted (duplicate delivery — skip it).
+  // Returns false if already submitted (duplicate delivery - skip it).
   enqueue(callId: string, output: string): boolean {
     if (this.submitted.has(callId)) return false;
     this.submitted.add(callId);

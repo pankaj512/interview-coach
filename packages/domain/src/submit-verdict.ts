@@ -1,4 +1,4 @@
-// @interview-coach/domain — AI-only Submit verdict contract (feature 18d).
+// @interview-coach/domain - AI-only Submit verdict contract (feature 18d).
 //
 // The backend assembles the input (problem context + candidate code), a
 // server-side LLM proposes a structured verdict, and the backend validates

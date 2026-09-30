@@ -1,4 +1,4 @@
-// @interview-coach/domain — evaluation model port + proposal validation +
+// @interview-coach/domain - evaluation model port + proposal validation +
 // deterministic fallback (learning-loop Phase 10).
 //
 // Mirrors the Phase 4 recommendation model: the backend assembles the input,

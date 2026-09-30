@@ -1,4 +1,4 @@
-// @interview-coach/backend — Python shape-runner assembly (feature 18a.1).
+// @interview-coach/backend - Python shape-runner assembly (feature 18a.1).
 //
 // Builds the per-run files for a linked problem: the candidate `Solution`
 // code (verbatim starter or editor content) with mechanical empty-body repair

@@ -1,7 +1,7 @@
 // H-Lobby (feature 17b): the final pre-interview step on the approved
 // prototype look.
 //
-// The system chooses the practice — the Lobby shows the server recommendation
+// The system chooses the practice - the Lobby shows the server recommendation
 // (type/topic/problem/difficulty/objective) and prepares the session. There is
 // no topic/difficulty/problem selection here: "Begin interview" is gated on
 // the microphone check AND the server's voice readiness, so a session that
@@ -30,7 +30,7 @@ function micHint(mic: MicState): string {
     case "unsupported":
       return "This browser did not expose a microphone API. Use a recent Chrome, Edge, or Firefox over HTTPS or localhost.";
     case "checking":
-      return "Waiting for microphone permission…";
+      return "Waiting for microphone permission...";
   }
 }
 
@@ -39,7 +39,7 @@ function sessionHint(session: SessionReadiness): string {
     case "ready":
       return "The voice interviewer is configured and ready.";
     case "checking":
-      return "Checking that the voice interviewer is available…";
+      return "Checking that the voice interviewer is available...";
     case "unconfigured":
       return "Voice is not configured on the server. Ask your administrator to enable Azure Voice Live, then retry.";
     case "error":
@@ -206,7 +206,7 @@ export function LobbyScreen({
       </div>
       {ready && (
         <div className="banner" role="status">
-          All checks green — begin when ready.
+          All checks green - begin when ready.
         </div>
       )}
       <div className="row actions">

@@ -247,7 +247,7 @@ describe("nextOpenDimension", () => {
 
 describe("formatCaseValue", () => {
   it("renders missing values as an em dash and strings verbatim", () => {
-    expect(formatCaseValue(undefined)).toBe("—");
+    expect(formatCaseValue(undefined)).toBe("-");
     expect(formatCaseValue("3")).toBe("3");
   });
 

@@ -1,4 +1,4 @@
-// @interview-coach/backend — Fastify product service (HLD Phase 3 / S3).
+// @interview-coach/backend - Fastify product service (HLD Phase 3 / S3).
 // Backend owns truth; the model owns conversation. Realtime audio is never
 // proxied here (frozen section 2).
 export * from "./config.js";

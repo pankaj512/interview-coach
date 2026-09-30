@@ -234,11 +234,11 @@ describe("s8c per-interview ownership", () => {
     const reg = await register(app, "gated@example.com");
     expect(reg.status).toBe(201);
     const userHeader = { authorization: `Bearer ${reg.body.session.token}` };
-    // Another user's interview is invisible to this user…
+    // Another user's interview is invisible to this user...
     expect(
       (await app.app.inject({ method: "GET", url: `/api/interviews/${id}/state`, headers: userHeader })).statusCode,
     ).toBe(404);
-    // …but the service token still reads it.
+    // ...but the service token still reads it.
     expect(
       (await app.app.inject({ method: "GET", url: `/api/interviews/${id}/state`, headers: svc })).statusCode,
     ).toBe(200);

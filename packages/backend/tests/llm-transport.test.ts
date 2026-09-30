@@ -1,4 +1,4 @@
-// Feature 21: shared LLM chat transport — per-provider request entries,
+// Feature 21: shared LLM chat transport - per-provider request entries,
 // provider resolution + configured gates, and the retrying POST loop.
 
 import { afterEach, describe, expect, it, vi } from "vitest";

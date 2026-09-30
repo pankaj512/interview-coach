@@ -1,10 +1,10 @@
-// @interview-coach/backend — recommendation application service (Phase 4).
+// @interview-coach/backend - recommendation application service (Phase 4).
 //
 // Owns the recommendation rule: build a deterministic candidate set from the
 // server-owned curriculum + the user's skill/progress state, ask the
 // server-side LLM (if configured) to pick from it, validate the proposal, and
 // persist the result. If the model is unavailable, slow, or invalid, the
-// deterministic fallback guarantees a result — the loop never dead-ends.
+// deterministic fallback guarantees a result - the loop never dead-ends.
 //
 // The recommendation is user-scoped server state: the route resolves the owner
 // from the session, never the body. The LLM never becomes the system of record

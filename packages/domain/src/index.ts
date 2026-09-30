@@ -1,4 +1,4 @@
-// @interview-coach/domain — backend-owned truth for interviews (HLD Phase 1).
+// @interview-coach/domain - backend-owned truth for interviews (HLD Phase 1).
 // Pure domain layer: entities, lifecycle, services, tool contracts.
 // No I/O, no HTTP, no DB driver; repositories are interfaces with
 // in-memory implementations for unit tests (Drizzle/Postgres lands in S2).

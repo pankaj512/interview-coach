@@ -1,4 +1,4 @@
-// @interview-coach/web-client — realtime Voice Live client (S4).
+// @interview-coach/web-client - realtime Voice Live client (S4).
 //
 // Media plane (frozen section 2): Browser<->Voice Live direct over WebSocket,
 // PCM16 / 24 kHz / mono both directions. Event handling mirrors the CLI
@@ -11,7 +11,7 @@
 // (once per turn) -> `response.cancel` + local playback flush.
 //
 // Collaborators (WebSocket, mic, playback, tool execution, storage, clocks)
-// are injected so vitest covers the lifecycle with fakes — no mic or network
+// are injected so vitest covers the lifecycle with fakes - no mic or network
 // in tests. Logging is lifecycle/timing only (frozen section 3); audio
 // deltas and PCM chunks are never logged.
 
@@ -138,7 +138,7 @@ const VALID_TOOL_NAMES: readonly string[] = [
 
 // Model-supplied function arguments arrive as a JSON string on the protocol
 // events. Parse defensively: anything non-object (or unparseable) means "no
-// args" — the backend applies defaults (hint tier, answer kind). Never throw.
+// args" - the backend applies defaults (hint tier, answer kind). Never throw.
 export function parseToolArgs(raw: unknown): ToolArgs | undefined {
   if (typeof raw !== "string") return undefined;
   const trimmed = raw.trim();
@@ -175,7 +175,7 @@ export class VoiceInterviewClient {
   private pendingCall: PendingCall | null = null;
   private handledCallIds = new Set<string>();
   // Outputs recovered across a reload via GET tool-results (frozen section 5).
-  // Served only if the new session requests the same call_id — the client
+  // Served only if the new session requests the same call_id - the client
   // never invents outputs for calls the model did not make.
   private recoveredOutputs = new Map<string, string>();
   private lastServerEventAt = 0;
@@ -266,7 +266,7 @@ export class VoiceInterviewClient {
     ws.send(JSON.stringify(buildSessionUpdate(session, loadVoicePreference() ?? undefined)));
     this.metric("voice.session_update_sent", { interviewId });
 
-    // Wait for session.updated like the CLI (3s), then proceed regardless —
+    // Wait for session.updated like the CLI (3s), then proceed regardless, since
     // the greeting must not hang a healthy session on a dropped ack.
     const acked = await this.waitForSessionAck(ws);
     this.metric("voice.session_ack", { interviewId, acked });
@@ -303,7 +303,7 @@ export class VoiceInterviewClient {
 
   // Reload recovery (frozen section 5): rehydrate pending `call_id`s from
   // sessionStorage via GET tool-results. Found results are cached and served
-  // when (and only when) the new session requests the same call_id — the
+  // when (and only when) the new session requests the same call_id - the
   // client never invents outputs for calls the model did not make. Unknown
   // ids (never executed) are dropped so a stale id can never shadow a fresh
   // call.
@@ -461,7 +461,7 @@ export class VoiceInterviewClient {
         this.setAssistantSpeaking(true);
         this.hasLoggedAudioStart = false;
         // Ordered channel: a new server response proves every submitted
-        // output arrived — ack the queue (and clear reload recovery).
+        // output arrived - ack the queue (and clear reload recovery).
         this.ackSubmittedOutputs();
         this.metric("response_created", { interviewId });
         break;
@@ -592,7 +592,7 @@ export class VoiceInterviewClient {
   private async executeTool(tool: ToolName, callId: string, previousItemId?: string, args?: ToolArgs): Promise<void> {
     if (this.handledCallIds.has(callId)) {
       // Duplicate protocol event for an in-session call: already submitted
-      // (ledger) — skip. The one exception is a reload-recovered result for
+      // (ledger) - skip. The one exception is a reload-recovered result for
       // the same call_id, served exactly once without re-execution.
       const cached = this.recoveredOutputs.get(callId);
       if (cached !== undefined) {
@@ -632,7 +632,7 @@ export class VoiceInterviewClient {
 
     // Exactly-once output per call_id (ledger) + reload recovery (storage).
     // The entry stays queued as unacked until the server proves receipt by
-    // continuing the conversation (see response.created below — an ordered
+    // continuing the conversation (see response.created below - an ordered
     // channel guarantees our output arrived before that new response).
     if (!this.ledger.enqueue(callId, output)) return;
     if (this.deps.storage !== undefined && this.interviewId !== null) {
@@ -711,7 +711,7 @@ export class VoiceInterviewClient {
         try {
           type = (JSON.parse(String(event.data)) as { type?: unknown }).type as string;
         } catch {
-          // not JSON — fall through to normal handling
+          // not JSON - fall through to normal handling
         }
         if (type === "session.updated") {
           clearTimeout(timer);

@@ -1,4 +1,4 @@
-// @interview-coach/backend — JavaScript shape-runner assembly (feature 18a.2).
+// @interview-coach/backend - JavaScript shape-runner assembly (feature 18a.2).
 //
 // Builds the per-run files for a linked problem: the verbatim candidate
 // starter (a free function or a constructor + prototype methods) plus an

@@ -2,7 +2,7 @@
 //
 // Language + editor + "Test code" (runs the candidate's code against the
 // problem's sample test case) and "Submit" (asks the AI judge for a
-// correctness/optimality verdict, persisted nowhere). No test-case editor —
+// correctness/optimality verdict, persisted nowhere). No test-case editor:
 // the sample case comes from the problem.
 
 import { useEffect, useRef, useState } from "react";
@@ -49,7 +49,7 @@ export function fitEditorHeight(container: HTMLDivElement, contentHeight: number
   container.style.height = `${clampEditorHeight(contentHeight, max)}px`;
 }
 
-/** Every problem example as a runner case (named `sample 1`, `sample 2`, …
+/** Every problem example as a runner case (named `sample 1`, `sample 2`, ...
  *  to match the problem pane), or [] when none exists. */
 export function sampleCasesFor(problem: Problem | null): TestCaseInput[] {
   const examples = problem?.examples ?? [];
@@ -65,7 +65,7 @@ export function sampleCasesFor(problem: Problem | null): TestCaseInput[] {
 
 /** Render a case value (input/expected/actual) as compact text. */
 export function formatCaseValue(value: unknown): string {
-  if (value === undefined) return "—";
+  if (value === undefined) return "-";
   if (typeof value === "string") return value;
   try {
     const json = JSON.stringify(value);
@@ -104,7 +104,7 @@ function toSampleRow(input: string, expected: string, result: SerializedTestResu
 }
 
 /** Pair a run's results with the samples that produced them: match by case
- *  name (Test sends one case per example, `sample 1`, `sample 2`, …). A lone
+ *  name (Test sends one case per example, `sample 1`, `sample 2`, ...). A lone
  *  sample still pairs with a lone result when names differ; results with no
  *  matching sample keep the run data with unknown input/expected, and samples
  *  with no result render with unknown actual, so the table never goes bare. */
@@ -119,13 +119,13 @@ export function sampleResultRows(samples: readonly TestCaseInput[], run: Seriali
       run.results.find((result) => result.name === sample.name) ??
       (loneFallback ? run.results[0] : undefined);
     if (match === undefined) {
-      return { name: sample.name, input, expected, actual: "—", passed: false };
+      return { name: sample.name, input, expected, actual: "-", passed: false };
     }
     return toSampleRow(input, expected, match);
   });
   if (!loneFallback) {
     for (const result of run.results) {
-      if (!sampleByName.has(result.name)) rows.push(toSampleRow("—", "—", result));
+      if (!sampleByName.has(result.name)) rows.push(toSampleRow("-", "-", result));
     }
   }
   return rows;
@@ -431,17 +431,17 @@ export function CodeWorkspace({
         <span className="note">boilerplate provided per problem</span>
       </div>
       <div className="code-editor" aria-label="Candidate code" ref={containerRef}>
-        {!editorReady && <div className="note">Loading editor…</div>}
+        {!editorReady && <div className="note">Loading editor...</div>}
       </div>
       <div className="actions test-row" ref={actionsRef}>
         <PrimaryButton onClick={() => void testCode()} disabled={busy || samples.length === 0}>
-          {busy ? "Testing…" : "Test"}
+          {busy ? "Testing..." : "Test"}
           <span className="info-icon" data-tip={sampleHint} aria-label={sampleHint}>
             i
           </span>
         </PrimaryButton>
         <PrimaryButton onClick={() => void submitForVerdict()} disabled={busy || code.trim() === ""}>
-          {busy ? "Submitting…" : "Submit for Review"}
+          {busy ? "Submitting..." : "Submit for Review"}
           <span className="info-icon" data-tip={reviewHint} aria-label={reviewHint}>
             i
           </span>
@@ -456,14 +456,14 @@ export function CodeWorkspace({
             <>
               <strong className={run.status === "passed" ? "accent-good" : "accent-warn"}>
                 {run.totalCount === 0
-                  ? `${run.status} — no cases executed`
+                  ? `${run.status} - no cases executed`
                   : run.passedCount === run.totalCount
                     ? `${run.passedCount} passed of ${run.totalCount}`
                     : `${run.passedCount} passed · ${run.totalCount - run.passedCount} failed of ${run.totalCount}`}
               </strong>
               <span className="hint"> in {run.durationMs}ms</span>
               {run.results.length === 0 ? (
-                <p className="note">The run could not execute — no case results were returned. See the error above.</p>
+                <p className="note">The run could not execute - no case results were returned. See the error above.</p>
               ) : (
                 <table className="case-table" aria-label="Sample case results">
                   <thead>
@@ -486,7 +486,7 @@ export function CodeWorkspace({
                           <span className={row.passed ? "accent-good" : "accent-warn"}>
                             {row.passed ? "pass" : "fail"}
                           </span>
-                          {row.error !== undefined && <span className="note"> — {row.error}</span>}
+                          {row.error !== undefined && <span className="note"> - {row.error}</span>}
                         </td>
                       </tr>
                     ))}
@@ -507,10 +507,10 @@ export function CodeWorkspace({
           </strong>
           <span className="hint"> · {verdict.optimality} optimality</span>
           {verdict.correctnessNotes !== "" && (
-            <p className="note"><strong>Correctness</strong> — {verdict.correctnessNotes}</p>
+            <p className="note"><strong>Correctness</strong> - {verdict.correctnessNotes}</p>
           )}
           {verdict.optimalityNotes !== "" && (
-            <p className="note"><strong>Optimality</strong> — {verdict.optimalityNotes}</p>
+            <p className="note"><strong>Optimality</strong> - {verdict.optimalityNotes}</p>
           )}
           {verdict.breakPoints.length > 0 && (
             <>
@@ -533,7 +533,7 @@ export function CodeWorkspace({
             </>
           )}
           {verdict.summary !== "" && (
-            <p className="note"><strong>Summary</strong> — {verdict.summary}</p>
+            <p className="note"><strong>Summary</strong> - {verdict.summary}</p>
           )}
         </div>
       )}

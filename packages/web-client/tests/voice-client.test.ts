@@ -1,4 +1,4 @@
-// VoiceInterviewClient tests (S4): realtime lifecycle with fakes — fake
+// VoiceInterviewClient tests (S4): realtime lifecycle with fakes - fake
 // WebSocket, mic, playback, and tool executor. No mic, speakers, or network.
 import { describe, expect, it } from "vitest";
 import { BackendClient, type FetchFn } from "../src/api/backend-client.js";

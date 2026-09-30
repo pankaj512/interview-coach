@@ -205,7 +205,7 @@ describe("InterviewService", () => {
 });
 
 // ---- P1 audit fixes ----
-describe("InterviewService — P1 audit fixes", () => {
+describe("InterviewService - P1 audit fixes", () => {
   it("F2: completeCurrentProblem marks done and advances; last clears currentOrder", async () => {
     const { repos, service } = setup();
     await seedProblems(service, repos);

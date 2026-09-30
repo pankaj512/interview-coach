@@ -1,6 +1,6 @@
 // Feature 16 sandbox routes + Docker runner (HLD Phase 6): submit code,
 // execute against visible/hidden cases, verify verdicts, timeouts, and
-// failures. Uses the real DockerCodeRunner via buildTestBackend —
+// failures. Uses the real DockerCodeRunner via buildTestBackend, so
 // a Docker daemon with the sandbox images is required (skips otherwise).
 
 import { afterEach, beforeAll, describe, expect, it } from "vitest";
@@ -20,7 +20,7 @@ const HAS_DOCKER: boolean = (() => {
     execFileSync("docker", ["info"], { timeout: 15_000, stdio: "ignore" });
     return true;
   } catch {
-    console.warn("Docker daemon unavailable — skipping live sandbox tests");
+    console.warn("Docker daemon unavailable - skipping live sandbox tests");
     return false;
   }
 })();

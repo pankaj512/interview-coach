@@ -154,7 +154,7 @@ function toInterview(
   };
 }
 
-// Concurrency (audit P2-1/F9): the MVP is explicitly single-writer — one
+// Concurrency (audit P2-1/F9): the MVP is explicitly single-writer - one
 // backend replica (frozen §5: no Redis/queues; deployment constraint), and the
 // only writers are the request handlers of that process, serialized per
 // interview by the voice session. A compare-and-swap is therefore deferred to

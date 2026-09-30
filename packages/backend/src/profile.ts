@@ -1,4 +1,4 @@
-// @interview-coach/backend — profile application service (Phase 2).
+// @interview-coach/backend - profile application service (Phase 2).
 //
 // Owns the create/edit rule for a user's profile: the domain validates the
 // fields and preserves createdAt; the service picks create-vs-update and

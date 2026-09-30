@@ -1,9 +1,9 @@
-// @interview-coach/domain — InterviewMessage (learning-loop Phase 9).
+// @interview-coach/domain - InterviewMessage (learning-loop Phase 9).
 //
 // Structured transcript of the realtime conversation. The browser forwards the
 // relevant Voice Live transcript events to the backend, which validates and
 // persists them (roadmap locked decision 6): the backend is canonical, and the
-// model never owns the transcript. Structured text only — no raw audio.
+// model never owns the transcript. Structured text only - no raw audio.
 //
 // Roles are deliberately small: "candidate", "interviewer", and "system"
 // (lifecycle notices). Content is trimmed and length-capped at the domain

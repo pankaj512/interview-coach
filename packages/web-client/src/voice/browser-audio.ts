@@ -1,4 +1,4 @@
-// @interview-coach/web-client — browser mic/playback adapters (S4).
+// @interview-coach/web-client - browser mic/playback adapters (S4).
 //
 // Thin WebAudio adapters over the tested `audio.ts` pipeline. Capture honors
 // the frozen audio contract (PCM16 / 24 kHz / mono to Voice Live); device

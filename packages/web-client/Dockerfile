@@ -1,4 +1,4 @@
-# @interview-coach/web-client — static build served by nginx (S8b).
+# @interview-coach/web-client - static build served by nginx (S8b).
 # Build from the repo root:
 #   docker build -f packages/web-client/Dockerfile \
 #     --build-arg VITE_BACKEND_URL=http://localhost:3000 .

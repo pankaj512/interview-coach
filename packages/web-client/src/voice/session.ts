@@ -1,4 +1,4 @@
-// @interview-coach/web-client — Voice Live session wire format (S4).
+// @interview-coach/web-client - Voice Live session wire format (S4).
 //
 // Mirrors the CLI regression harness
 // (/home/pankaj/dev/Projects/InterviewCoachCli/src/voice-session.ts + tools.ts)
@@ -8,8 +8,8 @@
 // appended as a query parameter (documented Voice Live browser pattern).
 //
 // Session parameters themselves always come from the backend mint
-// (POST /api/interviews/:id/voice-session, frozen section 3) — never
-// hardcoded here — so frozen-config changes land server-side only.
+// (POST /api/interviews/:id/voice-session, frozen section 3) - never
+// hardcoded here - so frozen-config changes land server-side only.
 
 import type { CodeLanguage, SerializedSubmitVerdict, ToolExecOutcome, VoiceSessionPayload } from "../api/types.js";
 
@@ -84,7 +84,7 @@ export const REALTIME_TOOL_DEFINITIONS: readonly RealtimeToolDefinition[] = [
     type: "function",
     name: "end_interview",
     description:
-      "Signal that the interview is finished and should be wrapped up. Say your final goodbye to the candidate FIRST, then call end_interview as your very last operation. Say nothing further after the call returns — the application finalizes the interview.",
+      "Signal that the interview is finished and should be wrapped up. Say your final goodbye to the candidate FIRST, then call end_interview as your very last operation. Say nothing further after the call returns - the application finalizes the interview.",
     parameters: { type: "object", properties: {}, required: [], additionalProperties: false },
   },
 ];

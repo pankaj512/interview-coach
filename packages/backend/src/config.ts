@@ -1,4 +1,4 @@
-// @interview-coach/backend — server configuration (HLD Phase 3 / S3).
+// @interview-coach/backend - server configuration (HLD Phase 3 / S3).
 // Env-driven. Azure voice credentials stay server-side; only derived,
 // non-secret session parameters ever leave the backend (frozen sections 3, 7).
 

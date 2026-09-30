@@ -111,10 +111,10 @@
 **Suggested fix:** Remove the route enumeration and rely on the registrations; optionally share `siblingSource`. Reformat `sandboxTestCaseSchema`.
 **Resolution:**
 
-### F-14 [P2] open - Pervasive em dashes violate the Writing standard
+### F-14 [P2] fixed - Pervasive em dashes violate the Writing standard
 
 **File:** packages/backend/src/app.ts:1865 (also many files across backend, domain, web-client, and tests)
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** The Writing standard bans em dashes (U+2014) in generated content, including code comments. They appear in source comments and user-facing copy across dozens of files (for example app.ts:1865, voice-session.ts:187,226, evaluation-model.ts:1, llm-transport.ts:1, auth.ts:1,4,5,112, domain/evaluation-model.ts:1, and client screens such as CodeWorkspace.tsx:459,466,510,513,536, LobbyScreen.tsx:209). The rule is enforced in intent: `packages/web-client/tests/render-smoke.test.tsx:352` asserts rendered HTML contains no `—`. Only the deliberate empty-value placeholder glyph may be legitimate.
 **Suggested fix:** Replace prose em dashes with hyphens or commas; keep the deliberate placeholder glyph only if the user confirms it.
-**Resolution:**
+**Resolution:** Fixed on `fix/remove-em-dashes`: 242 replacements (194 em, 3 en, 45 ellipsis) across 112 files under `packages/`; placeholders and prose both use `-`/`...` per user call; 7 line-wrapped breaks rephrased; `docs/` and `blueprint/history/` untouched as immutable logs. One intentional U+2014 remains in the `render-smoke` guard assertion that enforces the rule. Full suite green.

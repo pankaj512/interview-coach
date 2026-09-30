@@ -1,4 +1,4 @@
-// @interview-coach/web-client — auth session store (S8c).
+// @interview-coach/web-client - auth session store (S8c).
 //
 // Holds the active account session ({token, email, displayName}) outside
 // React so every BackendClient (all screens, voice forwarder) shares it.

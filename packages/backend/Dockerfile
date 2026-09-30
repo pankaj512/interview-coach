@@ -1,4 +1,4 @@
-# @interview-coach/backend — production image (HLD Phase 8, S8b).
+# @interview-coach/backend - production image (HLD Phase 8, S8b).
 #
 # Runtime is tsx-on-source (the repo has no emit step: packages export TS via
 # ./src/index.ts and run under tsx locally too). tsx is therefore a runtime

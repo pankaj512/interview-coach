@@ -1,4 +1,4 @@
-// @interview-coach/backend — server-side evaluation model (Phase 10).
+// @interview-coach/backend - server-side evaluation model (Phase 10).
 //
 // The third LLM surface (ADR-002): server-side only, never a realtime tool.
 // It reads the assembled interview context (transcript, code, runs, topic,

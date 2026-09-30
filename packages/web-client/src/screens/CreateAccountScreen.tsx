@@ -62,7 +62,7 @@ export function CreateAccountScreen({
         </Field>
         {error !== null && <p className="error" role="alert">{error}</p>}
         <PrimaryButton type="submit" disabled={busy || invalid}>
-          {busy ? "Creating…" : "Create account"}
+          {busy ? "Creating..." : "Create account"}
         </PrimaryButton>
         <p className="auth-alt">
           Already have an account?{" "}

@@ -1,5 +1,5 @@
 // H-Sign-In (Phase 2): email + password, link to create account. Sign-in is
-// required — there is no anonymous loop, so no guest path.
+// required - there is no anonymous loop, so no guest path.
 
 import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
@@ -57,7 +57,7 @@ export function SignInScreen({
         </Field>
         {error !== null && <p className="error" role="alert">{error}</p>}
         <PrimaryButton type="submit" disabled={busy || email.trim() === "" || password === ""}>
-          {busy ? "Signing in…" : "Sign in"}
+          {busy ? "Signing in..." : "Sign in"}
         </PrimaryButton>
         <p className="auth-alt">
           Don&apos;t have an account?{" "}

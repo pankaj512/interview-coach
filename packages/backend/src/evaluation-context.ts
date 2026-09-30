@@ -1,4 +1,4 @@
-// @interview-coach/backend — evaluation input assembly (Phase 10).
+// @interview-coach/backend - evaluation input assembly (Phase 10).
 //
 // Pure mapping from backend-owned state to the evaluation model's input. The
 // transcript, candidate responses, code submissions, and run verdicts are all

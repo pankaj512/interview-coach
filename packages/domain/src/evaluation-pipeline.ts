@@ -1,4 +1,4 @@
-// @interview-coach/domain — structured evaluation pipeline (HLD 5.5/5.8, S5).
+// @interview-coach/domain - structured evaluation pipeline (HLD 5.5/5.8, S5).
 //
 // Deterministic post-interview scoring. The backend (never the model)
 // computes overallScore from dimension scores and derives a recommendation,

@@ -18,7 +18,7 @@ export type MessageId = string & { readonly __brand: "MessageId" };
 // Learning-loop Phase 10: an async evaluation job.
 export type EvaluationJobId = string & { readonly __brand: "EvaluationJobId" };
 // Learning-loop Phase 3: curriculum is stable seeded config, so these IDs are
-// deterministic slugs (no UUID minting) — see curriculum.ts.
+// deterministic slugs (no UUID minting) - see curriculum.ts.
 export type CurriculumId = string & { readonly __brand: "CurriculumId" };
 export type ModuleId = string & { readonly __brand: "ModuleId" };
 export type TopicId = string & { readonly __brand: "TopicId" };

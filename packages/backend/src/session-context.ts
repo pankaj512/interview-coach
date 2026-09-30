@@ -1,7 +1,7 @@
-// @interview-coach/backend — realtime session context assembly (Phase 7).
+// @interview-coach/backend - realtime session context assembly (Phase 7).
 //
 // The realtime interviewer must start grounded in the learner's profile, the
-// recommended topic, and prior skill state — without owning any learning logic
+// recommended topic, and prior skill state - without owning any learning logic
 // (ADR-002). This module turns the server-owned profile/curriculum/skill state
 // into short reference summaries that travel with the voice-session mint and
 // are injected into the model instructions (voice-session.ts).

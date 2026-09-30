@@ -1,4 +1,4 @@
-// @interview-coach/backend — in-memory operational counters (HLD 8.4, S8a).
+// @interview-coach/backend - in-memory operational counters (HLD 8.4, S8a).
 //
 // Single-process JSON counters behind GET /api/metrics (auth-gated like the
 // rest of /api). No Prometheus dependency in S8a; the shape is deliberately

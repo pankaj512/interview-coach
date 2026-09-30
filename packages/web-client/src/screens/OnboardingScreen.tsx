@@ -1,6 +1,6 @@
 // H-Onboarding (feature 17a): required first-run profile setup on the
 // approved prototype look. Shown by the App gate for a signed-in user
-// with no profile; no cancel path. Server-state only — the profile is
+// with no profile; no cancel path. Server-state only - the profile is
 // persisted via PUT /api/profile.
 
 import { useMemo, useState } from "react";

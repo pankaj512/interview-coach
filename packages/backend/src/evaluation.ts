@@ -1,4 +1,4 @@
-// @interview-coach/backend — async evaluation service (Phase 10).
+// @interview-coach/backend - async evaluation service (Phase 10).
 //
 // Turns a completed interview into a persisted, validated evaluation. `end`
 // enqueues a durable EvaluationJob; the runner assembles the context, calls

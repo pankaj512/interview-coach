@@ -1,11 +1,11 @@
-// @interview-coach/backend — Docker-isolated code runner (feature 16).
+// @interview-coach/backend - Docker-isolated code runner (feature 16).
 //
 // Replaces the local runner (deleted) behind the domain CodeExecutor port.
 // Candidate code is untrusted input: this is the security boundary. Every
 // execution runs in a throwaway container with --network=none, memory / CPU
 // / pids caps, a read-only rootfs, a read-only submission mount, an
 // unprivileged user, dropped capabilities, and a scrubbed environment
-// (HOME/TMPDIR/NODE_OPTIONS only — never host secrets). Containers are
+// (HOME/TMPDIR/NODE_OPTIONS only - never host secrets). Containers are
 // always removed, including after timeouts (kill, then rm -f), so a killed
 // run cannot linger.
 //
@@ -420,8 +420,8 @@ export class DockerCodeRunner implements CodeExecutor {
    * against the problem's runner link (class entry, not the legacy free
    * `solve`), so verbatim LeetCode-style starters compile. Sources load from
    * the sibling `shape-runners/cpp/` tree (import.meta-relative, prod-safe
-   * under tsx). Throws a descriptive error — surfaced as an `error` outcome
-   * by execute() — when samples, shape meta, or the dispatch fragment cannot
+   * under tsx). Throws a descriptive error - surfaced as an `error` outcome
+   * by execute() - when samples, shape meta, or the dispatch fragment cannot
    * be resolved.
    */
   private async writeAssembledCpp(
@@ -499,7 +499,7 @@ export class DockerCodeRunner implements CodeExecutor {
    * class entry (not the legacy free `solve`) to the problem's runner.
    * Sources load from the sibling `shape-runners/javascript/` tree
    * (import.meta-relative, prod-safe under tsx). Throws a descriptive error
-   * — surfaced as an `error` outcome by execute() — when sample inputs
+   * - surfaced as an `error` outcome by execute() - when sample inputs
    * cannot be resolved.
    */
   private async writeAssembledJs(
@@ -537,7 +537,7 @@ export class DockerCodeRunner implements CodeExecutor {
 
   /**
    * Shape-runner Python assembly for linked problems: same contract as the
-   * JS branch — the candidate's class entry drives the problem's runner.
+   * JS branch - the candidate's class entry drives the problem's runner.
    * Throws a descriptive error (surfaced as an `error` outcome) when sample
    * inputs cannot be resolved.
    */
@@ -649,7 +649,7 @@ export class DockerCodeRunner implements CodeExecutor {
       return this.fail(startedAt, `Container wait failed: ${firstLine(waited.stderr)}`);
     }
     // NOTE: this is the container's exit code (printed by `docker wait`),
-    // not the CLI's — the CLI exits 0 even when the container failed.
+    // not the CLI's - the CLI exits 0 even when the container failed.
     const containerCode = Number.parseInt(waited.stdout.trim().split("\n").pop() ?? "", 10);
     const logged = await this.spawn(this.dockerBin, ["logs", containerId], {
       timeoutMs: DOCKER_OP_TIMEOUT_MS,
@@ -834,7 +834,7 @@ function capActual(actual: unknown, max: number): unknown {  let serialized: str
 }
 
 function truncate(text: string, max: number): string {
-  return text.length <= max ? text : text.slice(0, max) + "…";
+  return text.length <= max ? text : text.slice(0, max) + "...";
 }
 
 function firstLine(text: string): string {

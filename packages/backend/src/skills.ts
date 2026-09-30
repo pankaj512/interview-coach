@@ -1,4 +1,4 @@
-// @interview-coach/backend — skill/curriculum-progress service (Phase 3).
+// @interview-coach/backend - skill/curriculum-progress service (Phase 3).
 //
 // Reads and persists the per-user learning state (UserSkillState +
 // UserCurriculumProgress). The mastery algorithm that turns an accepted

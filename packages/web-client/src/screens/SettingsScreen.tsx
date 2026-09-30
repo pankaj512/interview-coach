@@ -99,7 +99,7 @@ export function SettingsScreen({
             <span className="hint">Delete interviews clears all history permanently.</span>
           </span>
           <DangerButton onClick={() => setConfirmingDelete(true)} disabled={entries.length === 0 || deletingAll}>
-            {deletingAll ? "Deleting…" : "Delete interviews"}
+            {deletingAll ? "Deleting..." : "Delete interviews"}
           </DangerButton>
         </div>
         <div className="setting-row">
@@ -110,7 +110,7 @@ export function SettingsScreen({
             </span>
           </span>
           <DangerButton onClick={() => setConfirmingReset(true)} disabled={resettingAll || deletingAll}>
-            {resettingAll ? "Resetting…" : "Reset learning state"}
+            {resettingAll ? "Resetting..." : "Reset learning state"}
           </DangerButton>
         </div>
         {exportError !== null && (

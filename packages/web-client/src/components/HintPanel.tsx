@@ -1,4 +1,4 @@
-// HLD 4.2/5.4 — candidate hint panel (S5b).
+// HLD 4.2/5.4 - candidate hint panel (S5b).
 //
 // The candidate asks for a hint through the same S5 tool path the model
 // uses: POST .../tool-exec with a UI-generated call_id and the
@@ -52,7 +52,7 @@ export function HintPanel({
           hintsUsed: typeof result.hintsUsed === "number" ? result.hintsUsed : hintsUsed + 1,
         };
         setHint(view);
-        onHint(`hint level ${view.level} (${callId.slice(0, 8)}…)`);
+        onHint(`hint level ${view.level} (${callId.slice(0, 8)}...)`);
       } else {
         setError(`${outcome.code}: ${outcome.message}`);
       }
@@ -71,7 +71,7 @@ export function HintPanel({
         Hints guide without revealing the solution and count toward evaluation.
       </p>
       <button type="button" disabled={busy} onClick={requestHint}>
-        {busy ? "Asking…" : "Ask for a hint"}
+        {busy ? "Asking..." : "Ask for a hint"}
       </button>
       {error !== null && <p className="error">{error}</p>}
       {hint !== null && (

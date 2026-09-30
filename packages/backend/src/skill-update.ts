@@ -1,10 +1,10 @@
-// @interview-coach/backend — deterministic skill/curriculum update (Phase 11).
+// @interview-coach/backend - deterministic skill/curriculum update (Phase 11).
 //
 // Applies a persisted ("accepted") evaluation to the user's learning state:
 // the mastery level for the evaluated topic and the curriculum pointer. The
 // decision is a pure function of persisted state (see
 // `@interview-coach/domain` `skill-update.ts`); this service is the storage
-// boundary, invoked by the async evaluation job — never a realtime tool and
+// boundary, invoked by the async evaluation job - never a realtime tool and
 // never a route (ADR-002).
 
 import {

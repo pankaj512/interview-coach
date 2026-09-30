@@ -30,10 +30,10 @@ import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
 
-// S7a sandbox service (HLD 6.1–6.3): candidate code submissions + test runs.
+// S7a sandbox service (HLD 6.1-6.3): candidate code submissions + test runs.
 // Submissions are validated source text; runs execute through the injected
 // CodeExecutor port (backend local runner) and persist as CodeRuns. Runner
-// crashes become `error` runs — never thrown — so tool-exec replays stay safe.
+// crashes become `error` runs - never thrown - so tool-exec replays stay safe.
 export interface SubmitCodeArgs {
   readonly language: string;
   readonly code: string;
@@ -279,5 +279,5 @@ export function parseLimitsForRun(raw: unknown): Result<RunLimits> {
 
 function runnerMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : "Runner failed";
-  return message.length <= 2000 ? message : `${message.slice(0, 2000)}…`;
+  return message.length <= 2000 ? message : `${message.slice(0, 2000)}...`;
 }

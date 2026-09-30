@@ -2,7 +2,7 @@
 // prototype look. Left: the problem (title + sample test case, title-only
 // until item 18). Right: the code editor with a single "Test sample cases"
 // action.
-// Conversation is voice-only — no transcript panel and no text composer.
+// Conversation is voice-only - no transcript panel and no text composer.
 // All session logic, hooks, and tool wiring preserved.
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
@@ -234,7 +234,7 @@ export function LiveScreen({
 
       {!inRoom && (
         <Card className="join-card">
-          <h1 className="page-title">Joining the interview…</h1>
+          <h1 className="page-title">Joining the interview...</h1>
           <p className="lede">
             {live.connection === "failed"
               ? live.error ?? joinError ?? "Could not reach the interviewer."
@@ -263,7 +263,7 @@ export function LiveScreen({
               )}
               {micBlocked && (
                 <Card className="state-card state-micblocked" role="alert">
-                  <strong>⌀ Mic blocked — room waiting</strong>
+                  <strong>⌀ Mic blocked - room waiting</strong>
                   <span className="hint">This tab is hidden. Return to this tab to resume speaking.</span>
                 </Card>
               )}
@@ -380,7 +380,7 @@ export function LiveScreen({
             <>
               <GhostButton onClick={() => setConfirmEnd(false)}>Continue Interview</GhostButton>
               <DangerButton onClick={handleConfirmEnd} disabled={live.busy}>
-                {live.busy ? "Ending…" : "End & Evaluate"}
+                {live.busy ? "Ending..." : "End & Evaluate"}
               </DangerButton>
             </>
           }

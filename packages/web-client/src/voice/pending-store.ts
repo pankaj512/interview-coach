@@ -1,4 +1,4 @@
-// @interview-coach/web-client — pending call_id persistence (frozen section 5).
+// @interview-coach/web-client - pending call_id persistence (frozen section 5).
 //
 // "On reload rehydrate pending `call_id`s from sessionStorage via
 // `GET tool-results`." The ledger owns submission; this module owns the

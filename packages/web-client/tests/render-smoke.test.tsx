@@ -1,6 +1,6 @@
 // Render smoke tests (no DOM): every redesigned screen renders to a string
 // without throwing. Effects do not run server-side, so the voice loop stays
-// inert — this guards the component tree, not the realtime path.
+// inert - this guards the component tree, not the realtime path.
 
 import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
@@ -259,7 +259,7 @@ describe("screen render smoke", () => {
     const loading = renderToString(
       <ProblemPanel snapshot={null} fallbackProblem={dashboardProblem} content={undefined} />,
     );
-    expect(loading).toContain("Loading full statement…");
+    expect(loading).toContain("Loading full statement...");
   });
   it("EvaluatingScreen renders", () => {
     const html = renderToString(<EvaluatingScreen />);

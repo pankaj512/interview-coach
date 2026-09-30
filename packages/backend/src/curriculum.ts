@@ -1,4 +1,4 @@
-// @interview-coach/backend — curriculum application service (Phase 3).
+// @interview-coach/backend - curriculum application service (Phase 3).
 //
 // Reads the server-owned curriculum (static seeded config). The backend is the
 // only source: the browser never bundles the curriculum file, and the model

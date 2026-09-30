@@ -10,7 +10,7 @@ import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
 
-// @interview-coach/domain — code execution sandbox model (HLD Phase 6, S7a).
+// @interview-coach/domain - code execution sandbox model (HLD Phase 6, S7a).
 //
 // Pure layer: submission/test-case validation, executor port, deterministic
 // run assembly (hidden-test masking, status derivation), execution summaries
@@ -86,7 +86,7 @@ export function createSubmission(
 }
 
 // A single deterministic check: call solve(...args), compare with expected.
-// `hidden` cases never leak actuals — results carry pass/fail only.
+// `hidden` cases never leak actuals - results carry pass/fail only.
 export interface RunTestCase {
   readonly name: string;
   readonly args: readonly unknown[];
@@ -381,5 +381,5 @@ export function summarizeRun(run: CodeRun): ExecutionSummary {
 }
 
 function truncate(text: string, max: number): string {
-  return text.length <= max ? text : `${text.slice(0, max)}…`;
+  return text.length <= max ? text : `${text.slice(0, max)}...`;
 }

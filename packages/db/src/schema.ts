@@ -1,4 +1,4 @@
-// @interview-coach/db — Postgres schema (HLD Phase 2 / S2).
+// @interview-coach/db - Postgres schema (HLD Phase 2 / S2).
 // Mirrors the S1 domain entities 1:1. Interviews embed their ordered
 // problem list in the domain; here it lives in `interview_problems` and is
 // reassembled on read. No FK from interviews.candidate_id to users: the S1

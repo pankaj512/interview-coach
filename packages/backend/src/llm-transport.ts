@@ -1,4 +1,4 @@
-// @interview-coach/backend — shared server-side LLM chat transport.
+// @interview-coach/backend - shared server-side LLM chat transport.
 //
 // One timeout/abort/retry chat-completions call shared by the three second-AI
 // model classes (recommendation, evaluation, submit-verdict), with one request

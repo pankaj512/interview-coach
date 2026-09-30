@@ -78,7 +78,7 @@ export function HistoryScreen({
           className="search-input"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Search interviews…"
+          placeholder="Search interviews..."
           aria-label="Search interviews"
         />
         <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} aria-label="Filter by difficulty">
@@ -136,16 +136,16 @@ export function HistoryScreen({
                       <span className="pill hot">{formatRecommendation(entry.recommendation)}</span>
                     )}
                   </td>
-                  <td>{entry.difficulty === undefined ? <span className="hint">—</span> : <span className="pill">{entry.difficulty}</span>}</td>
+                  <td>{entry.difficulty === undefined ? <span className="hint">-</span> : <span className="pill">{entry.difficulty}</span>}</td>
                   <td className="hist-actions">
                     <PrimaryButton onClick={() => onSelect(entry)} disabled={frozen}>
-                      {busyId === entry.id || loading ? "Loading…" : "Review"}
+                      {busyId === entry.id || loading ? "Loading..." : "Review"}
                     </PrimaryButton>
                     <GhostButton
                       onClick={() => onDelete(entry)}
                       disabled={(deletingId !== null && deletingId !== entry.id) || busyId !== null || loading}
                     >
-                      {deletingId === entry.id ? "Deleting…" : "Delete"}
+                      {deletingId === entry.id ? "Deleting..." : "Delete"}
                     </GhostButton>
                   </td>
                 </tr>
@@ -158,7 +158,7 @@ export function HistoryScreen({
       {hasMore && (
         <div className="row actions">
           <GhostButton onClick={onLoadMore} disabled={frozen}>
-            {loading ? "Loading…" : "Load more"}
+            {loading ? "Loading..." : "Load more"}
           </GhostButton>
         </div>
       )}

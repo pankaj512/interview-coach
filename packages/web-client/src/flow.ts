@@ -1,4 +1,4 @@
-// @interview-coach/web-client — interview ritual flow types (Phase 6).
+// @interview-coach/web-client - interview ritual flow types (Phase 6).
 //
 // The manual Setup screen is retired (roadmap Phase 6): the system chooses the
 // practice from the server recommendation. The Lobby is the final pre-interview

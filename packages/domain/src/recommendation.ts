@@ -1,4 +1,4 @@
-// @interview-coach/domain — recommendation (learning-loop Phase 4).
+// @interview-coach/domain - recommendation (learning-loop Phase 4).
 //
 // The product loop starts with a recommendation: given the user's profile,
 // curriculum, per-topic skill state, and progress pointer, decide what to

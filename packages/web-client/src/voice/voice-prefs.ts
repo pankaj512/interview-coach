@@ -3,7 +3,7 @@
 // The Azure realtime voice set is closed: the backend documents the same
 // list next to `AZURE_VOICE_VOICE` and rejects anything else on
 // session.voice. The stored preference never leaves the client as its own
-// value — it only overrides `session.voice` in the client-built
+// value - it only overrides `session.voice` in the client-built
 // session.update, with the server mint as the default. Unknown or empty
 // stored values read back as null so they can never reach the wire.
 

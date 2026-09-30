@@ -1,4 +1,4 @@
-// Feature 18d: POST /api/interviews/:id/submit-verdict — AI-only Submit.
+// Feature 18d: POST /api/interviews/:id/submit-verdict - AI-only Submit.
 // No sandbox run, zero persistence; failures surface errors.
 
 import { afterEach, describe, expect, it } from "vitest";

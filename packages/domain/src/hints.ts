@@ -1,9 +1,9 @@
-// @interview-coach/domain — controlled hint policy (HLD 5.4 / S5).
+// @interview-coach/domain - controlled hint policy (HLD 5.4 / S5).
 //
 // Three deterministic tiers; the interviewer guides without revealing the
 // solution. Hints never contain final code. Level defaults to
 // nextHintLevel(hintsUsed): first hint is conceptual, then approach scaffold,
-// then a detailed plan — capped at 3 so heavy hinting degrades gracefully
+// then a detailed plan - capped at 3 so heavy hinting degrades gracefully
 // and is visible in evaluation (hintsUsed).
 
 import type { Problem } from "./problem.js";
@@ -59,6 +59,6 @@ export function buildHint(problem: Problem, level: HintLevel): BuiltHint {
   return {
     level,
     revealsSolution: false,
-    hint: `Detailed plan for "${problem.title}": break the solution into 3-5 concrete steps with invariants for each step, then dry-run the steps on two examples (one typical, one edge case). State the final complexity before writing code — the implementation itself is still yours to produce.`,
+    hint: `Detailed plan for "${problem.title}": break the solution into 3-5 concrete steps with invariants for each step, then dry-run the steps on two examples (one typical, one edge case). State the final complexity before writing code - the implementation itself is still yours to produce.`,
   };
 }
