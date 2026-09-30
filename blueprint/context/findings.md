@@ -95,21 +95,21 @@
 **Suggested fix:** Read the loaded config value in `createVoiceSessionProviderFromEnv` (or delete the config field and keep a single validated parse); remove the unvalidated duplicate.
 **Resolution:** Fixed on `fix/voice-session-ttl-config`: the factory now takes the validated `config.voice.ephemeralTtlSeconds` as a required parameter (both `app.ts` and `server.ts` call sites pass it); the duplicate `Number()` env parse is deleted, so garbage TTL fails fast in `loadConfig`. Covered by a new unit case.
 
-### F-12 [P2] open - app.ts is one 1880-line module with inlined handlers far over the function-size guideline
+### F-12 [P2] fixed - app.ts is one 1880-line module with inlined handlers far over the function-size guideline
 
 **File:** packages/backend/src/app.ts:371-1845
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** `buildApp` spans roughly 1473 lines with every route handler inlined; individual handlers (for example `POST /api/interviews/:id/voice-session` at 1698-1828, `POST /api/interviews/:id/tool-exec` at ~1698-1830) run ~130 lines each. The standards ask to keep functions under 50 lines when possible. Size at this level makes navigation, review, and isolated testing hard.
 **Suggested fix:** Extract route handlers (at least the largest) into per-concern modules that `buildApp` registers.
-**Resolution:**
+**Resolution:** Fixed on `fix/app-header-and-handler-extraction`: the four largest handlers (voice-session, submit-verdict, runs, tool-exec) moved verbatim into `packages/backend/src/routes/` modules behind `register*Routes(app, ctx)` calls; shared schemas/helpers moved to `routes/shared.ts`; `app.ts` shrank 1882 -> 1390 lines with no behavior change (full suite green).
 
-### F-13 [P3] open - Stale hand-maintained route map in app.ts header, itself a banner block
+### F-13 [P3] fixed - Stale hand-maintained route map in app.ts header, itself a banner block
 
 **File:** packages/backend/src/app.ts:1-54
 **Found:** 2026-09-29 by /audit (scope: full; lens: quality)
 **Why it matters:** The 54-line header comment enumerates routes but already omits at least `DELETE /api/learning-state` (registered at app.ts:808) and `POST /api/interviews/:id/submit-verdict` (app.ts:1384), so it is misleading. It also conflicts with the standard banning banner/header blocks. (Related niche duplication: `siblingSource` is copied verbatim in shape-runners/javascript/assemble.ts:53 and shape-runners/python/assemble.ts:61; `sandboxTestCaseSchema` at app.ts:309 is misformatted.)
 **Suggested fix:** Remove the route enumeration and rely on the registrations; optionally share `siblingSource`. Reformat `sandboxTestCaseSchema`.
-**Resolution:**
+**Resolution:** Fixed on `fix/app-header-and-handler-extraction`: the 46-line route enumeration is deleted (8-line module summary kept); `sandboxTestCaseSchema` reformatted one-property-per-line in its new home `routes/runs.ts`. The optional `siblingSource` sharing was deliberately left as-is per the fix spec.
 
 ### F-14 [P2] fixed - Pervasive em dashes violate the Writing standard
 

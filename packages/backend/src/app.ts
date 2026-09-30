@@ -6,53 +6,6 @@
 // here: the browser talks to Voice Live directly with a backend-minted
 // ephemeral credential, and model tool calls come back via tool-exec.
 //
-// Routes (HLD 1.3 + S3 extensions marked):
-//   GET    /api/health
-//   GET    /api/ready                             (S8a probe)
-//   GET    /api/metrics                           (S8a observability)
-//   GET    /api/metrics/prometheus                (S8b scrape target)
-//   POST   /api/auth/register                     (S8c self-service signup)
-//   POST   /api/auth/login                        (S8c credential login)
-//   POST   /api/auth/logout                       (S8c session revoke)
-//   GET    /api/profile                           (Phase 2: read own profile)
-//   PUT    /api/profile                           (Phase 2: create/edit profile)
-//   GET    /api/curriculum                        (Phase 3: server-owned curriculum)
-//   GET    /api/curriculum/topics/:id             (Phase 3: topic + problems)
-//   GET    /api/skills                            (Phase 3: own skill state)
-//   GET    /api/recommendations/current           (Phase 4: current proposal)
-//   POST   /api/recommendations                   (Phase 4: generate + persist)
-//   POST   /api/recommendations/:id/accept        (Phase 4: accept proposal)
-//   POST   /api/interviews
-//   GET    /api/interviews/:id
-//   GET    /api/interviews/:id/state
-//   POST   /api/interviews/:id/ready            (extension: lifecycle needs it)
-//   POST   /api/interviews/:id/start
-//   POST   /api/interviews/:id/pause            (S6.1: expose domain pause)
-//   POST   /api/interviews/:id/resume           (S6.1: expose domain resume)
-//   POST   /api/interviews/:id/cancel           (S6.1: app-only cancel + reason)
-//   POST   /api/interviews/:id/fail             (S6.1: app-only fail + reason)
-//   DELETE /api/interviews/:id                  (S8b: hard erase, retention)
-//   POST   /api/interviews/:id/end
-//   POST   /api/interviews/:id/problems         (extension: attach problems)
-//   POST   /api/interviews/:id/problems/select  (S5: deterministic auto-select)
-//   GET    /api/problems                        (S5: browser + selection)
-//   GET    /api/problems/:id
-//   GET    /api/problems/:id/content       (18c: problem content slice)
-//   POST   /api/interviews/:id/responses        (S5: persist candidate answers)
-//   GET    /api/interviews/:id/evaluation       (Phase 10: async evaluation result)
-//   GET    /api/interviews                      (Phase 9: user history list)
-//   POST   /api/interviews/:id/transcript       (Phase 9: append transcript)
-//   GET    /api/interviews/:id/transcript       (Phase 9: read transcript)
-//   POST   /api/interviews/:id/submissions      (S7a: submit candidate code)
-//   GET    /api/interviews/:id/submissions      (S7a: list submissions)
-//   POST   /api/interviews/:id/submissions/:subId/runs (S7a: execute + tests)
-//   GET    /api/interviews/:id/runs             (S7a: list runs)
-//   GET    /api/interviews/:id/runs/:runId      (S7a: fetch one run)
-//   POST   /api/interviews/:id/tool-exec        (call_id idempotency, frozen §5)
-//   GET    /api/interviews/:id/tool-results/:call_id (recovery)
-//   POST   /api/interviews/:id/voice-session
-//   DELETE /api/interviews/:id/voice-session
-
 import Fastify, { type FastifyInstance } from "fastify";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
@@ -65,26 +18,16 @@ import {
   asProblemId,
   asRecommendationId,
   asRunId,
-  asSubmissionId,
   asTopicId,
   asUserId,
   selectProblems,
-  TOOL_NAMES,
-  validateSubmitVerdictInput,
-  validateSubmitVerdictProposal,
   type CodeExecutor,
   type EvaluationModel,
   type InterviewConfiguration,
-  type InterviewId,
-  type Problem,
   type RecommendationId,
   type RecommendationModel,
   type RepositorySet,
-  type RunProblemContext,
-  type SubmitVerdict,
   type SubmitVerdictModel,
-  type SubmitVerdictProblem,
-  type ToolName,
   type ToolResult,
   type TopicId,
 } from "@interview-coach/domain";
@@ -101,8 +44,6 @@ import { RecommendationService } from "./recommendation.js";
 import { createRecommendationModelFromEnv } from "./recommendation-model.js";
 import { bucketForRoute, FixedWindowRateLimiter, type RateBudget } from "./rate-limit.js";
 import {
-  CallIdConflictError,
-  CallIdToolMismatchError,
   IdempotencyStore,
 } from "./idempotency.js";
 import { sendApiError, sendDomainError } from "./http-errors.js";
@@ -117,24 +58,23 @@ import {
   serializeRun,
   serializeStateSnapshot,
   serializeSubmission,
-  serializeSubmitVerdict,
   serializeUserCurriculumProgress,
   serializeUserProfile,
   serializeUserSkillState,
 } from "./serializers.js";
 import {
-  FROZEN_VOICE_SESSION_CONFIG,
-  VoiceNotConfiguredError,
-  buildSessionInstructions,
-  buildVoiceWebSocketUrl,
   type VoiceSessionProvider,
 } from "./voice-session.js";
 import { createVoiceSessionProviderFromEnv } from "./voice-session.js";
-import { assembleSessionContext, type SessionContext } from "./session-context.js";
 import { EvaluationService } from "./evaluation.js";
 import { createEvaluationModelFromEnv } from "./evaluation-model.js";
-import { createSubmitVerdictModelFromEnv, UnconfiguredSubmitVerdictModel } from "./submit-verdict-model.js";
+import { createSubmitVerdictModelFromEnv } from "./submit-verdict-model.js";
 import { DockerCodeRunner } from "./docker-runner.js";
+import { errorBody, idParamSchema, submitCodeSchema, zodMessage } from "./routes/shared.js";
+import { registerSubmitVerdictRoutes } from "./routes/submit-verdict.js";
+import { registerRunRoutes } from "./routes/runs.js";
+import { registerToolExecRoutes } from "./routes/tool-exec.js";
+import { registerVoiceSessionRoutes } from "./routes/voice-session.js";
 
 export interface BuildAppDeps {
   readonly repos: RepositorySet;
@@ -159,11 +99,8 @@ export interface BuiltBackend {
   readonly metrics: BackendMetrics;
 }
 
-export interface ActiveVoiceSession {
-  readonly interviewId: string;
-  readonly createdAt: string;
-  readonly expiresAt: string;
-}
+import type { ActiveVoiceSession } from "./routes/voice-session.js";
+export type { ActiveVoiceSession };
 
 const VERSION = "0.1.0";
 
@@ -281,55 +218,6 @@ const listInterviewsQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(100).default(50),
 });
 
-// S7a sandbox (HLD 6.1/6.3): candidate code submission + test execution.
-// Caps mirror the domain (50k code chars, 50 cases, 100ms..30s timeout).
-const submitCodeSchema = z.object({
-  language: z.enum(["javascript", "python", "cpp"]),
-  code: z.string().min(1).max(50_000),
-  problemId: z.string().min(1).max(200).optional(),
-});
-
-// Feature 18d: map a catalog problem onto the verdict contract. Returns
-// null when the problem lacks a usable statement or constraints, so the
-// model judges code alone instead of receiving a half-empty problem.
-function toVerdictProblem(problem: Problem): SubmitVerdictProblem | null {
-  const statement = problem.description?.trim() ?? "";
-  const constraints = (problem.constraints ?? [])
-    .map((entry) => entry.trim())
-    .filter((entry) => entry !== "");
-  if (statement === "" || constraints.length === 0) return null;
-  return {
-    id: problem.id,
-    title: problem.title,
-    statement,
-    constraints: constraints.join("\n"),
-  };
-}
-
-const sandboxTestCaseSchema = z.object({  name: z.string().min(1).max(120),
-  args: z.array(z.unknown()),
-  expected: z.unknown(),
-  hidden: z.boolean().optional(),
-});
-
-const runCodeSchema = z.object({
-  testCases: z.array(sandboxTestCaseSchema).min(1).max(50),
-  timeoutMs: z.number().int().min(100).max(30_000).optional(),
-});
-
-const TOOL_NAMES_TUPLE = TOOL_NAMES as unknown as [
-  ToolName,
-  ...ToolName[],
-];
-
-const toolExecSchema = z.object({
-  call_id: z.string().min(1).max(200),
-  tool: z.enum(TOOL_NAMES_TUPLE),
-  arguments: z.record(z.string(), z.unknown()).optional(),
-});
-
-const idParamSchema = z.object({ id: z.string().min(1).max(200) });
-
 const callIdParamSchema = z.object({
   id: z.string().min(1).max(200),
   call_id: z.string().min(1).max(200),
@@ -349,23 +237,6 @@ function toDomainConfiguration(
       : { problemCount: input.problemCount }),
     ...(input.topicFocus === undefined ? {} : { topicFocus: input.topicFocus }),
   };
-}
-
-function zodMessage(error: z.ZodError): string {
-  const first = error.issues[0];
-  if (first === undefined) return "Invalid request";
-  const path = first.path.join(".");
-  return path === "" ? first.message : `${path}: ${first.message}`;
-}
-
-// F6-3: a transient quota/capacity result from a tool dispatch. Thrown (not
-// returned) so the idempotency store does not cache it as a permanent result;
-// the tool-exec route maps it to 429 retryable:true so the forwarder backs off.
-class RateLimitedToolError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "RateLimitedToolError";
-  }
 }
 
 export function buildApp(deps: BuildAppDeps): BuiltBackend {
@@ -1383,92 +1254,11 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     // the code is stored as a run-less submission (no runs, no verdict row).
     // Failures surface errors, never an invented verdict, and store nothing.
     // Body mirrors submitCodeSchema (submitCode-like guards).
-  app.post("/api/interviews/:id/submit-verdict", async (request, reply) => {
-    const params = idParamSchema.safeParse(request.params);
-    if (!params.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
-    }
-    const parsed = submitCodeSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
-    }
-    const id = asInterviewId(params.data.id);
-    const state = await interviews.getState(id);
-    if (!state.ok) return sendDomainError(reply, state.error);
-    const current =
-      parsed.data.problemId === undefined
-        ? state.value.currentProblem
-        : await deps.repos.problems.findById(asProblemId(parsed.data.problemId));
-    const input = validateSubmitVerdictInput({
-      interviewId: params.data.id,
-      language: parsed.data.language,
-      code: parsed.data.code,
-      problem: current === null ? null : toVerdictProblem(current),
-    });
-    if (input === null) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", "Invalid verdict input", false);
-    }
-    // No judge to call without LLM keys: 503 with plain copy, never the
-    // raw "not configured" message and never a 502 (which means the model
-    // ran and its output was unusable).
-    if (submitVerdictModel instanceof UnconfiguredSubmitVerdictModel) {
-      return sendApiError(
-        reply,
-        503,
-        "VERDICT_NOT_CONFIGURED",
-        "Submit verdict is unavailable right now. Try again later.",
-        false,
-      );
-    }
-    let proposal: SubmitVerdict | null;
-    try {
-      const judged = await submitVerdictModel.judge(input);
-      if (judged.proposal === null) {
-        return sendApiError(
-          reply,
-          502,
-          "VERDICT_FAILED",
-          judged.error ?? "Verdict model returned no verdict",
-          true,
-        );
-      }
-      proposal = validateSubmitVerdictProposal(judged.proposal);
-    } catch (error) {
-      return sendApiError(
-        reply,
-        502,
-        "VERDICT_FAILED",
-        error instanceof Error ? error.message : "Verdict model failed",
-        true,
-      );
-    }
-    if (proposal === null) {
-      return sendApiError(
-        reply,
-        502,
-        "VERDICT_FAILED",
-        "Verdict model returned an invalid verdict",
-        true,
-      );
-    }
-    // Fix: Submit persists the code as a run-less submission through the
-    // same service the Test path uses (shared cap, status and problem
-    // guards), so the evaluation reader credits coding evidence. Still no
-    // sandbox run, no verdict row. Only a judged submit persists: 400/404
-    // and 502/503 failures store nothing.
-    const stored = await submissions.submit(id, {
-      language: parsed.data.language,
-      code: parsed.data.code,
-      ...(parsed.data.problemId === undefined
-        ? {}
-        : { problemId: parsed.data.problemId }),
-    });
-    if (!stored.ok) return sendDomainError(reply, stored.error);
-    request.log.info(
-      { interviewId: params.data.id, submissionId: stored.value.id },
-      "code.verdict",
-    );
-    return reply.send({ ok: true, verdict: serializeSubmitVerdict(proposal) });
+  registerSubmitVerdictRoutes(app, {
+    interviews,
+    submissions,
+    problems: deps.repos.problems,
+    submitVerdictModel,
   });
 
   app.get("/api/interviews/:id/submissions", async (request, reply) => {
@@ -1484,78 +1274,12 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
-  app.post(
-    "/api/interviews/:id/submissions/:subId/runs",
-    async (request, reply) => {
-      const params = z
-        .object({
-          id: z.string().min(1).max(200),
-          subId: z.string().min(1).max(200),
-        })
-        .safeParse(request.params);
-      if (!params.success) {
-        return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
-      }
-      const parsed = runCodeSchema.safeParse(request.body);
-      if (!parsed.success) {
-        return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
-      }
-      const id = asInterviewId(params.data.id);
-      const submissionId = asSubmissionId(params.data.subId);
-      const submission = await deps.repos.submissions.findById(submissionId);
-      if (submission === null || submission.interviewId !== id) {
-        return sendApiError(
-          reply,
-          404,
-          "NOT_FOUND",
-          `Submission ${params.data.subId} does not exist for interview ${params.data.id}`,
-          false,
-        );
-      }
-      // F6-3: concurrency is enforced in SubmissionService (shared with the
-      // model tool path). Resolve the shape-runner link for the submission
-      // language when the submission names a known problem; absent problem or
-      // link keeps the legacy harnesses.
-      let runContext: RunProblemContext | undefined;
-      if (submission.problemId !== undefined) {
-        const problem = await deps.repos.problems.findById(submission.problemId);
-        if (problem !== null) {
-          const link = problem.runnerLinks?.[submission.language];
-          runContext = {
-            problemId: problem.id,
-            ...(link === undefined ? {} : { link }),
-            ...(problem.examples === undefined ? {} : { examples: problem.examples }),
-          };
-        }
-      }
-      const run = await submissions.runTests(
-        submissionId,
-        parsed.data.testCases.map((t) => ({
-          name: t.name,
-          args: t.args,
-          expected: t.expected,
-          ...(t.hidden === undefined ? {} : { hidden: t.hidden }),
-        })),
-        parsed.data.timeoutMs,
-        runContext,
-      );
-      if (!run.ok) return sendDomainError(reply, run.error);
-      request.log.info(
-        {
-          interviewId: params.data.id,
-          submissionId: params.data.subId,
-          runId: run.value.id,
-          status: run.value.status,
-          durationMs: run.value.durationMs,
-        },
-        "code.executed",
-      );
-      metrics.countCodeRun(run.value.status);
-      return reply
-        .status(201)
-        .send({ ok: true, run: serializeRun(run.value) });
-    },
-  );
+  registerRunRoutes(app, {
+    submissions,
+    submissionsStore: deps.repos.submissions,
+    problems: deps.repos.problems,
+    metrics,
+  });
 
   app.get("/api/interviews/:id/runs", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
@@ -1591,75 +1315,11 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, run: serializeRun(run) });
   });
 
-  app.post(
-    "/api/interviews/:id/tool-exec",
-    async (request, reply) => {
-    const params = idParamSchema.safeParse(request.params);
-    if (!params.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
-    }
-    const parsed = toolExecSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(parsed.error), false);
-    }
-    const interviewId = asInterviewId(params.data.id);
-    const exists = await deps.repos.interviews.findById(interviewId);
-    if (exists === null) {
-      return sendApiError(reply, 404, "NOT_FOUND", `Interview ${params.data.id} does not exist`, false);
-    }
-    const callId = parsed.data.call_id;
-    const tool = parsed.data.tool as ToolName;
-    const toolArgs = parsed.data.arguments as Record<string, unknown> | undefined;
-    request.log.info({ interviewId: interviewId as string, callId, tool }, "tool.received");
-    const startedAt = Date.now();
-    let outcome;
-    try {
-      outcome = await toolIdempotency.execute(callId, interviewId as string, tool, async () => {
-        const result = await tools.dispatch(tool, { interviewId, callId }, toolArgs);
-        if (result.ok) return { ok: true as const, result: result.value, error: null };
-        // Transient quota/capacity (F6-3): throw so it is not cached and the
-        // route can answer 429 retryable:true.
-        if (result.error.code === "RATE_LIMITED") {
-          throw new RateLimitedToolError(result.error.message);
-        }
-        return { ok: false as const, result: null, error: result.error };
-      });
-    } catch (error) {
-      if (error instanceof CallIdConflictError) {
-        return sendDomainError(reply, error.toDomainError());
-      }
-      if (error instanceof CallIdToolMismatchError) {
-        return sendDomainError(reply, error.toDomainError());
-      }
-      if (error instanceof RateLimitedToolError) {
-        return sendApiError(reply, 429, "RATE_LIMITED", error.message, true);
-      }
-      throw error;
-    }
-    const elapsedMs = Date.now() - startedAt;
-    request.log.info(
-      { interviewId: interviewId as string, callId, tool, elapsedMs, replayed: outcome.replayed, ok: outcome.record.ok },
-      "tool.executed",
-    );
-    const record = outcome.record;
-    metrics.countTool(outcome.replayed, record.ok);
-    if (record.ok) {
-      return reply.send({
-        ok: true,
-        callId: record.callId,
-        tool: record.tool,
-        result: record.result,
-        replayed: outcome.replayed,
-      });
-    }
-    // record.error is non-null when ok is false (stored by execute above).
-    const { status, body } = errorBody(record);
-    return reply.status(status).send({
-      ...body,
-      callId: record.callId,
-      tool: record.tool,
-      replayed: outcome.replayed,
-    });
+  registerToolExecRoutes(app, {
+    interviewsStore: deps.repos.interviews,
+    tools,
+    toolIdempotency,
+    metrics,
   });
 
   app.get("/api/interviews/:id/tool-results/:call_id", async (request, reply) => {
@@ -1697,136 +1357,17 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     });
   });
 
-  app.post(
-    "/api/interviews/:id/voice-session",
-    async (request, reply) => {
-    const params = idParamSchema.safeParse(request.params);
-    if (!params.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
-    }
-    const id: InterviewId = asInterviewId(params.data.id);
-    const state = await interviews.getState(id);
-    if (!state.ok) return sendDomainError(reply, state.error);
-    const status = state.value.interview.status;
-    const needsStart = status === "ready";
-    if (!needsStart && status !== "in_progress" && status !== "paused") {
-      metrics.countVoiceRejected();
-      return sendApiError(
-        reply,
-        409,
-        "ILLEGAL_TRANSITION",
-        `Voice session requires a ready or running interview (current: ${status})`,
-        false,
-      );
-    }
-    // V3-1: drop expired mints before the quota check.
-    sweepExpiredVoiceSessions();
-    // S8a quota: bound the in-memory session map (abuse protection).
-    if (!activeVoiceSessions.has(params.data.id) && activeVoiceSessions.size >= config.voice.maxActiveSessions) {
-      metrics.countVoiceRejected();
-      return sendApiError(
-        reply,
-        429,
-        "RATE_LIMITED",
-        `Too many active voice sessions (max ${config.voice.maxActiveSessions}); retry shortly`,
-        true,
-      );
-    }
-    let mint;
-    try {
-      mint = await voiceProvider.mint(id);
-    } catch (error) {
-      if (error instanceof VoiceNotConfiguredError) {
-        metrics.countVoiceRejected();
-        return sendApiError(reply, 503, "VOICE_NOT_CONFIGURED", error.message, false);
-      }
-      throw error;
-    }
-    // V3-4: start only after a successful mint, so a 429/503 does not record
-    // a false start on an interview that never received a session.
-    if (needsStart) {
-      const started = await interviews.start(id);
-      if (!started.ok) return sendDomainError(reply, started.error);
-      metrics.countInterviewTransition(started.value.status);
-    }
-    const endpoint = mint.endpoint !== "" ? mint.endpoint : config.voice.endpoint;
-    const model = mint.model !== "" ? mint.model : config.voice.model;
-    const apiVersion = mint.apiVersion !== "" ? mint.apiVersion : config.voice.apiVersion;
-    const voiceName = mint.voiceName !== "" ? mint.voiceName : config.voice.voiceName;
-    const expiresAt = mint.expiresAt.toISOString();
-    activeVoiceSessions.set(params.data.id, {
-      interviewId: params.data.id,
-      createdAt: new Date().toISOString(),
-      expiresAt,
-    });
-    request.log.info(
-      { interviewId: params.data.id, mode: mint.mode },
-      "voice_session.created",
-    );
-    metrics.countVoiceMinted();
-    // S7a sandbox summary (HLD 6.4): code progress travels with the mint so
-    // the model starts aware of submissions and latest run verdicts.
-    const submissionCount = await submissions.submissionCount(id);
-    const latestRun = await submissions.latestSummary(id);
-    const sandboxSummary =
-      submissionCount === 0
-        ? "no code submitted yet"
-        : latestRun.ok && latestRun.value !== null
-          ? `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, latest run ${latestRun.value.status} (${latestRun.value.passedCount}/${latestRun.value.totalCount})`
-          : `${submissionCount} submission${submissionCount === 1 ? "" : "s"}, not run yet`;
-    // Phase 7: best-effort learning-loop context (profile/topic/objective/skill)
-    // so the interviewer opens grounded. Only a user session has an owner to
-    // scope the reads; a service/anonymous caller (CLI harness) mints without
-    // it, and any failure degrades to the generic interview rather than
-    // blocking the mint.
-    const caller = request.caller;
-    let sessionContext: SessionContext = {};
-    if (caller !== undefined && caller.kind === "user") {
-      try {
-        const [profile, curriculum, skillSnapshot] = await Promise.all([
-          profiles.get(caller.userId),
-          curricula.getDefault(),
-          skills.getSnapshot(caller.userId),
-        ]);
-        sessionContext = assembleSessionContext({
-          profile,
-          curriculum,
-          skills: skillSnapshot.skills,
-          problem: state.value.currentProblem,
-        });
-      } catch {
-        sessionContext = {};
-      }
-    }
-    return reply.status(201).send({
-      ok: true,
-      session: {
-        websocketUrl: buildVoiceWebSocketUrl(endpoint, apiVersion, model),
-        endpoint,
-        model,
-        apiVersion,
-        voice: voiceName,
-        ttlSeconds: mint.ttlSeconds,
-        expiresAt,
-        credential: mint.credential,
-        credentialMode: mint.mode,
-        sessionConfig: FROZEN_VOICE_SESSION_CONFIG,
-        // S5 structured context (HLD 5.2): configuration + current problem
-        // + progress travel with the mint so the model starts grounded.
-        instructions: buildSessionInstructions({
-          candidateId: state.value.interview.candidateId as string,
-          interviewId: params.data.id,
-          configurationSummary: describeConfiguration(state.value.interview.configuration),
-          ...sessionContext,
-          ...(state.value.currentProblem === null
-            ? {}
-            : { problemSummary: describeProblem(state.value.currentProblem) }),
-          responseCount: state.value.responseCount,
-          hintsUsed: state.value.evaluation?.hintsUsed ?? 0,
-          sandboxSummary,
-        }),
-      },
-    });
+  registerVoiceSessionRoutes(app, {
+    interviews,
+    submissions,
+    profiles,
+    curricula,
+    skills,
+    voiceProvider,
+    config,
+    activeVoiceSessions,
+    sweepExpiredVoiceSessions,
+    metrics,
   });
 
   app.delete("/api/interviews/:id/voice-session", async (request, reply) => {
@@ -1846,37 +1387,3 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   return { app, toolIdempotency, activeVoiceSessions, metrics };
 }
 
-function describeConfiguration(config: InterviewConfiguration): string {
-  const parts = [`type=${config.interviewType}`];
-  if (config.difficulty !== undefined) parts.push(`difficulty=${config.difficulty}`);
-  if (config.durationMinutes !== undefined) parts.push(`duration=${config.durationMinutes}min`);
-  if (config.problemCount !== undefined) parts.push(`problems=${config.problemCount}`);
-  if (config.topicFocus !== undefined && config.topicFocus.length > 0) {
-    parts.push(`topics=${config.topicFocus.join(", ")}`);
-  }
-  return parts.join("; ");
-}
-
-function describeProblem(problem: {
-  title: string;
-  difficulty: string;
-  expectedConcepts?: readonly string[];
-}): string {
-  const concepts =
-    problem.expectedConcepts !== undefined && problem.expectedConcepts.length > 0
-      ? ` - ${problem.expectedConcepts.join(", ")}`
-      : "";
-  return `${problem.title} (${problem.difficulty})${concepts}`;
-}
-
-function errorBody(record: { ok: boolean; error: { code: string; message: string } | null }): {
-  status: number;
-  body: { ok: false; error: { code: string; message: string; retryable: boolean } };
-} {
-  // Stored failures are permanent domain errors (retryable:false), which is
-  // exactly what the browser forwarder must not retry (frozen section 5).
-  const code = record.error?.code ?? "INTERNAL_ERROR";
-  const message = record.error?.message ?? "Tool execution failed";
-  const status = code === "NOT_FOUND" ? 404 : code === "VALIDATION_ERROR" ? 400 : 409;
-  return { status, body: { ok: false, error: { code, message, retryable: false } } };
-}
