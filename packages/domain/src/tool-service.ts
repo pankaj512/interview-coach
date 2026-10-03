@@ -8,7 +8,7 @@ import type {
 import type { InterviewConfiguration, InterviewStatus } from "./interview.js";
 import type { Problem } from "./problem.js";
 import type { ResponseKind } from "./candidate-response.js";
-import { MAX_RESPONSE_CONTENT_LENGTH } from "./candidate-response.js";
+import { MAX_RESPONSE_CONTENT_LENGTH, RESPONSE_KINDS } from "./candidate-response.js";
 import type {
   EvaluationRepository,
   EventRepository,
@@ -258,14 +258,6 @@ const TOOL_RUN_MAX_TIMEOUT_MS = 6000;
 // the live editor snapshot (client CANDIDATE_CODE_MAX_CHARS) so a 50k
 // submission does not flood the realtime context.
 const LAST_SUBMISSION_CODE_MAX_CHARS = 8000;
-
-const RESPONSE_KINDS: readonly ResponseKind[] = [
-  "answer",
-  "approach",
-  "code",
-  "question",
-  "note",
-];
 
 export class ToolService {
   private readonly interviews: InterviewService;

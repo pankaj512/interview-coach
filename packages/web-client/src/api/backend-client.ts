@@ -291,14 +291,6 @@ export class BackendClient {
     return body.messages;
   }
 
-  async getInterview(id: string): Promise<SerializedInterview> {
-    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
-      "GET",
-      `/api/interviews/${encodeURIComponent(id)}`,
-    );
-    return body.interview;
-  }
-
   async getState(id: string): Promise<SerializedStateSnapshot> {
     const body = await this.request<{ ok: true; state: SerializedStateSnapshot }>(
       "GET",
@@ -366,15 +358,6 @@ export class BackendClient {
     const body = await this.request<{ ok: true; interview: SerializedInterview }>(
       "POST",
       `/api/interviews/${encodeURIComponent(id)}/cancel`,
-      reason === undefined ? undefined : { reason },
-    );
-    return body.interview;
-  }
-
-  async failInterview(id: string, reason?: string): Promise<SerializedInterview> {
-    const body = await this.request<{ ok: true; interview: SerializedInterview }>(
-      "POST",
-      `/api/interviews/${encodeURIComponent(id)}/fail`,
       reason === undefined ? undefined : { reason },
     );
     return body.interview;

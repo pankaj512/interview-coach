@@ -6,7 +6,10 @@ import { err, ok } from "./result.js";
 
 // Candidate utterances/artefacts captured during the interview. Persisted
 // separately from raw conversation (HLD 5.11); evaluation reads these.
-export type ResponseKind = "answer" | "approach" | "code" | "question" | "note";
+// Single source of truth for response kinds (audit F-25): the tuple owns
+// the list, ResponseKind derives from it, and tool-service reuses it.
+export const RESPONSE_KINDS = ["answer", "approach", "code", "question", "note"] as const;
+export type ResponseKind = (typeof RESPONSE_KINDS)[number];
 
 // Shared content cap (audit F5): enforced at the domain boundary so direct
 // HTTP recordResponse and the tool path cannot persist unbounded content.

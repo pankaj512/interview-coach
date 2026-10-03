@@ -31,11 +31,7 @@ import {
   CPP_MAIN_FILE,
   CPP_SUBMISSION_FILE,
 } from "./cpp-harness.js";
-import {
-  assembleCppRun,
-  type CppSample,
-  type CppShapeMeta,
-} from "./shape-runners/cpp/assemble.js";
+import { assembleCppRun, type CppShapeMeta } from "./shape-runners/cpp/assemble.js";
 import {
   assembleJSRun,
   type JSLink,
@@ -435,14 +431,7 @@ export class DockerCodeRunner implements CodeExecutor {
     const source = (name: string): string =>
       readFileSync(new URL(name, cppDir), "utf8");
     const isMethodSequence = link.actualRule === "method-sequence";
-    const examples = context.examples ?? [];
-    const samples: CppSample[] = testCases.map((t, i) => {
-      const input = examples[i]?.input;
-      if (input === undefined) {
-        throw new Error(`missing sample input for case ${t.name}`);
-      }
-      return { name: t.name, input };
-    });
+    const samples = this.rawCases(testCases, context);
     let shapeMeta: CppShapeMeta | undefined;
     let dispatchFragment: string | undefined;
     let repairEntries: { readonly name: string; readonly returnsVoid: boolean }[] | undefined;
@@ -695,48 +684,16 @@ export class DockerCodeRunner implements CodeExecutor {
     const text = stdout;
     const total = testCases.length;
     // Single-JSON protocol (JS/Python harnesses): the last line is the verdict.
-    try {
-      const parsed = JSON.parse(text.trim().split("\n").pop() ?? "") as {
-        results?: { name: string; passed: boolean; actual?: unknown; error?: string }[];
-        loadError?: string;
-      };
-      if (parsed !== null && typeof parsed === "object" && ("results" in parsed || "loadError" in parsed)) {
-        return this.toOutcome(parsed, durationMs, total);
-      }
-    } catch {
-      // Fall through to the JSON-lines protocol.
+    const single = this.parseSingleJsonProtocol(text);
+    if (single !== null) {
+      return this.toOutcome(single, durationMs, total);
     }
     // JSON-lines protocol (C++ harness): one verdict object per line.
     // The harness prints actuals only; pass/fail is decided here against
     // the expected values with the same canonical compare the JS/Python
     // harnesses use in-language.
     const expectedByName = new Map(testCases.map((t) => [t.name, t.expected] as const));
-    const raws: { name: string; actual?: unknown; error?: string }[] = [];
-    let loadError: string | undefined;
-    for (const line of text.split("\n")) {
-      const trimmed = line.trim();
-      if (trimmed === "") continue;
-      if (trimmed === CPP_BUILD_FAILED_MARKER) {
-        loadError = "C++ compile error";
-        continue;
-      }
-      if (loadError === "C++ compile error") continue;
-      try {
-        const row = JSON.parse(trimmed) as { name?: unknown; actual?: unknown; error?: unknown };
-        if (row !== null && typeof row === "object" && typeof row["name"] === "string") {
-          raws.push({
-            name: row["name"],
-            ...(row["actual"] === undefined ? {} : { actual: row["actual"] }),
-            ...(row["error"] === undefined ? {} : { error: String(row["error"]) }),
-          });
-        }
-      } catch {
-        // Candidate debug prints are not verdicts; skip them so extra
-        // stdout no longer fails the run. A line shaped exactly like a
-        // verdict row still collides and is read as one.
-        continue;
-      }
-    }
+    const { raws, loadError } = this.parseJsonLinesProtocol(text);
     if (raws.length === 0 && loadError === undefined && text.trim() !== "") {
       return {
         status: "error",
@@ -773,6 +730,57 @@ export class DockerCodeRunner implements CodeExecutor {
       durationMs,
       total,
     );
+  }
+
+  private parseSingleJsonProtocol(text: string): {
+    results?: { name: string; passed: boolean; actual?: unknown; error?: string }[];
+    loadError?: string;
+  } | null {
+    try {
+      const parsed = JSON.parse(text.trim().split("\n").pop() ?? "") as {
+        results?: { name: string; passed: boolean; actual?: unknown; error?: string }[];
+        loadError?: string;
+      };
+      if (parsed !== null && typeof parsed === "object" && ("results" in parsed || "loadError" in parsed)) {
+        return parsed;
+      }
+    } catch {
+      // Fall through to the JSON-lines protocol.
+    }
+    return null;
+  }
+
+  private parseJsonLinesProtocol(text: string): {
+    raws: { name: string; actual?: unknown; error?: string }[];
+    loadError: string | undefined;
+  } {
+    const raws: { name: string; actual?: unknown; error?: string }[] = [];
+    let loadError: string | undefined;
+    for (const line of text.split("\n")) {
+      const trimmed = line.trim();
+      if (trimmed === "") continue;
+      if (trimmed === CPP_BUILD_FAILED_MARKER) {
+        loadError = "C++ compile error";
+        continue;
+      }
+      if (loadError === "C++ compile error") continue;
+      try {
+        const row = JSON.parse(trimmed) as { name?: unknown; actual?: unknown; error?: unknown };
+        if (row !== null && typeof row === "object" && typeof row["name"] === "string") {
+          raws.push({
+            name: row["name"],
+            ...(row["actual"] === undefined ? {} : { actual: row["actual"] }),
+            ...(row["error"] === undefined ? {} : { error: String(row["error"]) }),
+          });
+        }
+      } catch {
+        // Candidate debug prints are not verdicts; skip them so extra
+        // stdout no longer fails the run. A line shaped exactly like a
+        // verdict row still collides and is read as one.
+        continue;
+      }
+    }
+    return { raws, loadError };
   }
 
   private toOutcome(
@@ -823,7 +831,8 @@ function canonJson(value: unknown): string {
   );
 }
 
-function capActual(actual: unknown, max: number): unknown {  let serialized: string;
+function capActual(actual: unknown, max: number): unknown {
+  let serialized: string;
   try {
     serialized = JSON.stringify(actual) ?? "null";
   } catch {

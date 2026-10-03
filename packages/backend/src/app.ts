@@ -20,6 +20,7 @@ import {
   asRunId,
   asTopicId,
   asUserId,
+  RESPONSE_KINDS,
   selectProblems,
   type CodeExecutor,
   type EvaluationModel,
@@ -183,17 +184,10 @@ const problemsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
-const RESPONSE_KINDS_TUPLE = [
-  "answer",
-  "approach",
-  "code",
-  "question",
-  "note",
-] as const;
-
-// S5: candidate answers persisted outside the model (HLD 5.11).
+// S5: candidate answers persisted outside the model (HLD 5.11). Kind list
+// is single-sourced from the domain (audit F-25); Zod accepts the tuple.
 const recordResponseSchema = z.object({
-  kind: z.enum(RESPONSE_KINDS_TUPLE).default("answer"),
+  kind: z.enum(RESPONSE_KINDS).default("answer"),
   content: z.string().min(1).max(10_000),
   problemId: z.string().min(1).max(200).optional(),
 });

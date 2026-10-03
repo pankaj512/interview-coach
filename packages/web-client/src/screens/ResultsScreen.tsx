@@ -29,7 +29,6 @@ export function nextOpenDimension(current: string | null, clicked: string): stri
 export function ResultsScreen({
   backend,
   snapshot,
-  stale = false,
   onHistory,
   onNew,
   onTranscript,
@@ -37,7 +36,6 @@ export function ResultsScreen({
 }: {
   readonly backend: BackendClient;
   readonly snapshot: SerializedStateSnapshot | null;
-  readonly stale?: boolean;
   readonly onHistory: () => void;
   readonly onNew: () => void;
   readonly onTranscript: () => void;
@@ -125,11 +123,6 @@ export function ResultsScreen({
       <h1 className="page-title">
         {problemTitle === null ? "Interview results" : `${problemTitle}, reviewed`}
       </h1>
-      {stale && (
-        <Card className="state-card state-reconnecting" role="note">
-          <p>Saved history entry - live state unavailable. Scores below may be stale.</p>
-        </Card>
-      )}
 
       {inProgress ? (
         <Card className="hero-card" role="status">

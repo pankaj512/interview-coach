@@ -367,7 +367,8 @@ export interface SerializedRun {
   readonly createdAt: string;
 }
 
-export function serializeSubmission(  submission: CodeSubmission,
+export function serializeSubmission(
+  submission: CodeSubmission,
 ): SerializedSubmission {
   return {
     id: submission.id,

@@ -192,9 +192,7 @@ export function supersedeRecommendation(
   return ok({ ...existing, status: "superseded", updatedAt: now });
 }
 
-// ---------------------------------------------------------------------------
 // Candidate set + deterministic fallback
-// ---------------------------------------------------------------------------
 
 export interface RecommendationCandidate {
   readonly recommendationType: RecommendationType;
@@ -242,6 +240,51 @@ function pickProblemForTopic(
   return problems[index] ?? null;
 }
 
+// Collects deduplicated recommendation candidates in pedagogical priority
+// order. Extracted from buildRecommendationCandidates (audit F-22) so the
+// entry point reads as the five priority phases plus the limit.
+class CandidateCollector {
+  private readonly candidates: RecommendationCandidate[] = [];
+  private readonly seenProblems = new Set<ProblemId>();
+
+  constructor(
+    private readonly skillByTopic: Map<TopicId, UserSkillState>,
+    private readonly problemById: Map<ProblemId, Problem>,
+  ) {}
+
+  add(
+    topic: CurriculumTopic | undefined,
+    recommendationType: RecommendationType,
+    reason: string,
+  ): void {
+    if (topic === undefined) return;
+    const skill = this.skillByTopic.get(topic.id);
+    const problem = pickProblemForTopic(topic, skill, this.problemById);
+    if (problem === null || this.seenProblems.has(problem.id)) return;
+    this.seenProblems.add(problem.id);
+    this.candidates.push({
+      recommendationType,
+      topicId: topic.id,
+      topicName: topic.name,
+      problemId: problem.id,
+      problemTitle: problem.title,
+      difficulty: problem.difficulty,
+      reason,
+    });
+  }
+
+  finish(curriculumId: CurriculumId, limit: number | undefined): RecommendationCandidateSet {
+    const capped = Math.min(
+      MAX_RECOMMENDATION_CANDIDATES,
+      Math.max(1, Math.floor(limit ?? MAX_RECOMMENDATION_CANDIDATES)),
+    );
+    return {
+      curriculumId,
+      candidates: this.candidates.slice(0, capped),
+    };
+  }
+}
+
 // Builds the ordered candidate set the model may choose from (and the
 // fallback picks from). Order encodes pedagogical priority:
 //   continue/reinforce the current topic -> advance/new -> review mastered.
@@ -260,38 +303,15 @@ export function buildRecommendationCandidates(
     topics.findIndex((topic) => topic.id === currentTopicId),
   );
   const currentTopic = topics[currentIndex];
-
-  const candidates: RecommendationCandidate[] = [];
-  const seenProblems = new Set<ProblemId>();
-
-  const add = (
-    topic: CurriculumTopic | undefined,
-    recommendationType: RecommendationType,
-    reason: string,
-  ): void => {
-    if (topic === undefined) return;
-    const skill = skillByTopic.get(topic.id);
-    const problem = pickProblemForTopic(topic, skill, problemById);
-    if (problem === null || seenProblems.has(problem.id)) return;
-    seenProblems.add(problem.id);
-    candidates.push({
-      recommendationType,
-      topicId: topic.id,
-      topicName: topic.name,
-      problemId: problem.id,
-      problemTitle: problem.title,
-      difficulty: problem.difficulty,
-      reason,
-    });
-  };
+  const collector = new CandidateCollector(skillByTopic, problemById);
 
   // 1. Current topic: keep going if started, otherwise start it.
   if (currentTopic !== undefined && skillByTopic.get(currentTopic.id)?.masteryLevel !== "mastered") {
     const skill = skillByTopic.get(currentTopic.id);
     if (skill === undefined) {
-      add(currentTopic, "new_topic", `Start ${currentTopic.name}, the first topic in your curriculum.`);
+      collector.add(currentTopic, "new_topic", `Start ${currentTopic.name}, the first topic in your curriculum.`);
     } else {
-      add(
+      collector.add(
         currentTopic,
         "continue_topic",
         `Keep building on ${currentTopic.name} (${skill.masteryLevel}).`,
@@ -307,7 +327,7 @@ export function buildRecommendationCandidates(
       (skill.lastOutcome === "failure" || skill.lastOutcome === "partial") &&
       skill.masteryLevel !== "mastered"
     ) {
-      add(topic, "reinforce_weakness", `Reinforce ${topic.name} where your last attempt was ${skill.lastOutcome}.`);
+      collector.add(topic, "reinforce_weakness", `Reinforce ${topic.name} where your last attempt was ${skill.lastOutcome}.`);
     }
   }
 
@@ -320,7 +340,7 @@ export function buildRecommendationCandidates(
     if (topic === undefined) continue;
     const skill = skillByTopic.get(topic.id);
     if (skill?.masteryLevel === "mastered") continue;
-    add(
+    collector.add(
       topic,
       currentMastered ? "advance_topic" : "new_topic",
       currentMastered
@@ -332,7 +352,7 @@ export function buildRecommendationCandidates(
   // 4. Spaced review of mastered topics (retention), lowest priority.
   for (const topic of topics) {
     if (skillByTopic.get(topic.id)?.masteryLevel === "mastered") {
-      add(topic, "review_topic", `Review ${topic.name} to keep it sharp.`);
+      collector.add(topic, "review_topic", `Review ${topic.name} to keep it sharp.`);
     }
   }
 
@@ -340,22 +360,13 @@ export function buildRecommendationCandidates(
   // reviewed) still get an option so the set is never empty for a non-empty
   // curriculum.
   for (const topic of topics) {
-    add(topic, "new_topic", `Explore ${topic.name}.`);
+    collector.add(topic, "new_topic", `Explore ${topic.name}.`);
   }
 
-  const limit = Math.min(
-    MAX_RECOMMENDATION_CANDIDATES,
-    Math.max(1, Math.floor(input.limit ?? MAX_RECOMMENDATION_CANDIDATES)),
-  );
-  return {
-    curriculumId: input.curriculum.id,
-    candidates: candidates.slice(0, limit),
-  };
+  return collector.finish(input.curriculum.id, input.limit);
 }
 
-// ---------------------------------------------------------------------------
 // Model port + validation
-// ---------------------------------------------------------------------------
 
 // The raw, unvalidated shape the LLM is asked to return.
 export interface RecommendationProposal {

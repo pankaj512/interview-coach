@@ -429,21 +429,15 @@ export class VoiceInterviewClient {
       case "conversation.item.created": {
         const item = event.item as Record<string, unknown> | undefined;
         if (item !== undefined && item["type"] === "function_call") {
-          const callId = String(item["call_id"] ?? "");
-          const name = String(item["name"] ?? "");
-          if (callId !== "" && this.isToolName(name)) {
-            const args = parseToolArgs(item["arguments"]);
-            this.pendingCall = {
-              callId,
-              name,
-              ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
-              ...(args === undefined ? {} : { args }),
-            };
-            const rawArgs = String(item["arguments"] ?? "");
-            if (rawArgs.trim().length > 2) {
-              void this.executeTool(name, callId, this.pendingCall.previousItemId, args);
-            }
-          }
+          this.handleFunctionCall(
+            {
+              callId: String(item["call_id"] ?? ""),
+              name: String(item["name"] ?? ""),
+              argsRaw: item["arguments"],
+              item,
+            },
+            { fallbackToPending: false, store: true, execute: "whenArgsText", previous: "stored" },
+          );
         }
         if (item !== undefined && item["type"] === "message" && item["role"] === "user") {
           const transcript = extractTranscript(item["content"]);
@@ -488,49 +482,49 @@ export class VoiceInterviewClient {
       case "response.function_call_arguments.delta":
         break;
       case "response.function_call_arguments.done": {
-        const callId = String(event.call_id ?? "");
-        const name = String(event.name ?? "");
-        const effectiveName = name !== "" ? name : (this.pendingCall?.name ?? "");
-        const effectiveCallId = callId !== "" ? callId : (this.pendingCall?.callId ?? "");
-        if (effectiveCallId !== "" && this.isToolName(effectiveName)) {
-          const previous = this.pendingCall?.previousItemId;
-          const args = parseToolArgs(event.arguments) ?? this.pendingCall?.args;
-          this.pendingCall = {
-            callId: effectiveCallId,
-            name: effectiveName as ToolName,
-            ...(args === undefined ? {} : { args }),
-          };
-          void this.executeTool(effectiveName as ToolName, effectiveCallId, previous, args);
-        }
+        this.handleFunctionCall(
+          {
+            callId: String(event.call_id ?? ""),
+            name: String(event.name ?? ""),
+            argsRaw: event.arguments,
+          },
+          { fallbackToPending: true, store: true, execute: "always", previous: "pending" },
+        );
         break;
       }
       case "response.output_item.added": {
         const item = event.item as Record<string, unknown> | undefined;
         if (item !== undefined && item["type"] === "function_call") {
-          const callId = String(item["call_id"] ?? "");
-          const name = String(item["name"] ?? "");
-          if (callId !== "" && this.isToolName(name)) {
-            const args = parseToolArgs(item["arguments"]);
-            this.pendingCall = {
-              callId,
-              name: name as ToolName,
-              ...(typeof item["id"] === "string" ? { previousItemId: item["id"] as string } : {}),
-              ...(args === undefined ? {} : { args }),
-            };
-            this.metric("tool.requested", { interviewId, callId, tool: name });
-          }
+          this.handleFunctionCall(
+            {
+              callId: String(item["call_id"] ?? ""),
+              name: String(item["name"] ?? ""),
+              argsRaw: item["arguments"],
+              item,
+            },
+            {
+              fallbackToPending: false,
+              store: true,
+              execute: "never",
+              previous: "stored",
+              onTracked: (call) => this.metric("tool.requested", { interviewId, callId: call.callId, tool: call.name }),
+            },
+          );
         }
         break;
       }
       case "response.output_item.done": {
         const item = event.item as Record<string, unknown> | undefined;
         if (item !== undefined && item["type"] === "function_call") {
-          const callId = String(item["call_id"] ?? "") || this.pendingCall?.callId || "";
-          const name = String(item["name"] ?? "") || this.pendingCall?.name || "";
-          if (callId !== "" && this.isToolName(name)) {
-            const args = parseToolArgs(item["arguments"]) ?? this.pendingCall?.args;
-            void this.executeTool(name as ToolName, callId, previousItemIdOf(item) ?? this.pendingCall?.previousItemId, args);
-          }
+          this.handleFunctionCall(
+            {
+              callId: String(item["call_id"] ?? ""),
+              name: String(item["name"] ?? ""),
+              argsRaw: item["arguments"],
+              item,
+            },
+            { fallbackToPending: true, store: false, execute: "always", previous: "itemThenPending" },
+          );
         }
         break;
       }
@@ -587,6 +581,54 @@ export class VoiceInterviewClient {
       default:
         break;
     }
+  }
+
+  // Single choke point for model function-call dispatch: resolve call_id and
+  // name (optionally against the pending call), guard the tool name, parse
+  // args, record the pending call, and optionally execute. Per-event
+  // differences stay parameters; response.done keeps its own snapshot-match
+  // shape because it matches the pending call instead of parsing a new one.
+  private handleFunctionCall(
+    source: {
+      readonly callId: string;
+      readonly name: string;
+      readonly argsRaw: unknown;
+      readonly item?: Record<string, unknown>;
+    },
+    behavior: {
+      readonly fallbackToPending: boolean;
+      readonly store: boolean;
+      readonly execute: "always" | "whenArgsText" | "never";
+      readonly previous: "stored" | "pending" | "itemThenPending";
+      readonly onTracked?: (call: PendingCall) => void;
+    },
+  ): void {
+    const pending = this.pendingCall;
+    const callId =
+      behavior.fallbackToPending && source.callId === "" ? (pending?.callId ?? "") : source.callId;
+    const name =
+      behavior.fallbackToPending && source.name === "" ? (pending?.name ?? "") : source.name;
+    if (callId === "" || !this.isToolName(name)) return;
+    const args = parseToolArgs(source.argsRaw) ?? (behavior.fallbackToPending ? pending?.args : undefined);
+    const itemId = source.item === undefined ? undefined : previousItemIdOf(source.item);
+    if (behavior.store) {
+      this.pendingCall = {
+        callId,
+        name,
+        ...(itemId === undefined ? {} : { previousItemId: itemId }),
+        ...(args === undefined ? {} : { args }),
+      };
+      behavior.onTracked?.(this.pendingCall);
+    }
+    if (behavior.execute === "never") return;
+    if (behavior.execute === "whenArgsText" && String(source.argsRaw ?? "").trim().length <= 2) return;
+    const previous =
+      behavior.previous === "stored"
+        ? this.pendingCall?.previousItemId
+        : behavior.previous === "pending"
+          ? pending?.previousItemId
+          : (itemId ?? pending?.previousItemId);
+    void this.executeTool(name, callId, previous, args);
   }
 
   private async executeTool(tool: ToolName, callId: string, previousItemId?: string, args?: ToolArgs): Promise<void> {

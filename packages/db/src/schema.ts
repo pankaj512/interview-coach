@@ -16,19 +16,16 @@ import {
   uniqueIndex,
 } from "drizzle-orm/pg-core";
 
-export const users = pgTable(
-  "users",
-  {
-    id: text("id").primaryKey(),
-    displayName: text("display_name").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-    // S8c accounts (HLD 7.1): nullable at the DB level because pre-S8c rows
-    // predate credentials; auth flows require both (enforced above this layer).
-    email: text("email").unique(),
-    passwordHash: text("password_hash"),
-  },
-  (t) => [index("users_email_idx").on(t.email)],
-);
+export const users = pgTable("users", {
+  id: text("id").primaryKey(),
+  displayName: text("display_name").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  // S8c accounts (HLD 7.1): nullable at the DB level because pre-S8c rows
+  // predate credentials; auth flows require both (enforced above this layer).
+  // No secondary index: the unique() constraint already covers findByEmail.
+  email: text("email").unique(),
+  passwordHash: text("password_hash"),
+});
 
 export const userSessions = pgTable(
   "user_sessions",

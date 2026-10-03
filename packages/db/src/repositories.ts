@@ -102,6 +102,21 @@ function toResponseKind(raw: string): ResponseKind {
 type InterviewRow = typeof schema.interviews.$inferSelect;
 type InterviewAssignmentRow = typeof schema.interviewProblems.$inferSelect;
 
+// Single interview-configuration mapper (audit F-20): the insert values and
+// the onConflictDoUpdate set share it so a configuration field is a
+// one-place edit.
+function toConfigurationColumn(
+  configuration: InterviewConfiguration,
+): typeof schema.interviews.$inferInsert.configuration {
+  return {
+    interviewType: configuration.interviewType,
+    ...(configuration.difficulty === undefined ? {} : { difficulty: configuration.difficulty }),
+    ...(configuration.durationMinutes === undefined ? {} : { durationMinutes: configuration.durationMinutes }),
+    ...(configuration.problemCount === undefined ? {} : { problemCount: configuration.problemCount }),
+    ...(configuration.topicFocus === undefined ? {} : { topicFocus: [...configuration.topicFocus] }),
+  };
+}
+
 // Shared interview row -> domain mapper (findById + listByCandidate).
 function toInterview(
   row: InterviewRow,
@@ -173,21 +188,7 @@ export class DrizzleInterviewRepository implements InterviewRepository {
           candidateId: interview.candidateId,
           type: interview.type,
           status: interview.status,
-          configuration: {
-            interviewType: interview.configuration.interviewType,
-            ...(interview.configuration.difficulty === undefined
-              ? {}
-              : { difficulty: interview.configuration.difficulty }),
-            ...(interview.configuration.durationMinutes === undefined
-              ? {}
-              : { durationMinutes: interview.configuration.durationMinutes }),
-            ...(interview.configuration.problemCount === undefined
-              ? {}
-              : { problemCount: interview.configuration.problemCount }),
-            ...(interview.configuration.topicFocus === undefined
-              ? {}
-              : { topicFocus: [...interview.configuration.topicFocus] }),
-          },
+          configuration: toConfigurationColumn(interview.configuration),
           currentOrder: interview.currentOrder,
           recommendationId: interview.recommendationId ?? null,
           topicId: interview.topicId ?? null,
@@ -203,23 +204,7 @@ export class DrizzleInterviewRepository implements InterviewRepository {
             candidateId: interview.candidateId,
             type: interview.type,
             status: interview.status,
-            configuration: {
-              interviewType: interview.configuration.interviewType,
-              ...(interview.configuration.difficulty === undefined
-                ? {}
-                : { difficulty: interview.configuration.difficulty }),
-              ...(interview.configuration.durationMinutes === undefined
-                ? {}
-                : {
-                    durationMinutes: interview.configuration.durationMinutes,
-                  }),
-              ...(interview.configuration.problemCount === undefined
-                ? {}
-                : { problemCount: interview.configuration.problemCount }),
-              ...(interview.configuration.topicFocus === undefined
-                ? {}
-                : { topicFocus: [...interview.configuration.topicFocus] }),
-            },
+            configuration: toConfigurationColumn(interview.configuration),
             currentOrder: interview.currentOrder,
             recommendationId: interview.recommendationId ?? null,
             topicId: interview.topicId ?? null,
@@ -1403,7 +1388,8 @@ export class DrizzleRecommendationRepository implements RecommendationRepository
 
 function toAccount(
   row: typeof schema.users.$inferSelect | null,
-): UserAccount | null {  // Pre-S8c rows have no credentials and are invisible to auth flows.
+): UserAccount | null {
+  // Pre-S8c rows have no credentials and are invisible to auth flows.
   if (row === null || row.email === null || row.passwordHash === null) return null;
   return {
     id: row.id as UserId,

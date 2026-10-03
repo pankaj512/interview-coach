@@ -321,7 +321,8 @@ export function CodeWorkspace({
   // Verbatim-starter prefill while untouched; refill on problem/language
   // change while untouched; never clobber edits.
   useEffect(() => {
-    if (dirtyRef.current) return;    const starter = starterForLanguage(starters, language);
+    if (dirtyRef.current) return;
+    const starter = starterForLanguage(starters, language);
     if (starter === null) return;
     const editor = editorRef.current;
     if (editor !== null && editor.getValue() !== starter) pushValue(editor, starter);

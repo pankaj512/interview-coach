@@ -63,36 +63,6 @@ function asDifficulty(value: string | undefined): Difficulty {
   return value === "Easy" || value === "Hard" ? value : "Medium";
 }
 
-// DashboardView mounts the Phase 5 data hook only while the Dashboard is
-// visible, so a signed-out or onboarding render never probes user-only APIs.
-function DashboardView({
-  profile,
-  data,
-  starting,
-  onStart,
-  onProfile,
-}: {
-  readonly profile: SerializedUserProfile;
-  readonly data: DashboardData;
-  readonly starting: boolean;
-  readonly onStart: (
-    recommendation: SerializedRecommendation,
-    problem: Problem | null,
-    curriculum: SerializedCurriculum | null,
-  ) => void;
-  readonly onProfile: () => void;
-}) {
-  return (
-    <DashboardScreen
-      profile={profile}
-      data={data}
-      starting={starting}
-      onStart={onStart}
-      onProfile={onProfile}
-    />
-  );
-}
-
 export function App() {
   const backend: BackendClient = useBackendClient();
   const session = useAuthSession();
@@ -113,7 +83,6 @@ export function App() {
   const [sessionPlan, setSessionPlan] = useState<SessionPlan | null>(null);
   const [finalSnapshot, setFinalSnapshot] = useState<SerializedStateSnapshot | null>(null);
   const [events, setEvents] = useState<readonly LiveEvent[]>([]);
-  const [stale, setStale] = useState(false);
   const [entries, setEntries] = useState<readonly HistoryEntry[]>([]);
   const [historyLimit, setHistoryLimit] = useState(20);
   const [historyHasMore, setHistoryHasMore] = useState(false);
@@ -303,7 +272,6 @@ export function App() {
         });
         setFinalSnapshot(null);
         setEvents([]);
-        setStale(false);
         setNav(null);
         setFlow("lobby");
         pushPath("/lobby");
@@ -325,7 +293,6 @@ export function App() {
     (snapshot: SerializedStateSnapshot | null, roomEvents: readonly LiveEvent[], _elapsedSec: number) => {
       setFinalSnapshot(snapshot);
       setEvents(roomEvents);
-      setStale(false);
       // Phase 9: the interview + its evaluation are persisted server-side, so
       // refresh the server-backed history instead of recording a local entry.
       remember();
@@ -352,7 +319,6 @@ export function App() {
       setSessionPlan(null);
       setFinalSnapshot(snapshot);
       setEvents([]);
-      setStale(false);
       setNav(null);
       setFlow("results");
       pushPath("/results");
@@ -432,11 +398,9 @@ export function App() {
     setSessionPlan(null);
     setFinalSnapshot(null);
     setEvents([]);
-    setStale(false);
     navigate("dashboard");
   }
 
-  // ---- Client URL routing (feature 20) ----
   // The URL mirrors nav/flow: user navigations pushed above, automatic
   // transitions replaced, and the normalize effect repairs the URL when a
   // gate overrides what renders (sign-out, auth success, onboarding).
@@ -478,7 +442,6 @@ export function App() {
     return () => window.removeEventListener("popstate", onPopState);
   }, [nav, flow, session, guestMode, interview, sessionPlan, finalSnapshot]);
 
-  // ---- First-run gate (Phase 2) ----
   // No anonymous loop: signed-out users only get the landing/sign-in, and a
   // signed-in user with no profile is sent to required onboarding.
   if (session === null && !guestMode) {
@@ -557,7 +520,6 @@ export function App() {
     );
   }
 
-  // ---- Nav views (sidebar shell) ----
   if (nav !== null) {
     return (
       <AppShell
@@ -569,7 +531,7 @@ export function App() {
       >
         {nav === "dashboard" && (
           <>
-            <DashboardView
+            <DashboardScreen
               profile={profile}
               data={dashboardData}
               starting={dashboardBusy}
@@ -628,7 +590,6 @@ export function App() {
     );
   }
 
-  // ---- Profile (full page in the app shell, like Settings) ----
   if (flow === "profile" && session !== null) {
     return (
       <AppShell
@@ -651,7 +612,6 @@ export function App() {
     );
   }
 
-  // ---- Interview ritual (standalone) ----
   return (
     <main className="app">
       {flow === "signin" && (
@@ -710,7 +670,6 @@ export function App() {
           <ResultsScreen
             backend={backend}
             snapshot={finalSnapshot}
-            stale={stale}
             onHistory={() => navigate("history")}
             onNew={startNew}
             onTranscript={() => {

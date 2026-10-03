@@ -160,83 +160,109 @@ export class EvaluationService {
       // A previous attempt may have recorded the evaluation before failing
       // later in the job. Reuse it (same id) so the Phase 11 skill update
       // stays idempotent instead of scoring the interview twice.
-      const existing = await this.repos.evaluations.findByInterview(job.interviewId);
-      let evaluation: Evaluation;
-      if (isRealEvaluation(existing)) {
-        evaluation = existing;
-      } else {
-        const { proposal, source } = await this.propose(input);
-        const finalized = finalizeEvaluation({
-          dimensions: proposal.dimensions,
-          hintsUsed: input.hintsUsed,
-          strengths: [...proposal.strengths],
-          weaknesses: [...proposal.weaknesses],
-        });
-        const interview = await this.repos.interviews.findById(job.interviewId);
-        const recorded = await this.interviews.recordEvaluation(job.interviewId, {
-          status: "completed",
-          source,
-          jobId: job.id,
-          ...(interview?.topicId === undefined ? {} : { topicId: interview.topicId }),
-          dimensions: finalized.dimensions,
-          hintsUsed: finalized.hintsUsed,
-          strengths: [...finalized.strengths],
-          weaknesses: [...finalized.weaknesses],
-          ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
-          ...(finalized.recommendation === null
-            ? {}
-            : { recommendation: finalized.recommendation }),
-        });
-        if (!recorded.ok) throw recorded.error;
-        evaluation = recorded.value;
-      }
-      // Phase 11: apply the accepted evaluation to mastery + curriculum.
-      // Deterministic and idempotent (guarded by the evaluation id on the
-      // skill state); a failure retries the job against the same evaluation.
-      const skillUpdate = await this.skillUpdates.apply({
-        evaluation,
-        userId: input.candidateId as UserId,
-      });
-      if (!skillUpdate.ok) throw skillUpdate.error;
-      // Phase 12: close the learning loop. A fresh skill update invalidates the
-      // current recommendation and regenerates it from the new state. This is
-      // best-effort: the evaluation is already persisted and must not be lost,
-      // and an unregenerated recommendation self-heals via the Dashboard's
-      // auto-generate when `current` is null.
-      if (skillUpdate.value.applied) {
-        await this.regenerateRecommendation(input.candidateId as UserId);
-      }
-      await this.interviews.markEvaluationStatus(job.interviewId, "completed");
-      await this.repos.evaluationJobs.save({
-        ...job,
-        status: "completed",
-        attempts,
-        startedAt: job.startedAt ?? now,
-        completedAt: this.clock.now(),
-        updatedAt: this.clock.now(),
-      });
-      return ok(evaluation);
+      const evaluation = await this.loadOrRecordEvaluation(job, input);
+      return await this.finishJob(job, evaluation, input, attempts, now);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : typeof error === "object" && error !== null && "message" in error
-            ? String((error as { message: unknown }).message)
-            : "Evaluation failed";
-      const exhausted = attempts >= MAX_EVALUATION_JOB_ATTEMPTS;
-      await this.repos.evaluationJobs.save({
-        ...job,
-        status: exhausted ? "failed" : "pending",
-        attempts,
-        lastError: message,
-        startedAt: job.startedAt ?? now,
-        updatedAt: this.clock.now(),
-      });
-      if (exhausted) {
-        await this.interviews.markEvaluationStatus(job.interviewId, "failed");
-      }
-      return err(domainError("CONFLICT", message));
+      return await this.failJob(job, attempts, now, error);
     }
+  }
+
+  // Returns the existing evaluation for the interview, or proposes,
+  // finalizes, and records a new one.
+  private async loadOrRecordEvaluation(
+    job: EvaluationJob,
+    input: EvaluationModelInput,
+  ): Promise<Evaluation> {
+    const existing = await this.repos.evaluations.findByInterview(job.interviewId);
+    if (isRealEvaluation(existing)) {
+      return existing;
+    }
+    const { proposal, source } = await this.propose(input);
+    const finalized = finalizeEvaluation({
+      dimensions: proposal.dimensions,
+      hintsUsed: input.hintsUsed,
+      strengths: [...proposal.strengths],
+      weaknesses: [...proposal.weaknesses],
+    });
+    const interview = await this.repos.interviews.findById(job.interviewId);
+    const recorded = await this.interviews.recordEvaluation(job.interviewId, {
+      status: "completed",
+      source,
+      jobId: job.id,
+      ...(interview?.topicId === undefined ? {} : { topicId: interview.topicId }),
+      dimensions: finalized.dimensions,
+      hintsUsed: finalized.hintsUsed,
+      strengths: [...finalized.strengths],
+      weaknesses: [...finalized.weaknesses],
+      ...(finalized.overallScore === null ? {} : { overallScore: finalized.overallScore }),
+      ...(finalized.recommendation === null
+        ? {}
+        : { recommendation: finalized.recommendation }),
+    });
+    if (!recorded.ok) throw recorded.error;
+    return recorded.value;
+  }
+
+  // Phase 11: apply the accepted evaluation to mastery + curriculum.
+  // Deterministic and idempotent (guarded by the evaluation id on the
+  // skill state); a failure retries the job against the same evaluation.
+  private async finishJob(
+    job: EvaluationJob,
+    evaluation: Evaluation,
+    input: EvaluationModelInput,
+    attempts: number,
+    claimedAt: Date,
+  ): Promise<Result<Evaluation>> {
+    const skillUpdate = await this.skillUpdates.apply({
+      evaluation,
+      userId: input.candidateId as UserId,
+    });
+    if (!skillUpdate.ok) throw skillUpdate.error;
+    // Phase 12: close the learning loop. A fresh skill update invalidates the
+    // current recommendation and regenerates it from the new state. This is
+    // best-effort: the evaluation is already persisted and must not be lost,
+    // and an unregenerated recommendation self-heals via the Dashboard's
+    // auto-generate when `current` is null.
+    if (skillUpdate.value.applied) {
+      await this.regenerateRecommendation(input.candidateId as UserId);
+    }
+    await this.interviews.markEvaluationStatus(job.interviewId, "completed");
+    await this.repos.evaluationJobs.save({
+      ...job,
+      status: "completed",
+      attempts,
+      startedAt: job.startedAt ?? claimedAt,
+      completedAt: this.clock.now(),
+      updatedAt: this.clock.now(),
+    });
+    return ok(evaluation);
+  }
+
+  private async failJob(
+    job: EvaluationJob,
+    attempts: number,
+    claimedAt: Date,
+    error: unknown,
+  ): Promise<Result<Evaluation>> {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "object" && error !== null && "message" in error
+          ? String((error as { message: unknown }).message)
+          : "Evaluation failed";
+    const exhausted = attempts >= MAX_EVALUATION_JOB_ATTEMPTS;
+    await this.repos.evaluationJobs.save({
+      ...job,
+      status: exhausted ? "failed" : "pending",
+      attempts,
+      lastError: message,
+      startedAt: job.startedAt ?? claimedAt,
+      updatedAt: this.clock.now(),
+    });
+    if (exhausted) {
+      await this.interviews.markEvaluationStatus(job.interviewId, "failed");
+    }
+    return err(domainError("CONFLICT", message));
   }
 
   // The latest evaluation for the interview, or null before one is recorded.
