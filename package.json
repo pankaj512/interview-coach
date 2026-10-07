@@ -13,7 +13,10 @@
     "dev": "pnpm --parallel --filter @interview-coach/api --filter @interview-coach/web dev",
     "build": "tsc -b",
     "typecheck": "tsc --noEmit -p tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --project unit --project integration",
+    "test:unit": "vitest run --project unit",
+    "test:integration": "vitest run --project integration",
+    "test:e2e": "vitest run --project e2e",
     "lint": "tsc --noEmit -p tsconfig.json"
   },
   "devDependencies": {

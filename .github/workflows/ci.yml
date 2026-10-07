@@ -60,8 +60,11 @@ jobs:
       - name: Typecheck (lint gate)
         run: pnpm typecheck
 
-      - name: Test (live Postgres)
-        run: pnpm test
+      - name: Test units (no infra)
+        run: pnpm test:unit
+
+      - name: Test integration (live Postgres)
+        run: pnpm test:integration
 
       - name: Build (tsc -b)
         run: pnpm build
@@ -93,29 +96,29 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 12.3.4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install workspace deps
+        run: pnpm install --frozen-lockfile
+
       - name: Build backend image
         run: docker build -f apps/api/Dockerfile -t interview-coach-backend:ci .
 
       - name: Build web image
         run: docker build -f apps/web/Dockerfile -t interview-coach-web:ci .
 
-      - name: Boot stack and probe health
-        run: |
-          docker compose up -d db backend web
-          for i in $(seq 1 24); do
-            if curl -sf http://127.0.0.1:3000/api/ready > /dev/null; then break; fi
-            sleep 5
-          done
-          curl -sf http://127.0.0.1:3000/api/ready
-          curl -sf http://127.0.0.1:3000/api/metrics/prometheus | grep interview_coach_uptime_seconds
-          curl -sf http://127.0.0.1:3000/api/metrics/prometheus | grep interview_coach_interview_transitions_total
-          # F8-10: boot the web image too and assert the SPA + deep-link fallback.
-          for i in $(seq 1 24); do
-            if curl -sf http://127.0.0.1:8080/ > /dev/null; then break; fi
-            sleep 5
-          done
-          curl -sf http://127.0.0.1:8080/ > /dev/null
-          curl -sf http://127.0.0.1:8080/history > /dev/null
+      - name: Boot stack and probe health (e2e suite)
+        # The probe bash used to live here; it now lives in
+        # tests/e2e/boot-probe.test.ts. The image builds above stay as
+        # steps and warm the layer cache for the in-test `--build`.
+        run: pnpm test:e2e
 
       - name: Tear down stack
         if: always()

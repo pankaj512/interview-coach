@@ -63,7 +63,7 @@ the next unchecked item.
   flags, Dockerfiles, compose, CI paths, and live docs updated in one pass;
   `s0-smoke.*` strays get a home; lockfile regenerated; `blueprint/history/*`
   left immutable
-- [ ] V1.1-2. **Test kind-split** - `test:unit` (pure, no infra) /
+- [x] V1.1-2. **Test kind-split** - `test:unit` (pure, no infra) /
   `test:integration` (needs Postgres/Docker; warn-and-pass locally, live in
   CI) / `test:e2e` (compose boot + probes, ported out of CI bash) via vitest
   projects + CI jobs; no `test:staging`/`test:prod` until those environments
