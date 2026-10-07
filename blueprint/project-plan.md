@@ -38,14 +38,15 @@ Shipped (see `build-plan.md` 1-13, verified in `docs/SESSION_HANDOFF.md`):
 - Adaptive loop (evaluation -> skill update -> regenerated recommendation)
 - Server-backed History, Progress, Weak-Areas views
 
-Shipped since (see `build-plan.md` 14-18, 20): green
+Shipped since (see `build-plan.md` 14-21): green
 main, UI prototype, isolated multi-language sandbox, fresh UI rebuild
 (17a-17d), problem content slices + full reseed + new endpoints,
-AI-only Submit (18d), client URL routing.
+AI-only Submit (18d), loop verification (19), client URL routing (20),
+provider-switchable LLM transport (21).
 
-Next (unchecked in `build-plan.md`): loop
-verification (19) and provider-switchable LLM transport (21); the v2
-items stay deferred.
+Next: v1.1 refactoring milestone (see `build-plan.md` V1.1-1-V1.1-3) -
+apps/packages layout + rename, test kind-split, retirements + drift sweep;
+no behavior change. The v2 items stay deferred.
 
 ## 4. Data - What are we storing?
 
@@ -95,7 +96,7 @@ Intentional, keep as-is (per user interview):
 
 ## 7. UI/UX - How should this look and feel?
 
-> Web client rethink approved and rebuild underway (prototype item 15
+> Web client rethink approved and rebuild shipped (prototype item 15
 > approved; `docs/interview-coach-ui-specification.md` is the locked target).
 
 - Previous client (16 screens, ~3.7k lines) mixed three generations: the

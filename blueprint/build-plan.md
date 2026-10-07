@@ -48,6 +48,31 @@ per-interview ownership, audit remediation P1-P8.
 - [x] 20. **Client URL routing** - History-API routing for the web client (no new router dependency): every nav view and auth/ritual state gets a real URL, browser back/forward works, refresh and deep links land somewhere sane; in-page `#how/#scoring/#why` anchors keep working
 - [x] 21. **Provider-switchable LLM transport** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports and gain live LLM coverage once keys are set
 
+## v1.1 - refactoring milestone (before v2; no behavior change)
+
+Release convention: `v1.0` = current main (items 1-21 + audit fixes, tagged);
+`v1.1` tagged on the milestone merge. Workspace packages stay `0.1.0`
+(private, never published); tags carry release meaning. Run `/feature` for
+the next unchecked item.
+
+- [ ] V1.1-1. **Apps/packages layout + rename (same window)** - `packages/backend`
+  -> `apps/api` (`@interview-coach/api`), `packages/web-client` -> `apps/web`
+  (`@interview-coach/web`), `packages/domain` -> `packages/core`
+  (`@interview-coach/core`), `packages/db` -> `packages/store`
+  (`@interview-coach/store`); all `@interview-coach/*` specifiers, `--filter`
+  flags, Dockerfiles, compose, CI paths, and live docs updated in one pass;
+  `s0-smoke.*` strays get a home; lockfile regenerated; `blueprint/history/*`
+  left immutable
+- [ ] V1.1-2. **Test kind-split** - `test:unit` (pure, no infra) /
+  `test:integration` (needs Postgres/Docker; warn-and-pass locally, live in
+  CI) / `test:e2e` (compose boot + probes, ported out of CI bash) via vitest
+  projects + CI jobs; no `test:staging`/`test:prod` until those environments
+  exist (V2-3/V2-4)
+- [ ] V1.1-3. **Retirements + drift sweep** - retire the pre-18c problem
+  endpoints left byte-identical by 18c and the deprecated CLI-harness tool
+  aliases (after confirming no callers); fix the `project-plan.md` §3/§7
+  drift as part of this plan update
+
 ## Deferred to v2 - not next, listed so nothing is lost
 
 - [ ] V2-1. **Security, observability and failure handling** (roadmap Phase 14)

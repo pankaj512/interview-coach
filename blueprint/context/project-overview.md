@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 4f9d1794e424fd2738a2cfc9cd92881786ec05d5d88600e6db2369ef8b85fd2c -->
+<!-- blueprint:source-hash 7e34dc6d2ed7b05988323bfc95a32ec3b8e0cfb4765eabf16c29622c27a8f9c9 -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -59,6 +59,12 @@ Shipped (1-21, in build-plan order):
 20. **Loop verification (19)** - end-to-end pass dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB; no new functionality.
 21. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
 22. **Provider-switchable LLM transport (21)** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports and gain live LLM coverage once keys are set.
+
+Next - v1.1 refactoring milestone (no behavior change; `v1.0` = current main tagged, `v1.1` tagged on the milestone merge):
+
+- **V1.1-1. Apps/packages layout + rename** - `packages/backend` -> `apps/api` (`@interview-coach/api`), `packages/web-client` -> `apps/web` (`@interview-coach/web`), `packages/domain` -> `packages/core` (`@interview-coach/core`), `packages/db` -> `packages/store` (`@interview-coach/store`); all specifiers, filters, Dockerfiles, compose, CI, and live docs updated in one pass; lockfile regenerated; `blueprint/history/*` immutable.
+- **V1.1-2. Test kind-split** - `test:unit` / `test:integration` / `test:e2e` via vitest projects + CI jobs; no staging/prod suites until those environments exist (V2-3/V2-4).
+- **V1.1-3. Retirements + drift sweep** - retire pre-18c problem endpoints and deprecated CLI-harness tool aliases after confirming no callers.
 
 Deferred to v2: security/observability hardening, testing consolidation,
 final integration, prod identity + voice, multi-track expansion.
@@ -153,6 +159,9 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
   Inception Mercury behind `LLM_PROVIDER`) is item 21, shipped
 - **Tests / CI** - Vitest everywhere (live `*_test` DB or warn-and-pass);
   `.github/workflows/ci.yml`: typecheck -> tests -> builds -> secret scans -> boot probe
+- v1.1 renames/moves are next (V1.1-1: `apps/api`, `apps/web`,
+  `packages/core`, `packages/store`) with a `test:unit` / `test:integration` /
+  `test:e2e` split (V1.1-2); workspace packages stay `0.1.0` private, tags carry releases
 
 ## Monetization
 
@@ -191,8 +200,3 @@ resume continuity, live-code tool, editor language memory). Confirmed ritual flo
 
 - > TODO (confirm): broader tracks beyond DSA and their timing.
 - > TODO (confirm): monetization, if any.
-- Plan drift (fix in the plans, then re-run `/overview`): `project-plan.md`
-  §3 still lists loop verification (19) and provider-switchable transport (21)
-  as unchecked "Next", and §7 describes the client rebuild as "underway",
-  while `build-plan.md` has 17a-17d, 19, 20, and 21 all checked. The overview
-  above follows the build plan; the project plan needs a user-owned touch-up.
