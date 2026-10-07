@@ -17,11 +17,11 @@ services:
       retries: 5
 
   # Product API (HLD Phase 8, S8b). Boot migrates, then serves.
-  # Seed once explicitly: docker compose run --rm backend pnpm --filter @interview-coach/db db:seed
+  # Seed once explicitly: docker compose run --rm backend pnpm --filter @interview-coach/store db:seed
   backend:
     build:
       context: .
-      dockerfile: packages/backend/Dockerfile
+      dockerfile: apps/api/Dockerfile
     restart: unless-stopped
     depends_on:
       db:
@@ -56,7 +56,7 @@ services:
   web:
     build:
       context: .
-      dockerfile: packages/web-client/Dockerfile
+      dockerfile: apps/web/Dockerfile
       args:
         VITE_BACKEND_URL: ${VITE_BACKEND_URL:-http://localhost:3000}
         VITE_API_TOKEN: ${VITE_API_TOKEN:-}

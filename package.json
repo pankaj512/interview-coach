@@ -8,9 +8,9 @@
     "node": ">=20"
   },
   "scripts": {
-    "dev:backend": "pnpm --filter @interview-coach/backend dev",
-    "dev:web": "pnpm --filter @interview-coach/web-client dev",
-    "dev": "pnpm --parallel --filter @interview-coach/backend --filter @interview-coach/web-client dev",
+    "dev:backend": "pnpm --filter @interview-coach/api dev",
+    "dev:web": "pnpm --filter @interview-coach/web dev",
+    "dev": "pnpm --parallel --filter @interview-coach/api --filter @interview-coach/web dev",
     "build": "tsc -b",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "vitest run",

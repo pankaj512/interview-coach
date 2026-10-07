@@ -301,10 +301,10 @@ pnpm-only (never npm/yarn). Package manager `pnpm@12.3.4`, `node >= 20`.
 - Test: `pnpm test` (`vitest run`; integration tests need a live `*_test` DB, warn-and-pass without one)
 - Build: `pnpm build` (`tsc -b`)
 - Lint: `pnpm lint` (`tsc --noEmit`; no eslint configured)
-- Backend dev/start: `DATABASE_URL=... pnpm --filter @interview-coach/backend dev|start` (Fastify on `HOST:PORT`, default `127.0.0.1:3000`)
-- Web client: `pnpm --filter @interview-coach/web-client dev|build|preview|typecheck` (Vite on `127.0.0.1:5173`, `VITE_BACKEND_URL` only)
-- DB: `pnpm --filter @interview-coach/db db:generate|db:migrate|db:seed` with `DATABASE_URL` set; local Postgres via `docker compose up db` (postgres:16)
-- Stack: `docker compose up -d db backend web` (backend boot-migrates; seed once via `docker compose run --rm backend pnpm --filter @interview-coach/db db:seed`)
+- Backend dev/start: `DATABASE_URL=... pnpm --filter @interview-coach/api dev|start` (Fastify on `HOST:PORT`, default `127.0.0.1:3000`)
+- Web client: `pnpm --filter @interview-coach/web dev|build|preview|typecheck` (Vite on `127.0.0.1:5173`, `VITE_BACKEND_URL` only)
+- DB: `pnpm --filter @interview-coach/store db:generate|db:migrate|db:seed` with `DATABASE_URL` set; local Postgres via `docker compose up db` (postgres:16)
+- Stack: `docker compose up -d db backend web` (backend boot-migrates; seed once via `docker compose run --rm backend pnpm --filter @interview-coach/store db:seed`)
 
 No `Verify` command is declared: CI (`.github/workflows/ci.yml`) runs
 typecheck, live-DB tests, builds, bundle secret scans, and a container boot

@@ -1,0 +1,23 @@
+# @interview-coach/web - static build served by nginx (S8b).
+# Build from the repo root:
+#   docker build -f apps/web/Dockerfile \
+#     --build-arg VITE_BACKEND_URL=http://localhost:3000 .
+# VITE_API_TOKEN is local-dev-only (ships in the bundle when set).
+
+FROM node:24-slim AS build
+RUN npm install -g pnpm@12.3.4
+WORKDIR /repo
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json tsconfig.base.json ./
+COPY apps/web/package.json apps/web/package.json
+RUN pnpm install --frozen-lockfile --filter @interview-coach/web
+COPY apps/web ./apps/web
+ARG VITE_BACKEND_URL=http://localhost:3000
+ARG VITE_API_TOKEN=
+ENV VITE_BACKEND_URL=${VITE_BACKEND_URL} \
+    VITE_API_TOKEN=${VITE_API_TOKEN}
+RUN pnpm --filter @interview-coach/web build
+
+FROM nginx:1.27-alpine
+COPY apps/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY --from=build /repo/apps/web/dist /usr/share/nginx/html
+EXPOSE 80

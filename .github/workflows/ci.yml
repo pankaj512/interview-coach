@@ -18,7 +18,7 @@ on:
 
 env:
   # Dedicated throwaway DB for the destructive persistence tests; the guard in
-  # packages/db/tests/helpers.ts requires a *_test name or this explicit flag.
+  # packages/store/tests/helpers.ts requires a *_test name or this explicit flag.
   DATABASE_URL: postgresql://coach:coach_dev_only@localhost:5432/interview_coach_test
   ALLOW_DESTRUCTIVE_DB_TESTS: "true"
 
@@ -55,7 +55,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Migrate test database
-        run: pnpm --filter @interview-coach/db db:migrate
+        run: pnpm --filter @interview-coach/store db:migrate
 
       - name: Typecheck (lint gate)
         run: pnpm typecheck
@@ -69,20 +69,20 @@ jobs:
       - name: Build web client
         env:
           NODE_OPTIONS: --max-old-space-size=8192
-        run: pnpm --filter @interview-coach/web-client build
+        run: pnpm --filter @interview-coach/web build
 
       - name: Security — no secret values in the client bundle
         # The bundle may mention VITE_AZURE_* in the pre-existing guard
         # comment (src/config.ts), but must never contain assigned secret
         # values or the server-side voice key.
         run: |
-          test -z "$(grep -r -o 'VITE_AZURE_[A-Z_]*=[^"'"'"' ]*' packages/web-client/dist/assets/*.js || true)"
-          test -z "$(grep -r 'AZURE_VOICE_API_KEY' packages/web-client/dist/assets/*.js || true)"
-          test -z "$(grep -r -o 'sk-[A-Za-z0-9]\{10,\}' packages/web-client/dist/assets/*.js || true)"
+          test -z "$(grep -r -o 'VITE_AZURE_[A-Z_]*=[^"'"'"' ]*' apps/web/dist/assets/*.js || true)"
+          test -z "$(grep -r 'AZURE_VOICE_API_KEY' apps/web/dist/assets/*.js || true)"
+          test -z "$(grep -r -o 'sk-[A-Za-z0-9]\{10,\}' apps/web/dist/assets/*.js || true)"
 
       - name: Security — backend has no client-leaked secrets
         run: |
-          if grep -rn 'VITE_AZURE_' packages/backend/src/; then
+          if grep -rn 'VITE_AZURE_' apps/api/src/; then
             echo "backend must never reference client VITE_ secrets" >&2
             exit 1
           fi
@@ -94,10 +94,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build backend image
-        run: docker build -f packages/backend/Dockerfile -t interview-coach-backend:ci .
+        run: docker build -f apps/api/Dockerfile -t interview-coach-backend:ci .
 
       - name: Build web image
-        run: docker build -f packages/web-client/Dockerfile -t interview-coach-web:ci .
+        run: docker build -f apps/web/Dockerfile -t interview-coach-web:ci .
 
       - name: Boot stack and probe health
         run: |

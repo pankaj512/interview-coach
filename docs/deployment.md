@@ -7,7 +7,7 @@ S8b). The audit (`docs/audit/phase-8-deployment.md`) drives the items below.
 
 | Env | How it runs | `NODE_ENV` | Auth |
 |---|---|---|---|
-| Development | `pnpm --filter @interview-coach/backend dev`, `web-client dev` | unset/`development` | open local-dev (no token) |
+| Development | `pnpm --filter @interview-coach/api dev`, `pnpm --filter @interview-coach/web dev` | unset/`development` | open local-dev (no token) |
 | Staging | not defined yet | `staging` | token + (eventually) Entra |
 | Production | `docker compose up -d db backend web` | `production` (set at the process level in compose) | required |
 
@@ -24,8 +24,8 @@ CI ends at the boot probe: **there is no automated registry push or deploy
 target yet.** The intended manual process is:
 
 1. Tag the release commit (`session-*` convention).
-2. `docker build -f packages/backend/Dockerfile -t <registry>/interview-coach-backend:<tag> .`
-3. `docker build -f packages/web-client/Dockerfile -t <registry>/interview-coach-web:<tag> .`
+2. `docker build -f apps/api/Dockerfile -t <registry>/interview-coach-backend:<tag> .`
+3. `docker build -f apps/web/Dockerfile -t <registry>/interview-coach-web:<tag> .`
 4. Push both, then roll the deployment with the environment variables from
    `.env.example` (secrets via the platform's secret store, never committed).
 
@@ -45,12 +45,12 @@ scope for the MVP (frozen §5).
 The production image runs TypeScript via `tsx` on source (no compiled emit).
 This is an accepted trade-off: a larger runtime surface and a small per-boot
 transpile cost, in exchange for skipping composite tsconfigs across
-domain/db/backend. Emitting compiled JS is a follow-up.
+core/store/api. Emitting compiled JS is a follow-up.
 
 ## Code sandbox (audit F8-1 / F6-1)
 
 Candidate code executes in one Docker container per run
-(`DockerCodeRunner`, `packages/backend/src/docker-runner.ts`). Each
+(`DockerCodeRunner`, `apps/api/src/docker-runner.ts`). Each
 container runs with `--network=none`, all capabilities dropped,
 a read-only rootfs (writable `/tmp` only), `--user 65534:65534`,
 and quotas from `SANDBOX_MEMORY`, `SANDBOX_CPUS`, `SANDBOX_PIDS_LIMIT`

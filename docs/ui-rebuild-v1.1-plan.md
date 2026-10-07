@@ -22,7 +22,7 @@ Goal: rebuild the Interview Coach UI with a fresh design system, stitched markup
 - Component library: buttons, cards, tabs, filters, tables, progress bars, charts, dialogs, waveform, transcript list, nav shells, CTAs, status chips.
 
 ## Phase 3 — Code (implementation)
-- Map Penpot components to React in `packages/web-client`: marketing shell vs app shell.
+- Map Penpot components to React in `apps/web`: marketing shell vs app shell.
 - Onboarding flow: local cache for pre-auth data; final sign-in gate; dev flag to bypass auth.
 - Auth stance: marketing public; onboarding collects context; sign-in required to persist, except dev bypass.
 - Implement Dashboard/Lobby/Live/Results/History/Progress/Settings per spec; voice state UI with ARIA/non-color indicators.
@@ -42,7 +42,7 @@ Order of execution (reuse shared primitives, keep Stitch breakpoints ~768px/1024
 7) Progress: trend chart placeholder, per-type performance cards, strengths/weak areas with Start Practice, improvement notes.
 8) Settings: General, Voice, Interview defaults, AI (advanced), Privacy; consistent cards/toggles/inputs.
 
-Execution: apply per-screen, reuse primitives (no one-off CSS), keep existing data wiring, run `pnpm --filter @interview-coach/web-client test` + `... build`, commit per screen/batch.
+Execution: apply per-screen, reuse primitives (no one-off CSS), keep existing data wiring, run `pnpm --filter @interview-coach/web test` + `... build`, commit per screen/batch.
 
 ## Notes
 - Grounded in `docs/interview-coach-ui-specification.md` and `docs/implementation-roadmap.md` constraints (backend owns truth; guests only for marketing/dev bypass).

@@ -27,7 +27,7 @@ terminates at Voice Live and the browser (architecture principle 8).
 - Removes the interview row; Postgres `ON DELETE CASCADE` removes every
   interview-scoped row: assignments, candidate responses, evaluations,
   events, submissions, code runs. Verified by
-  `packages/db/tests/persistence.test.ts` ("hard-deletes … cascading").
+  `packages/store/tests/persistence.test.ts` ("hard-deletes … cascading").
 - Refuses live interviews (`in_progress`/`paused` → 409): end, cancel, or
   fail first, so a running voice session is never pulled out from under the
   model. The backend also drops its voice-session record on delete.
