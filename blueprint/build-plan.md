@@ -55,7 +55,7 @@ Release convention: `v1.0` = current main (items 1-21 + audit fixes, tagged);
 (private, never published); tags carry release meaning. Run `/feature` for
 the next unchecked item.
 
-- [ ] V1.1-1. **Apps/packages layout + rename (same window)** - `packages/backend`
+- [x] V1.1-1. **Apps/packages layout + rename (same window)** - `packages/backend`
   -> `apps/api` (`@interview-coach/api`), `packages/web-client` -> `apps/web`
   (`@interview-coach/web`), `packages/domain` -> `packages/core`
   (`@interview-coach/core`), `packages/db` -> `packages/store`

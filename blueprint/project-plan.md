@@ -50,7 +50,7 @@ no behavior change. The v2 items stay deferred.
 
 ## 4. Data - What are we storing?
 
-PostgreSQL via Drizzle (`packages/db/src/schema.ts`); backend owns truth:
+PostgreSQL via Drizzle (`packages/store/src/schema.ts`); backend owns truth:
 
 - `users`, `user_sessions`, `user_profiles` (taxonomy: interview types, role, level, goals)
 - `problems` (300 seeded, stable `prob_<slug>` IDs, `topic_id`), `curricula`,
@@ -77,11 +77,11 @@ PostgreSQL via Drizzle (`packages/db/src/schema.ts`); backend owns truth:
 
 Intentional, keep as-is (per user interview):
 
-- `pnpm@12.3.4` monorepo (`packages/*`), `node >= 20`
-- `packages/domain`: pure TypeScript, no I/O (entities, lifecycle, Result, branded IDs)
-- `packages/backend`: Fastify 5 + Zod 4, owns application truth
-- `packages/db`: Drizzle ORM + `postgres` driver, Postgres 16
-- `packages/web-client`: React 19 + Vite 7 + TypeScript (no `VITE_AZURE_*`, `VITE_BACKEND_URL` only)
+- `pnpm@12.3.4` monorepo (`apps/*`, `packages/*`), `node >= 20`
+- `packages/core`: pure TypeScript, no I/O (entities, lifecycle, Result, branded IDs)
+- `apps/api`: Fastify 5 + Zod 4, owns application truth
+- `packages/store`: Drizzle ORM + `postgres` driver, Postgres 16
+- `apps/web`: React 19 + Vite 7 + TypeScript (no `VITE_AZURE_*`, `VITE_BACKEND_URL` only)
 - Two LLM surfaces: Azure Voice Live realtime vs server-side Azure AI Foundry
   text deployment behind `RecommendationModel`/`EvaluationModel`
   (Managed Identity prod, API key local-dev only)

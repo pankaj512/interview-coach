@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 7e34dc6d2ed7b05988323bfc95a32ec3b8e0cfb4765eabf16c29622c27a8f9c9 -->
+<!-- blueprint:source-hash 805c9571dcaa49f1ca4f3b1f9b6824501ff67fd64a335c55da7a26b82c44c054 -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -35,7 +35,7 @@ is chosen by the system from persisted skill state, not by browsing.
 
 ## Features
 
-Shipped (1-21, in build-plan order):
+Shipped (1-21, V1.1-1, V1.1-2, in build-plan order):
 
 1. **Architecture principles** - ADR-002 alignment; LLM advisory, backend owns truth.
 2. **Profile + onboarding** - `UserProfile`, taxonomy, required first-run gate.
@@ -58,12 +58,12 @@ Shipped (1-21, in build-plan order):
 19. **AI-only Submit (18d)** - backend second-AI correctness/optimality verdict with break-points and edge cases; no sandbox run, nothing persisted; unconfigured keys surface a friendly 503; voice stays interview-only.
 20. **Loop verification (19)** - end-to-end pass dashboard -> lobby -> live -> evaluating -> results -> history/progress against a live DB; no new functionality.
 21. **Client URL routing (20)** - History-API routing (no router dep): real URLs per view, working back/forward, sane refresh/deep-link landings.
-22. **Provider-switchable LLM transport (21)** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports and gain live LLM coverage once keys are set.
+22. **Provider-switchable LLM transport (21)** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports and gain live LLM coverage once keys set.
+23. **Apps/packages layout + rename (V1.1-1)** - `apps/api` (`@interview-coach/api`), `apps/web` (`@interview-coach/web`), `packages/core` (`@interview-coach/core`), `packages/store` (`@interview-coach/store`); all specifiers, filters, Dockerfiles, compose, CI, and live docs updated in one pass.
+24. **Test kind-split (V1.1-2)** - `test:unit` (pure, no infra) / `test:integration` (needs Postgres/Docker; warn-and-pass locally, live in CI) / `test:e2e` (compose boot + probes) via vitest projects + CI jobs.
 
-Next - v1.1 refactoring milestone (no behavior change; `v1.0` = current main tagged, `v1.1` tagged on the milestone merge):
+Next - v1.1 refactoring tail (no behavior change; `v1.0` = current main tagged, `v1.1` tagged on the milestone merge):
 
-- **V1.1-1. Apps/packages layout + rename** - `packages/backend` -> `apps/api` (`@interview-coach/api`), `packages/web-client` -> `apps/web` (`@interview-coach/web`), `packages/domain` -> `packages/core` (`@interview-coach/core`), `packages/db` -> `packages/store` (`@interview-coach/store`); all specifiers, filters, Dockerfiles, compose, CI, and live docs updated in one pass; lockfile regenerated; `blueprint/history/*` immutable.
-- **V1.1-2. Test kind-split** - `test:unit` / `test:integration` / `test:e2e` via vitest projects + CI jobs; no staging/prod suites until those environments exist (V2-3/V2-4).
 - **V1.1-3. Retirements + drift sweep** - retire pre-18c problem endpoints and deprecated CLI-harness tool aliases after confirming no callers.
 
 Deferred to v2: security/observability hardening, testing consolidation,
@@ -148,20 +148,18 @@ PostgreSQL via Drizzle; backend owns truth. Re-seeds never wipe user state:
 
 ## Tech stack
 
-- **pnpm@12.3.4 monorepo** (`packages/*`), node >= 20 - only package manager
-- **domain** - pure TypeScript, no I/O; entities, lifecycle, Result, branded IDs
-- **backend** - Fastify 5 + Zod 4; owns application truth
-- **db** - Drizzle ORM + `postgres` driver on Postgres 16
-- **web-client** - React 19 + Vite 7 (`VITE_BACKEND_URL` only, never secrets)
+- **pnpm@12.3.4 monorepo** (`apps/*`, `packages/*`), node >= 20 - only package manager
+- **core** - pure TypeScript, no I/O; entities, lifecycle, Result, branded IDs
+- **api** - Fastify 5 + Zod 4; owns application truth
+- **store** - Drizzle ORM + `postgres` driver on Postgres 16
+- **web** - React 19 + Vite 7 (`VITE_BACKEND_URL` only, never secrets)
 - **LLMs** - Azure Voice Live realtime vs server-side text behind
   `RecommendationModel` / `EvaluationModel` (Managed Identity prod, key local-dev);
   shared provider-switchable chat-completions transport (Azure AI Foundry +
   Inception Mercury behind `LLM_PROVIDER`) is item 21, shipped
-- **Tests / CI** - Vitest everywhere (live `*_test` DB or warn-and-pass);
+- **Tests / CI** - Vitest projects `test:unit` / `test:integration` (live `*_test` DB or warn-and-pass) / `test:e2e` (compose boot + probes);
   `.github/workflows/ci.yml`: typecheck -> tests -> builds -> secret scans -> boot probe
-- v1.1 renames/moves are next (V1.1-1: `apps/api`, `apps/web`,
-  `packages/core`, `packages/store`) with a `test:unit` / `test:integration` /
-  `test:e2e` split (V1.1-2); workspace packages stay `0.1.0` private, tags carry releases
+- Workspace packages stay `0.1.0` private, tags carry releases
 
 ## Monetization
 
