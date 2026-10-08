@@ -125,15 +125,6 @@ const VALID_TOOL_NAMES: readonly string[] = [
   "get_last_submission",
   "submit_interview_data",
   "end_interview",
-  // Deprecated aliases: accepted for CLI-harness compatibility and replayed
-  // legacy calls, but never advertised to the web model (session.ts).
-  "get_interview_state",
-  "get_candidate_performance",
-  "get_interview_configuration",
-  "get_problem_hint",
-  "record_candidate_answer",
-  "submit_solution",
-  "run_code",
 ];
 
 // Model-supplied function arguments arrive as a JSON string on the protocol

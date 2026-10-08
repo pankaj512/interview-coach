@@ -281,9 +281,9 @@ describe("VoiceInterviewClient", () => {
     const pending = h.client.connect("int_1", mint());
     h.socket().open();
     await pending;
-    const item = { type: "function_call", id: "item_1", call_id: "call_7", name: "get_interview_state", arguments: "{}" };
+    const item = { type: "function_call", id: "item_1", call_id: "call_7", name: "get_current_interview", arguments: "{}" };
     h.socket().serverMessage({ type: "conversation.item.created", item });
-    h.socket().serverMessage({ type: "response.function_call_arguments.done", call_id: "call_7", name: "get_interview_state", arguments: "{}" });
+    h.socket().serverMessage({ type: "response.function_call_arguments.done", call_id: "call_7", name: "get_current_interview", arguments: "{}" });
     h.socket().serverMessage({ type: "response.output_item.done", item });
     await tick();
     expect(h.execCalls.filter((call) => call.callId === "call_7")).toHaveLength(1);
@@ -349,7 +349,7 @@ describe("VoiceInterviewClient", () => {
     h.socket().serverMessage({
       type: "response.function_call_arguments.done",
       call_id: "call_r",
-      name: "get_interview_state",
+      name: "get_current_interview",
       arguments: "{}",
     });
     await tick();
@@ -366,7 +366,7 @@ describe("VoiceInterviewClient", () => {
           json: async () => ({
             ok: true,
             callId: "call_r",
-            tool: "get_interview_state",
+            tool: "get_current_interview",
             result: { status: "in_progress" },
             replayed: true,
           }),
@@ -389,7 +389,7 @@ describe("VoiceInterviewClient", () => {
     h2.socket().serverMessage({
       type: "response.function_call_arguments.done",
       call_id: "call_r",
-      name: "get_interview_state",
+      name: "get_current_interview",
       arguments: "{}",
     });
     await tick();

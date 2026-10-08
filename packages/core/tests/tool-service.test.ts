@@ -107,28 +107,28 @@ describe("ToolService", () => {
     expect(mustErr(result)).toBe("NO_CURRENT_PROBLEM");
   });
 
-  it("get_interview_state reflects status and counts", async () => {
+  it("get_current_interview reflects status and counts", async () => {
     const { repos, interviews, tools } = setup();
     const id = await readyInterview(interviews, repos, { withProblem: true });
     const state = must(
-      await tools.getInterviewState({ interviewId: id, callId: "call_3" }),
+      await tools.getCurrentInterview({ interviewId: id, callId: "call_3" }),
     );
-    expect(state.status).toBe("in_progress");
+    expect(state.interview.status).toBe("in_progress");
     expect(state.currentProblemId).toBe("prob_move-zeroes");
-    expect(state.problemCount).toBe(1);
+    expect(state.interview.problemCount).toBe(1);
     expect(state.responseCount).toBe(2);
   });
 
-  it("get_candidate_performance breaks down responses by kind", async () => {
+  it("get_current_interview performance breaks down responses by kind", async () => {
     const { repos, interviews, tools } = setup();
     const id = await readyInterview(interviews, repos, { withProblem: true });
-    const perf = must(
-      await tools.getCandidatePerformance({ interviewId: id, callId: "call_4" }),
+    const state = must(
+      await tools.getCurrentInterview({ interviewId: id, callId: "call_4" }),
     );
-    expect(perf.responseCount).toBe(2);
-    expect(perf.byKind).toMatchObject({ approach: 1, code: 1, answer: 0 });
-    expect(perf.hasEvaluation).toBe(false);
-    expect(perf.hintsUsed).toBe(0);
+    expect(state.responseCount).toBe(2);
+    expect(state.performance.byKind).toMatchObject({ approach: 1, code: 1, answer: 0 });
+    expect(state.performance.hasEvaluation).toBe(false);
+    expect(state.performance.hintsUsed).toBe(0);
   });
 
   it("end_interview moves to completing and is idempotent", async () => {

@@ -198,12 +198,15 @@ describe("problems", () => {
     expect(assigned.statusCode).toBe(200);
     expect((assigned.json() as { interview: { currentOrder: number } }).interview.currentOrder).toBe(0);
 
-    const fetched = await b.app.inject({ method: "GET", url: "/api/problems/prob_two-sum" });
+    const fetched = await b.app.inject({ method: "GET", url: "/api/problems/prob_two-sum/content" });
     expect(fetched.statusCode).toBe(200);
-    expect(fetched.json()).toMatchObject({ ok: true, problem: { title: "Two Sum" } });
+    expect(fetched.json()).toMatchObject({ ok: true, content: { title: "Two Sum" } });
 
-    const missing = await b.app.inject({ method: "GET", url: "/api/problems/prob_nope" });
+    const missing = await b.app.inject({ method: "GET", url: "/api/problems/prob_nope/content" });
     expect(missing.statusCode).toBe(404);
+
+    const retired = await b.app.inject({ method: "GET", url: "/api/problems/prob_two-sum" });
+    expect(retired.statusCode).toBe(404);
   });
 
   it("assign rejects unknown problem ids with 404", async () => {

@@ -13,7 +13,7 @@ import {
 } from "../src/voice/tool-forwarder.js";
 
 function success(callId: string): ToolExecOutcome {
-  return { ok: true, callId, tool: "get_interview_state", result: { status: "in_progress" }, replayed: false };
+  return { ok: true, callId, tool: "get_current_interview", result: { status: "in_progress" }, replayed: false };
 }
 
 function permanent(callId: string): ToolExecOutcome {
@@ -32,7 +32,7 @@ describe("forwardToolCall", () => {
       return success(callId);
     };
     const sleeps: number[] = [];
-    const result = await forwardToolCall(exec, "call_1", "get_interview_state", {
+    const result = await forwardToolCall(exec, "call_1", "get_current_interview", {
       clocks: immediateClocks(sleeps),
     });
     expect(result.attempts).toBe(1);
@@ -68,14 +68,14 @@ describe("forwardToolCall", () => {
           message: "slow down",
           retryable: true,
           callId,
-          tool: "get_interview_state",
+          tool: "get_current_interview",
           replayed: false,
         };
       }
       return success(callId);
     };
     const sleeps: number[] = [];
-    const result = await forwardToolCall(exec, "call_429", "get_interview_state", {
+    const result = await forwardToolCall(exec, "call_429", "get_current_interview", {
       clocks: immediateClocks(sleeps),
     });
     expect(result.attempts).toBe(2);
@@ -94,7 +94,7 @@ describe("forwardToolCall", () => {
         message: "slow down",
         retryable: true,
         callId: "c",
-        tool: "get_interview_state",
+        tool: "get_current_interview",
         replayed: false,
       }),
     ).toBe(true);
@@ -110,7 +110,7 @@ describe("forwardToolCall", () => {
       return success(callId);
     };
     const sleeps: number[] = [];
-    const result = await forwardToolCall(exec, "call_2", "get_interview_state", {
+    const result = await forwardToolCall(exec, "call_2", "get_current_interview", {
       clocks: immediateClocks(sleeps),
     });
     expect(result.attempts).toBe(3);
@@ -127,7 +127,7 @@ describe("forwardToolCall", () => {
     };
     const sleeps: number[] = [];
     await expect(
-      forwardToolCall(exec, "call_3", "get_interview_state", { clocks: immediateClocks(sleeps), maxRetries: 2 }),
+      forwardToolCall(exec, "call_3", "get_current_interview", { clocks: immediateClocks(sleeps), maxRetries: 2 }),
     ).rejects.toBeInstanceOf(BackendApiError);
     expect(calls).toBe(3);
     expect(sleeps).toEqual([300, 600]);
@@ -141,7 +141,7 @@ describe("forwardToolCall", () => {
     };
     const sleeps: number[] = [];
     await expect(
-      forwardToolCall(exec, "call_4", "get_interview_state", { clocks: immediateClocks(sleeps) }),
+      forwardToolCall(exec, "call_4", "get_current_interview", { clocks: immediateClocks(sleeps) }),
     ).rejects.toBeInstanceOf(BackendApiError);
     expect(calls).toBe(1);
     expect(sleeps).toEqual([]);
@@ -157,7 +157,7 @@ describe("forwardToolCall", () => {
     };
     const sleeps: number[] = [];
     await expect(
-      forwardToolCall(exec, "call_5", "get_interview_state", {
+      forwardToolCall(exec, "call_5", "get_current_interview", {
         clocks: immediateClocks(sleeps),
         timeoutMs: 5,
         maxRetries: 1,

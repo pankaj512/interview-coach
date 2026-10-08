@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { asProblemId, asUserId } from "../src/ids.js";
 import type { InterviewId } from "../src/ids.js";
 import { createProblem } from "../src/problem.js";
-import type { CodeExecutor, ExecutorOutcome } from "../src/submission.js";
 import { createInMemoryRepositories } from "../src/repositories.js";
 import { InterviewService } from "../src/interview-service.js";
 import { SubmissionService } from "../src/submission-service.js";
@@ -10,7 +9,7 @@ import { ToolService } from "../src/tool-service.js";
 import { must, mustErr } from "./helpers.js";
 import { throwingExecutor } from "./tool-service.test.js";
 
-function setup(executor?: CodeExecutor) {
+function setup() {
   const repos = createInMemoryRepositories();
   const now = new Date("2026-09-11T10:00:00.000Z");
   const clock = { now: () => now };
@@ -20,7 +19,7 @@ function setup(executor?: CodeExecutor) {
     submissions: repos.submissions,
     runs: repos.runs,
     events: repos.events,
-    executor: executor ?? throwingExecutor,
+    executor: throwingExecutor,
     clock,
   });
   const tools = new ToolService({
@@ -60,68 +59,41 @@ async function runningInterview(
   return created.id;
 }
 
-function fakeExecutor(): CodeExecutor {
-  return {
-    execute: async (_submission, testCases): Promise<ExecutorOutcome> => ({
-      status: "completed",
-      results: testCases.map((t) => ({
-        name: t.name,
-        passed: true,
-        actual: t.expected,
-      })),
-      durationMs: 4,
-    }),
-  };
-}
-
 describe("ToolService S7a sandbox tools", () => {
-  it("submit_solution persists code and run_code executes the latest", async () => {
-    const { repos, interviews, tools } = setup(fakeExecutor());
+  it("submit_interview_data persists code (retired submit_solution)", async () => {
+    const { repos, interviews, tools } = setup();
     const id = await runningInterview(interviews, repos);
     const submitted = must(
       await tools.dispatch(
-        "submit_solution",
+        "submit_interview_data",
         { interviewId: id, callId: "s1" },
         { language: "javascript", code: "function solve(a){return a;}" },
       ),
     );
     expect(submitted).toMatchObject({
+      recorded: "code",
       language: "javascript",
       submissionCount: 1,
     });
     const submissionId = (submitted as { submissionId: string }).submissionId;
     expect(submissionId.startsWith("sub_")).toBe(true);
 
-    const run = must(
-      await tools.dispatch(
-        "run_code",
-        { interviewId: id, callId: "s2" },
-        { testCases: [{ name: "t1", args: [1], expected: 1 }] },
-      ),
-    );
-    expect(run).toMatchObject({
-      submissionId,
-      status: "passed",
-      passedCount: 1,
-      totalCount: 1,
-    });
-
-    const perf = must(
-      await tools.dispatch("get_candidate_performance", {
+    const state = must(
+      await tools.dispatch("get_current_interview", {
         interviewId: id,
         callId: "s3",
       }),
     );
-    expect(perf).toMatchObject({ submissionCount: 1, lastRunStatus: "passed" });
+    expect((state as { performance: { submissionCount: number } }).performance).toMatchObject({ submissionCount: 1 });
   });
 
-  it("submit_solution validates language and code", async () => {
+  it("submit_interview_data validates language and code", async () => {
     const { repos, interviews, tools } = setup();
     const id = await runningInterview(interviews, repos);
     expect(
       mustErr(
         await tools.dispatch(
-          "submit_solution",
+          "submit_interview_data",
           { interviewId: id, callId: "s1" },
           { language: "go", code: "x" },
         ),
@@ -130,51 +102,9 @@ describe("ToolService S7a sandbox tools", () => {
     expect(
       mustErr(
         await tools.dispatch(
-          "submit_solution",
+          "submit_interview_data",
           { interviewId: id, callId: "s2" },
           { language: "python", code: "  " },
-        ),
-      ),
-    ).toBe("VALIDATION_ERROR");
-  });
-
-  it("run_code reports no-submissions and bad cases", async () => {
-    const { repos, interviews, tools } = setup(fakeExecutor());
-    const id = await runningInterview(interviews, repos);
-    expect(
-      mustErr(
-        await tools.dispatch(
-          "run_code",
-          { interviewId: id, callId: "s1" },
-          { testCases: [{ name: "t1", args: [], expected: 0 }] },
-        ),
-      ),
-    ).toBe("NOT_FOUND");
-    // Unknown submission ids surface before case validation.
-    expect(
-      mustErr(
-        await tools.dispatch(
-          "run_code",
-          { interviewId: id, callId: "s2" },
-          { submissionId: "sub_missing", testCases: [] },
-        ),
-      ),
-    ).toBe("NOT_FOUND");
-    // Empty case lists are rejected against a real submission.
-    const submitted = must(
-      await tools.dispatch(
-        "submit_solution",
-        { interviewId: id, callId: "s3" },
-        { language: "python", code: "x = 1" },
-      ),
-    );
-    const submissionId = (submitted as { submissionId: string }).submissionId;
-    expect(
-      mustErr(
-        await tools.dispatch(
-          "run_code",
-          { interviewId: id, callId: "s4" },
-          { submissionId, testCases: [] },
         ),
       ),
     ).toBe("VALIDATION_ERROR");

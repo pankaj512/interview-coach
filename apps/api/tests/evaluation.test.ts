@@ -4,6 +4,8 @@
 
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  asInterviewId,
+  InterviewService,
   type EvaluationModel,
   type EvaluationModelInput,
   type EvaluationModelResult,
@@ -115,12 +117,12 @@ describe("phase 10 evaluation", () => {
     const tb = backend;
     await seedProblem(tb.repos);
     const { id } = await createStartedInterview(tb, ["prob_two-sum"]);
+    // The hint tool is retired; hint accounting is recorded at the domain
+    // level to preserve the evaluation-pipeline downgrade coverage.
+    const interviews = new InterviewService({ ...tb.repos, clock: { now: () => new Date() } });
     for (const n of [1, 2, 3]) {
-      await tb.app.inject({
-        method: "POST",
-        url: `/api/interviews/${id}/tool-exec`,
-        payload: { call_id: `p10_hint_${n}`, tool: "get_problem_hint" },
-      });
+      const recorded = await interviews.recordHint(asInterviewId(id), n);
+      expect(recorded.ok).toBe(true);
     }
     await tb.app.inject({ method: "POST", url: `/api/interviews/${id}/end` });
     const evaluation = (await getEvaluation(tb, id)).json() as {

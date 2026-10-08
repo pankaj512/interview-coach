@@ -36,7 +36,7 @@ describe("BackendClient S8a auth", () => {
       fakeFetch((_url, init) => {
         seen.push(init?.headers);
         if ((_url as string).endsWith("/tool-exec")) {
-          return { status: 200, body: { ok: true, callId: "c", tool: "get_interview_state", result: {} } };
+          return { status: 200, body: { ok: true, callId: "c", tool: "get_current_interview", result: {} } };
         }
         return { status: 200, body: { ok: true, service: "x", version: "0.1.0" } };
       }),
@@ -44,7 +44,7 @@ describe("BackendClient S8a auth", () => {
     );
     await client.getHealth();
     expect(seen[0]).toMatchObject({ authorization: "Bearer s8a-token" });
-    await client.toolExec("int_1", "c", "get_interview_state");
+    await client.toolExec("int_1", "c", "get_current_interview");
     expect(seen[seen.length - 1]).toMatchObject({ authorization: "Bearer s8a-token" });
   });
 

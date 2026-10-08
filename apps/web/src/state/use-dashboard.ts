@@ -10,7 +10,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedRecommendation,
   SerializedUserCurriculumProgress,
@@ -23,7 +23,7 @@ export type DashboardState = "loading" | "ready" | "error";
 export interface DashboardData {
   readonly state: DashboardState;
   readonly recommendation: SerializedRecommendation | null;
-  readonly problem: Problem | null;
+  readonly problem: ProblemContent | null;
   readonly curriculum: SerializedCurriculum | null;
   readonly skills: readonly SerializedUserSkillState[];
   readonly progress: SerializedUserCurriculumProgress | null;
@@ -36,7 +36,7 @@ export interface DashboardData {
 export function useDashboard(backend: BackendClient, enabled = true): DashboardData {
   const [state, setState] = useState<DashboardState>("loading");
   const [recommendation, setRecommendation] = useState<SerializedRecommendation | null>(null);
-  const [problem, setProblem] = useState<Problem | null>(null);
+  const [problem, setProblem] = useState<ProblemContent | null>(null);
   const [curriculum, setCurriculum] = useState<SerializedCurriculum | null>(null);
   const [skills, setSkills] = useState<readonly SerializedUserSkillState[]>([]);
   const [progress, setProgress] = useState<SerializedUserCurriculumProgress | null>(null);
@@ -72,9 +72,9 @@ export function useDashboard(backend: BackendClient, enabled = true): DashboardD
         // one if the user has none yet (the backend validates + falls back).
         const current =
           (await backend.getCurrentRecommendation()) ?? (await backend.createRecommendation());
-        let recommendedProblem: Problem | null = null;
+        let recommendedProblem: ProblemContent | null = null;
         try {
-          recommendedProblem = await backend.getProblem(current.problemId);
+          recommendedProblem = await backend.getProblemContent(current.problemId);
         } catch {
           // The problem panel degrades to the topic name if the catalog row
           // is unavailable; the recommendation itself is still valid.
@@ -107,9 +107,9 @@ export function useDashboard(backend: BackendClient, enabled = true): DashboardD
     setError(null);
     try {
       const next = await backend.createRecommendation();
-      let recommendedProblem: Problem | null = null;
+      let recommendedProblem: ProblemContent | null = null;
       try {
-        recommendedProblem = await backend.getProblem(next.problemId);
+        recommendedProblem = await backend.getProblemContent(next.problemId);
       } catch {
         recommendedProblem = null;
       }

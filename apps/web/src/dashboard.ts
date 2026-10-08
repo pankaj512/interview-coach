@@ -7,7 +7,7 @@
 
 import type {
   MasteryLevel,
-  Problem,
+  ProblemContent,
   RecommendationSource,
   RecommendationType,
   SerializedCurriculum,
@@ -95,7 +95,7 @@ export interface RecommendationView {
 export function buildRecommendationView(
   recommendation: SerializedRecommendation,
   curriculum: SerializedCurriculum | null,
-  problem: Problem | null,
+  problem: ProblemContent | null,
 ): RecommendationView {
   const topic = findTopic(curriculum, recommendation.topicId);
   return {

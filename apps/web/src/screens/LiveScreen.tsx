@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { BackendClient } from "../api/backend-client.js";
-import type { InterviewStatus, Problem, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
+import type { InterviewStatus, ProblemContent, SerializedInterview, SerializedStateSnapshot } from "../api/types.js";
 import { CodeWorkspace } from "../components/CodeWorkspace.js";
 import { ProblemPanel } from "../components/ProblemPanel.js";
 import { DangerButton, GhostButton, PrimaryButton } from "../ds/buttons.js";
@@ -76,7 +76,7 @@ export function LiveScreen({
   readonly interaction: Interaction;
   /** Phase 7: the recommendation-driven problem from the Lobby, displayed
    *  immediately while the first state snapshot is still loading. */
-  readonly problem?: Problem | null;
+  readonly problem?: ProblemContent | null;
   readonly onFinished: (
     snapshot: SerializedStateSnapshot | null,
     events: readonly LiveEvent[],

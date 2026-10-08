@@ -239,58 +239,38 @@ liveDescribe("sandbox runs (docker runner)", () => {
   }, 30_000);
 });
 
-liveDescribe("sandbox tools via tool-exec", () => {
-  async function toolExec(
-    b: TestBackend,
-    id: string,
-    tool: string,
-    args?: Record<string, unknown>,
-  ): Promise<{ status: number; json: unknown }> {
-    const res = await b.app.inject({
-      method: "POST",
-      url: `/api/interviews/${id}/tool-exec`,
-      payload: {
-        call_id: `call_${tool}_${Math.random().toString(36).slice(2)}`,
-        tool,
-        ...(args === undefined ? {} : { arguments: args }),
-      },
-    });
-    return { status: res.statusCode, json: res.json() };
-  }
-
-  it("submit_solution + run_code + performance surfaces sandbox state", async () => {
+liveDescribe("sandbox state via HTTP routes + canonical tool read", () => {
+  it("submit + run routes surface sandbox state in get_current_interview", async () => {
     const b = useBackend();
     const { id } = await createStartedInterview(b);
-    const submitted = await toolExec(b, id, "submit_solution", {
-      language: "python",
-      code: PY_SOLVE,
-    });
-    expect(submitted.status).toBe(200);
-    const submissionId = (
-      submitted.json as { result: { submissionId: string } }
-    ).result.submissionId;
+    const submissionId = await submit(b, id, PY_SOLVE, "python");
     expect(submissionId.startsWith("sub_")).toBe(true);
 
-    const executed = await toolExec(b, id, "run_code", {
+    const executed = await run(b, id, submissionId, {
       testCases: [{ name: "adds", args: [2, 3], expected: 5 }],
     });
-    expect(executed.status).toBe(200);
+    expect(executed.status).toBe(201);
     expect(executed.json).toMatchObject({
       ok: true,
-      result: { submissionId, status: "passed" },
+      run: { submissionId, status: "passed" },
     });
 
-    const perf = await toolExec(b, id, "get_candidate_performance");
-    expect(perf.json).toMatchObject({
+    const perf = await b.app.inject({
+      method: "POST",
+      url: `/api/interviews/${id}/tool-exec`,
+      payload: { call_id: "call_perf_1", tool: "get_current_interview" },
+    });
+    expect(perf.statusCode).toBe(200);
+    expect(perf.json()).toMatchObject({
       ok: true,
-      result: { submissionCount: 1, lastRunStatus: "passed" },
+      result: { performance: { submissionCount: 1, lastRunStatus: "passed" } },
     });
   }, 30_000);
 
-  it("run_code without submissions is a permanent NOT_FOUND", async () => {
+  it("run route without submissions is a permanent NOT_FOUND", async () => {
     const b = useBackend();
     const { id } = await createStartedInterview(b);
-    const res = await toolExec(b, id, "run_code", {
+    const res = await run(b, id, "sub_missing", {
       testCases: [{ name: "t", args: [], expected: 0 }],
     });
     expect(res.status).toBe(404);

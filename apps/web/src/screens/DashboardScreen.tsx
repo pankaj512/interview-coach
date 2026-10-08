@@ -3,7 +3,7 @@
 // (loading / error+retry / empty recommendation / empty skills) preserved.
 
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedRecommendation,
   SerializedUserProfile,
@@ -38,7 +38,7 @@ export function DashboardScreen({
   readonly starting: boolean;
   readonly onStart: (
     recommendation: SerializedRecommendation,
-    problem: Problem | null,
+    problem: ProblemContent | null,
     curriculum: SerializedCurriculum | null,
   ) => void;
   readonly onProfile: () => void;

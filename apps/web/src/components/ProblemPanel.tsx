@@ -5,7 +5,7 @@
 // Statement enrichment arrives via the 18c content endpoint (the `content`
 // prop); snapshot/fallback fields render immediately underneath.
 
-import type { Problem, ProblemContent, SerializedStateSnapshot } from "../api/types.js";
+import type { ProblemContent, SerializedStateSnapshot } from "../api/types.js";
 
 export function ProblemPanel({
   snapshot,
@@ -15,7 +15,7 @@ export function ProblemPanel({
   snapshot: SerializedStateSnapshot | null;
   /** Phase 7: the recommendation-driven problem carried by the Lobby, shown
    *  immediately while the first state snapshot is still loading. */
-  fallbackProblem?: Problem | null;
+  fallbackProblem?: ProblemContent | null;
   /** 18c content slice. `undefined` = still loading, `null` = fetch failed
    *  (snapshot fields render alone), object = ready (null fields inside the
    *  object mark a title-only gap problem). */

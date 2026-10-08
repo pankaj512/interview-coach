@@ -209,7 +209,7 @@ describe("s8c per-interview ownership", () => {
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
       headers: authB,
-      payload: { call_id: "s8c-x", tool: "get_interview_state" },
+      payload: { call_id: "s8c-x", tool: "get_current_interview" },
     });
     expect(foreignWrite.statusCode).toBe(404);
     const foreignDelete = await tb.app.inject({ method: "DELETE", url: `/api/interviews/${id}`, headers: authB });

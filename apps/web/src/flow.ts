@@ -7,7 +7,7 @@
 // and the App router.
 
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedInterview,
   SerializedRecommendation,
@@ -22,7 +22,7 @@ export interface SessionPlan {
   /** The recommendation this session was started from (Phase 5 CTA). */
   readonly recommendation: SerializedRecommendation | null;
   /** The recommended problem, resolved for display (may be null if unavailable). */
-  readonly problem: Problem | null;
+  readonly problem: ProblemContent | null;
   /** Curriculum used to resolve topic/module names for the Lobby. */
   readonly curriculum: SerializedCurriculum | null;
   readonly mode: InterviewMode;

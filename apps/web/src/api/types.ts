@@ -18,8 +18,10 @@ export type InterviewStatus =
 export type EvaluationStatus = "none" | "pending" | "completed" | "failed";
 
 // Phase 8: canonical realtime tool contract (ADR-002 decision 11). The web
-// model is advertised only the canonical names; the deprecated aliases stay
-// accepted by the forwarder/backend for CLI-harness compatibility.
+// model is advertised only the canonical names; V1.1-3 retired the
+// deprecated aliases outright (unknown names fail closed as validation
+// errors). get_candidate_code is browser-local (answered from the live
+// editor, never forwarded to tool-exec).
 export type CanonicalToolName =
   | "get_current_interview"
   | "get_current_problem"
@@ -28,16 +30,7 @@ export type CanonicalToolName =
   | "submit_interview_data"
   | "end_interview";
 
-export type DeprecatedToolAlias =
-  | "get_interview_state"
-  | "get_candidate_performance"
-  | "get_interview_configuration"
-  | "get_problem_hint"
-  | "record_candidate_answer"
-  | "submit_solution"
-  | "run_code";
-
-export type ToolName = CanonicalToolName | DeprecatedToolAlias;
+export type ToolName = CanonicalToolName;
 
 // Raw model- or UI-supplied tool arguments (sent as `arguments` to tool-exec).
 export type ToolArgs = Record<string, unknown>;
@@ -121,9 +114,13 @@ export interface ProblemRunnerLinks {
   readonly cpp?: ProblemRunnerLink;
 }
 
-// 18c: dedicated content view (GET /api/problems/:id/content). Nullable
+// 18c: dedicated content view (GET /api/problems/:id/content). Identity
+// fields are always present (even on title-only gap problems); nullable
 // fields mark title-only gap problems; the pane falls back to title-only.
 export interface ProblemContent {
+  readonly id: string;
+  readonly title: string;
+  readonly difficulty: string;
   readonly description: string | null;
   readonly constraints: readonly string[] | null;
   readonly examples: readonly ProblemExample[] | null;

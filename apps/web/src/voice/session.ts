@@ -26,9 +26,8 @@ export interface RealtimeToolDefinition {
 }
 
 // Phase 8 canonical tool surface (ADR-002 decision 11): five explicit tools.
-// The pre-Phase-8 names remain backend/forwarder aliases for CLI-harness
-// compatibility but are never advertised to the web model. Hints are
-// model-driven conversation (no get_problem_hint tool) and code execution
+// V1.1-3 retired the pre-Phase-8 aliases outright; unknown names fail closed.
+// Hints are model-driven conversation (no get_problem_hint tool) and code execution
 // stays the client HTTP path; the model records answers/code via
 // submit_interview_data, reads state via get_current_interview, and reads
 // the live editor via get_candidate_code (answered locally in the browser,

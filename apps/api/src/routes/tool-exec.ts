@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 import {
   ToolService,
-  TOOL_NAMES,
+  CANONICAL_TOOL_NAMES,
   asInterviewId,
   type RepositorySet,
   type ToolName,
@@ -24,7 +24,7 @@ export interface ToolExecRouteDeps {
   readonly metrics: BackendMetrics;
 }
 
-const TOOL_NAMES_TUPLE = TOOL_NAMES as unknown as [
+const TOOL_NAMES_TUPLE = CANONICAL_TOOL_NAMES as unknown as [
   ToolName,
   ...ToolName[],
 ];

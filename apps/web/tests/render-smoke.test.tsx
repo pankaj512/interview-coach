@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { renderToString } from "react-dom/server";
 import { BackendClient } from "../src/api/backend-client.js";
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedEvaluation,
   SerializedInterview,
@@ -146,7 +146,16 @@ const dashboardRecommendation: SerializedRecommendation = {
   updatedAt: new Date(0).toISOString(),
 };
 
-const dashboardProblem: Problem = { id: "prob_move-zeroes", title: "Move Zeroes", difficulty: "Easy" };
+const dashboardProblem: ProblemContent = {
+  id: "prob_move-zeroes",
+  title: "Move Zeroes",
+  difficulty: "Easy",
+  description: null,
+  constraints: null,
+  examples: null,
+  starters: null,
+  runnerLinks: null,
+};
 
 const lobbyPlan: SessionPlan = {
   interview,
@@ -230,6 +239,9 @@ describe("screen render smoke", () => {
         snapshot={null}
         fallbackProblem={dashboardProblem}
         content={{
+          id: "prob_move-zeroes",
+          title: "Move Zeroes",
+          difficulty: "Easy",
           description: "Move all zeroes to the end.",
           constraints: ["1 <= n <= 10^4"],
           examples: [
@@ -251,7 +263,7 @@ describe("screen render smoke", () => {
       <ProblemPanel
         snapshot={null}
         fallbackProblem={dashboardProblem}
-        content={{ description: null, constraints: null, examples: null, starters: null, runnerLinks: null }}
+        content={{ id: "prob_move-zeroes", title: "Move Zeroes", difficulty: "Easy", description: null, constraints: null, examples: null, starters: null, runnerLinks: null }}
       />,
     );
     expect(gap).toContain("Move Zeroes");

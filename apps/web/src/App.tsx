@@ -7,7 +7,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackendApiError, type BackendClient } from "./api/backend-client.js";
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedInterview,
   SerializedRecommendation,
@@ -237,7 +237,7 @@ export function App() {
   const startRecommended = useCallback(
     async (
       recommendation: SerializedRecommendation,
-      problem: Problem | null,
+      problem: ProblemContent | null,
       curriculum: SerializedCurriculum | null,
     ) => {
     if (session === null) {

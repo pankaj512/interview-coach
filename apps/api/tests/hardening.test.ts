@@ -103,13 +103,13 @@ describe("s8a probes and metrics", () => {
     await tb.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s8a-call-1", tool: "get_interview_state" },
+      payload: { call_id: "s8a-call-1", tool: "get_current_interview" },
     });
     // Replay counts separately from first execution.
     await tb.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s8a-call-1", tool: "get_interview_state" },
+      payload: { call_id: "s8a-call-1", tool: "get_current_interview" },
     });
     await tb.app.inject({ method: "POST", url: `/api/interviews/${id}/voice-session` });
 
@@ -212,14 +212,14 @@ describe("s8a quotas", () => {
       app.app.inject({
         method: "POST",
         url: `/api/interviews/${id}/tool-exec`,
-        payload: { call_id: `s8a-rl-${n}`, tool: "get_interview_state" },
+        payload: { call_id: `s8a-rl-${n}`, tool: "get_current_interview" },
       });
     expect((await toolCall(1)).statusCode).toBe(200);
     expect((await toolCall(2)).statusCode).toBe(200);
     const limited = await app.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s8a-rl-3", tool: "get_interview_state" },
+      payload: { call_id: "s8a-rl-3", tool: "get_current_interview" },
     });
     expect(limited.statusCode).toBe(429);
     expect(limited.json()).toMatchObject({
@@ -287,7 +287,7 @@ describe("s8b prometheus exporter", () => {
     await tb.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s8b-prom-1", tool: "get_interview_state" },
+      payload: { call_id: "s8b-prom-1", tool: "get_current_interview" },
     });
 
     const res = await tb.app.inject({ method: "GET", url: "/api/metrics/prometheus" });

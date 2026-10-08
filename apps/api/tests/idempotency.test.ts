@@ -18,8 +18,8 @@ describe("IdempotencyStore", () => {
       executions += 1;
       return okResult;
     };
-    const first = await store.execute("c1", "iv_1", "get_interview_state", fn);
-    const second = await store.execute("c1", "iv_1", "get_interview_state", fn);
+    const first = await store.execute("c1", "iv_1", "get_current_interview", fn);
+    const second = await store.execute("c1", "iv_1", "get_current_interview", fn);
     expect(first.replayed).toBe(false);
     expect(second.replayed).toBe(true);
     expect(executions).toBe(1);
@@ -39,8 +39,8 @@ describe("IdempotencyStore", () => {
       await gate;
       return okResult;
     };
-    const p1 = store.execute("c2", "iv_1", "get_interview_state", fn);
-    const p2 = store.execute("c2", "iv_1", "get_interview_state", fn);
+    const p1 = store.execute("c2", "iv_1", "get_current_interview", fn);
+    const p2 = store.execute("c2", "iv_1", "get_current_interview", fn);
     release();
     const [r1, r2] = await Promise.all([p1, p2]);
     expect(executions).toBe(1);
@@ -57,8 +57,8 @@ describe("IdempotencyStore", () => {
       if (attempts === 1) throw new Error("db down");
       return okResult;
     };
-    await expect(store.execute("c3", "iv_1", "get_interview_state", flaky)).rejects.toThrow("db down");
-    const retry = await store.execute("c3", "iv_1", "get_interview_state", flaky);
+    await expect(store.execute("c3", "iv_1", "get_current_interview", flaky)).rejects.toThrow("db down");
+    const retry = await store.execute("c3", "iv_1", "get_current_interview", flaky);
     expect(retry.replayed).toBe(false);
     expect(attempts).toBe(2);
     store.close();
@@ -66,16 +66,16 @@ describe("IdempotencyStore", () => {
 
   it("rejects cross-interview call_id reuse with CONFLICT", async () => {
     const store = new IdempotencyStore<{ status: string }>({ sweepIntervalMs: 0 });
-    await store.execute("c4", "iv_1", "get_interview_state", async () => okResult);
+    await store.execute("c4", "iv_1", "get_current_interview", async () => okResult);
     await expect(
-      store.execute("c4", "iv_2", "get_interview_state", async () => okResult),
+      store.execute("c4", "iv_2", "get_current_interview", async () => okResult),
     ).rejects.toBeInstanceOf(CallIdConflictError);
     store.close();
   });
 
   it("V3-3: rejects a call_id reused with a different tool", async () => {
     const store = new IdempotencyStore<{ status: string }>({ sweepIntervalMs: 0 });
-    await store.execute("c6", "iv_1", "get_interview_state", async () => okResult);
+    await store.execute("c6", "iv_1", "get_current_interview", async () => okResult);
     await expect(
       store.execute("c6", "iv_1", "get_current_problem", async () => okResult),
     ).rejects.toBeInstanceOf(CallIdToolMismatchError);
@@ -88,12 +88,12 @@ describe("IdempotencyStore", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const p1 = store.execute("c7", "iv_1", "get_interview_state", async () => {
+    const p1 = store.execute("c7", "iv_1", "get_current_interview", async () => {
       await gate;
       return okResult;
     });
     await expect(
-      store.execute("c7", "iv_2", "get_interview_state", async () => okResult),
+      store.execute("c7", "iv_2", "get_current_interview", async () => okResult),
     ).rejects.toBeInstanceOf(CallIdConflictError);
     release();
     await p1;
@@ -106,7 +106,7 @@ describe("IdempotencyStore", () => {
     const gate = new Promise<void>((resolve) => {
       release = resolve;
     });
-    const p1 = store.execute("c8", "iv_1", "get_interview_state", async () => {
+    const p1 = store.execute("c8", "iv_1", "get_current_interview", async () => {
       await gate;
       return okResult;
     });

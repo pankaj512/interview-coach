@@ -60,80 +60,46 @@ async function runningInterview(
 }
 
 describe("ToolService S5 tools", () => {
-  it("get_interview_configuration returns backend-owned config", async () => {
+  it("get_current_interview folds the retired configuration alias", async () => {
     const { repos, interviews, tools } = setup();
     const id = await runningInterview(interviews, repos);
     const result = must(
-      await tools.dispatch("get_interview_configuration", { interviewId: id, callId: "c1" }),
+      await tools.dispatch("get_current_interview", { interviewId: id, callId: "c1" }),
     );
     expect(result).toMatchObject({
-      status: "in_progress",
       currentProblemId: "prob_two-sum",
-      problemCount: 1,
     });
-    expect((result as { configuration: { difficulty: string } }).configuration).toMatchObject({
+    expect(result).toMatchObject({
+      interview: { status: "in_progress", problemCount: 1 },
+    });
+    expect((result as { interview: { configuration: { difficulty: string } } }).interview.configuration).toMatchObject({
       interviewType: "dsa",
       difficulty: "Easy",
     });
   });
 
-  it("get_problem_hint escalates tiers and counts hints", async () => {
-    const { repos, interviews, tools } = setup();
-    const id = await runningInterview(interviews, repos);
-    const first = must(
-      await tools.dispatch("get_problem_hint", { interviewId: id, callId: "h1" }),
-    );
-    expect(first).toMatchObject({ level: 1, revealsSolution: false, hintsUsed: 1 });
-    const second = must(
-      await tools.dispatch("get_problem_hint", { interviewId: id, callId: "h2" }),
-    );
-    expect(second).toMatchObject({ level: 2, hintsUsed: 2 });
-    const explicit = must(
-      await tools.dispatch(
-        "get_problem_hint",
-        { interviewId: id, callId: "h3" },
-        { level: 3 },
-      ),
-    );
-    expect(explicit).toMatchObject({ level: 3, hintsUsed: 3 });
-    const capped = must(
-      await tools.dispatch("get_problem_hint", { interviewId: id, callId: "h4" }),
-    );
-    expect(capped).toMatchObject({ level: 3, hintsUsed: 4 });
-  });
-
-  it("get_problem_hint rejects bad levels and missing problems", async () => {
-    const { repos, interviews, tools } = setup();
-    const id = await runningInterview(interviews, repos);
-    expect(
-      mustErr(
-        await tools.dispatch("get_problem_hint", { interviewId: id, callId: "h5" }, { level: 9 }),
-      ),
-    ).toBe("VALIDATION_ERROR");
-  });
-
-  it("record_candidate_answer persists a response", async () => {
+  it("submit_interview_data persists a response (retired record_candidate_answer)", async () => {
     const { repos, interviews, tools } = setup();
     const id = await runningInterview(interviews, repos);
     const result = must(
       await tools.dispatch(
-        "record_candidate_answer",
+        "submit_interview_data",
         { interviewId: id, callId: "a1" },
         { kind: "approach", content: "Use a hash map." },
       ),
     );
-    expect(result).toMatchObject({ recorded: true, kind: "approach", responseCount: 1 });
+    expect(result).toMatchObject({ recorded: "response", kind: "approach", responseCount: 1 });
     const responses = await repos.responses.listByInterview(id);
     expect(responses[0]?.content).toBe("Use a hash map.");
   });
 
-  it("record_candidate_answer validates content and kind", async () => {
+  it("submit_interview_data validates response content and kind", async () => {
     const { repos, interviews, tools } = setup();
     const id = await runningInterview(interviews, repos);
     expect(
       mustErr(
         await tools.dispatch(
-          "record_candidate_answer",
+          "submit_interview_data",
           { interviewId: id, callId: "a2" },
           { kind: "approach", content: "   " },
         ),
@@ -142,7 +108,7 @@ describe("ToolService S5 tools", () => {
     expect(
       mustErr(
         await tools.dispatch(
-          "record_candidate_answer",
+          "submit_interview_data",
           { interviewId: id, callId: "a3" },
           { kind: "nope", content: "x" },
         ),

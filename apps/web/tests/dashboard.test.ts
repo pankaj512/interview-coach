@@ -3,7 +3,7 @@
 
 import { describe, expect, it } from "vitest";
 import type {
-  Problem,
+  ProblemContent,
   SerializedCurriculum,
   SerializedRecommendation,
   SerializedUserCurriculumProgress,
@@ -79,7 +79,16 @@ const recommendation: SerializedRecommendation = {
   updatedAt: AT,
 };
 
-const problem: Problem = { id: "prob_move-zeroes", title: "Move Zeroes", difficulty: "Easy" };
+const problem: ProblemContent = {
+  id: "prob_move-zeroes",
+  title: "Move Zeroes",
+  difficulty: "Easy",
+  description: null,
+  constraints: null,
+  examples: null,
+  starters: null,
+  runnerLinks: null,
+};
 
 function skill(overrides: Partial<SerializedUserSkillState>): SerializedUserSkillState {
   return {

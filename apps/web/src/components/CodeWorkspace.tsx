@@ -8,7 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import type * as monaco from "monaco-editor";
 import type { BackendClient } from "../api/backend-client.js";
-import type { CodeLanguage, Problem, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, SerializedTestResult, TestCaseInput } from "../api/types.js";
+import type { CodeLanguage, Problem, ProblemContent, ProblemStarterSet, SerializedRun, SerializedSubmitVerdict, SerializedTestResult, TestCaseInput } from "../api/types.js";
 import type { LiveCodeReader } from "../voice/session.js";
 import { buildVerdictPushSummary } from "../voice/session.js";
 import { PrimaryButton } from "../ds/buttons.js";
@@ -51,7 +51,7 @@ export function fitEditorHeight(container: HTMLDivElement, contentHeight: number
 
 /** Every problem example as a runner case (named `sample 1`, `sample 2`, ...
  *  to match the problem pane), or [] when none exists. */
-export function sampleCasesFor(problem: Problem | null): TestCaseInput[] {
+export function sampleCasesFor(problem: Problem | ProblemContent | null): TestCaseInput[] {
   const examples = problem?.examples ?? [];
   return examples.map((example, i) => {
     const args = tryJson(example.input);
@@ -172,7 +172,7 @@ export function CodeWorkspace({
 }: {
   readonly backend: BackendClient;
   readonly interviewId: string;
-  readonly problem: Problem | null;
+  readonly problem: Problem | ProblemContent | null;
   /** 18c verbatim starters from the content endpoint. Prefills the editor
    *  while the candidate has not typed anything; never clobbers edits. */
   readonly starters?: ProblemStarterSet | null;

@@ -38,11 +38,11 @@ describe("forwardToolCall args", () => {
       const outcome: ToolExecOutcome = { ok: true, callId, tool, result: {}, replayed: false };
       return outcome;
     };
-    const result = await forwardToolCall(exec, "c1", "get_problem_hint", {
+    const result = await forwardToolCall(exec, "c1", "submit_interview_data", {
       clocks: immediateClocks(),
-      args: { level: 2 },
+      args: { kind: "approach", content: "Use a hash map." },
     });
     expect(result.attempts).toBe(1);
-    expect(seen).toEqual([{ level: 2 }]);
+    expect(seen).toEqual([{ kind: "approach", content: "Use a hash map." }]);
   });
 });

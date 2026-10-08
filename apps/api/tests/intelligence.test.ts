@@ -130,43 +130,40 @@ describe("S5 responses", () => {
 // async evaluation. The automatic flow is covered in `evaluation.test.ts`.
 
 describe("S5 tool-exec extensions", () => {
-  it("routes new tools with arguments", async () => {
+  it("routes canonical tools with arguments", async () => {
     backend = buildTestBackend();
     await seedProblem(backend.repos);
     const { id } = await createStartedInterview(backend, ["prob_two-sum"]);
     const config = await backend.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s5_config_1", tool: "get_interview_configuration" },
+      payload: { call_id: "s5_config_1", tool: "get_current_interview" },
     });
     expect(config.statusCode).toBe(200);
     expect(config.json()).toMatchObject({
       ok: true,
-      result: { status: "in_progress", currentProblemId: "prob_two-sum" },
+      result: { interview: { status: "in_progress" }, currentProblemId: "prob_two-sum" },
     });
-    const hint = await backend.app.inject({
-      method: "POST",
-      url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s5_hint_1", tool: "get_problem_hint", arguments: { level: 2 } },
-    });
-    expect(hint.statusCode).toBe(200);
-    expect(hint.json()).toMatchObject({ ok: true, result: { level: 2, hintsUsed: 1 } });
     const answer = await backend.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
       payload: {
         call_id: "s5_answer_1",
-        tool: "record_candidate_answer",
+        tool: "submit_interview_data",
         arguments: { kind: "approach", content: "Two pointers." },
       },
     });
     expect(answer.statusCode).toBe(200);
-    expect(answer.json()).toMatchObject({ ok: true, result: { recorded: true, responseCount: 1 } });
-    // Idempotent replay of the hint call.
+    expect(answer.json()).toMatchObject({ ok: true, result: { recorded: "response", responseCount: 1 } });
+    // Idempotent replay of the answer call.
     const replay = await backend.app.inject({
       method: "POST",
       url: `/api/interviews/${id}/tool-exec`,
-      payload: { call_id: "s5_hint_1", tool: "get_problem_hint", arguments: { level: 2 } },
+      payload: {
+        call_id: "s5_answer_1",
+        tool: "submit_interview_data",
+        arguments: { kind: "approach", content: "Two pointers." },
+      },
     });
     expect(replay.json()).toMatchObject({ ok: true, replayed: true });
   });
@@ -179,7 +176,7 @@ describe("S5 tool-exec extensions", () => {
       url: `/api/interviews/${id}/tool-exec`,
       payload: {
         call_id: "s5_badarg_1",
-        tool: "record_candidate_answer",
+        tool: "submit_interview_data",
         arguments: { kind: "answer", content: "" },
       },
     });

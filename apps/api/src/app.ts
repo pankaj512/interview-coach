@@ -1050,21 +1050,10 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
     return reply.send({ ok: true, interview: serializeInterview(next.value) });
   });
 
-  app.get("/api/problems/:id", async (request, reply) => {
-    const params = idParamSchema.safeParse(request.params);
-    if (!params.success) {
-      return sendApiError(reply, 400, "VALIDATION_ERROR", zodMessage(params.error), false);
-    }
-    const problem = await deps.repos.problems.findById(asProblemId(params.data.id));
-    if (problem === null) {
-      return sendApiError(reply, 404, "NOT_FOUND", `Problem ${params.data.id} does not exist`, false);
-    }
-    return reply.send({ ok: true, problem });
-  });
-
-  // Feature 18c: dedicated content view over the reseeded columns. Same id
-  // validation and 404 shape as GET /api/problems/:id; gap (title-only)
-  // problems return 200 with null content fields via serializeProblemContent.
+  // Feature 18c: dedicated content view over the reseeded columns, the
+  // only per-problem read (V1.1-3 retired GET /api/problems/:id). Gap
+  // (title-only) problems return 200 with null content fields via
+  // serializeProblemContent.
   app.get("/api/problems/:id/content", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {
@@ -1162,7 +1151,7 @@ export function buildApp(deps: BuildAppDeps): BuiltBackend {
   });
 
   // S5: persist candidate answers (HLD 5.11). Used by the UI and the
-  // record_candidate_answer tool path alike; evaluation reads these.
+  // submit_interview_data tool path alike; evaluation reads these.
   app.post("/api/interviews/:id/responses", async (request, reply) => {
     const params = idParamSchema.safeParse(request.params);
     if (!params.success) {

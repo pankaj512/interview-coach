@@ -87,11 +87,11 @@ describe("BackendClient S5", () => {
       "http://localhost:3000",
       fakeFetch((_url, init) => {
         bodies.push(init?.body === undefined ? null : JSON.parse(init.body));
-        return { status: 200, body: { ok: true, callId: "c1", tool: "get_problem_hint", result: {}, replayed: false } };
+        return { status: 200, body: { ok: true, callId: "c1", tool: "submit_interview_data", result: {}, replayed: false } };
       }),
     );
-    await client.toolExec("int_1", "c1", "get_problem_hint", undefined, { level: 2 });
-    expect(bodies[0]).toMatchObject({ call_id: "c1", tool: "get_problem_hint", arguments: { level: 2 } });
+    await client.toolExec("int_1", "c1", "submit_interview_data", undefined, { kind: "approach", content: "Use a hash map." });
+    expect(bodies[0]).toMatchObject({ call_id: "c1", tool: "submit_interview_data", arguments: { kind: "approach" } });
   });
 
   it("omits arguments when no args are given", async () => {
@@ -100,10 +100,10 @@ describe("BackendClient S5", () => {
       "http://localhost:3000",
       fakeFetch((_url, init) => {
         bodies.push(init?.body === undefined ? null : JSON.parse(init.body));
-        return { status: 200, body: { ok: true, callId: "c1", tool: "get_interview_state", result: {}, replayed: false } };
+        return { status: 200, body: { ok: true, callId: "c1", tool: "get_current_interview", result: {}, replayed: false } };
       }),
     );
-    await client.toolExec("int_1", "c1", "get_interview_state");
+    await client.toolExec("int_1", "c1", "get_current_interview");
     expect(bodies[0]).not.toHaveProperty("arguments");
   });
 });

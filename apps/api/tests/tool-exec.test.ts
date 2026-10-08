@@ -26,28 +26,28 @@ async function toolExec(
 }
 
 describe("tool-exec", () => {
-  it("dispatches get_interview_state and returns the snapshot", async () => {
+  it("dispatches get_current_interview and returns the folded snapshot", async () => {
     backend = buildTestBackend();
     const { id } = await createStartedInterview(backend);
     const { statusCode, json } = await toolExec(backend, id, {
       call_id: "call_state_1",
-      tool: "get_interview_state",
+      tool: "get_current_interview",
     });
     expect(statusCode).toBe(200);
     expect(json).toMatchObject({
       ok: true,
       callId: "call_state_1",
-      tool: "get_interview_state",
+      tool: "get_current_interview",
       replayed: false,
-      result: { status: "in_progress" },
+      result: { interview: { status: "in_progress" } },
     });
   });
 
   it("replays the same call_id without re-executing (single tool.invoked event)", async () => {
     backend = buildTestBackend();
     const { id } = await createStartedInterview(backend);
-    const first = await toolExec(backend, id, { call_id: "call_dup_1", tool: "get_interview_state" });
-    const second = await toolExec(backend, id, { call_id: "call_dup_1", tool: "get_interview_state" });
+    const first = await toolExec(backend, id, { call_id: "call_dup_1", tool: "get_current_interview" });
+    const second = await toolExec(backend, id, { call_id: "call_dup_1", tool: "get_current_interview" });
     expect(first.json).toMatchObject({ ok: true, replayed: false });
     expect(second.statusCode).toBe(200);
     expect(second.json).toMatchObject({ ok: true, replayed: true });
@@ -63,8 +63,8 @@ describe("tool-exec", () => {
     const { id } = await createStartedInterview(backend);
     const b = backend;
     const [a, c] = await Promise.all([
-      toolExec(b, id, { call_id: "call_race_1", tool: "get_candidate_performance" }),
-      toolExec(b, id, { call_id: "call_race_1", tool: "get_candidate_performance" }),
+      toolExec(b, id, { call_id: "call_race_1", tool: "get_current_interview" }),
+      toolExec(b, id, { call_id: "call_race_1", tool: "get_current_interview" }),
     ]);
     expect(a.statusCode).toBe(200);
     expect(c.statusCode).toBe(200);
@@ -125,7 +125,7 @@ describe("tool-exec", () => {
     const badTool = await toolExec(backend, id, { call_id: "call_x", tool: "query_database" });
     expect(badTool.statusCode).toBe(400);
     expect(badTool.json).toMatchObject({ ok: false, error: { code: "VALIDATION_ERROR" } });
-    const missingCallId = await toolExec(backend, id, { tool: "get_interview_state" });
+    const missingCallId = await toolExec(backend, id, { tool: "get_current_interview" });
     expect(missingCallId.statusCode).toBe(400);
   });
 
@@ -133,7 +133,7 @@ describe("tool-exec", () => {
     backend = buildTestBackend();
     const { statusCode } = await toolExec(backend, "iv_missing", {
       call_id: "call_x",
-      tool: "get_interview_state",
+      tool: "get_current_interview",
     });
     expect(statusCode).toBe(404);
   });
@@ -214,30 +214,24 @@ describe("phase 8 canonical tools", () => {
     expect(events.filter((e) => e.type === "tool.invoked")).toHaveLength(1);
   });
 
-  it("keeps the deprecated aliases working with their original shapes", async () => {
+  it("rejects the retired aliases with 400 VALIDATION_ERROR", async () => {
     backend = buildTestBackend();
     await seedProblem(backend.repos);
     const { id } = await createStartedInterview(backend, ["prob_two-sum"]);
-    const state = await toolExec(backend, id, { call_id: "alias_state", tool: "get_interview_state" });
-    expect(state.json).toMatchObject({ ok: true, result: { status: "in_progress" } });
-    const config = await toolExec(backend, id, { call_id: "alias_config", tool: "get_interview_configuration" });
-    expect(config.json).toMatchObject({ ok: true, result: { configuration: { interviewType: "dsa" } } });
-    const perf = await toolExec(backend, id, { call_id: "alias_perf", tool: "get_candidate_performance" });
-    expect(perf.json).toMatchObject({ ok: true, result: { responseCount: 0 } });
-    const hint = await toolExec(backend, id, { call_id: "alias_hint", tool: "get_problem_hint" });
-    expect(hint.json).toMatchObject({ ok: true, result: { level: 1, revealsSolution: false } });
-    const answer = await toolExec(backend, id, {
-      call_id: "alias_answer",
-      tool: "record_candidate_answer",
-      arguments: { content: "hash map" },
-    });
-    expect(answer.json).toMatchObject({ ok: true, result: { recorded: true, kind: "answer" } });
-    const code = await toolExec(backend, id, {
-      call_id: "alias_code",
-      tool: "submit_solution",
-      arguments: { language: "javascript", code: "return 1;" },
-    });
-    expect(code.json).toMatchObject({ ok: true, result: { language: "javascript" } });
+    const retired = [
+      "get_interview_state",
+      "get_interview_configuration",
+      "get_candidate_performance",
+      "get_problem_hint",
+      "record_candidate_answer",
+      "submit_solution",
+      "run_code",
+    ];
+    for (const [i, tool] of retired.entries()) {
+      const res = await toolExec(backend, id, { call_id: `retired_${i}`, tool });
+      expect(res.statusCode).toBe(400);
+      expect(res.json).toMatchObject({ ok: false, error: { code: "VALIDATION_ERROR" } });
+    }
   });
 
   it("authorizes tool-exec per interview for user callers", async () => {
@@ -284,7 +278,7 @@ describe("tool-results recovery", () => {
   it("rehydrates a stored result and 404s unknown call_ids", async () => {
     backend = buildTestBackend();
     const { id } = await createStartedInterview(backend);
-    await toolExec(backend, id, { call_id: "call_recover_1", tool: "get_interview_state" });
+    await toolExec(backend, id, { call_id: "call_recover_1", tool: "get_current_interview" });
     const hit = await backend.app.inject({
       method: "GET",
       url: `/api/interviews/${id}/tool-results/call_recover_1`,
@@ -302,7 +296,7 @@ describe("tool-results recovery", () => {
     backend = buildTestBackend();
     const first = await createStartedInterview(backend);
     const second = await createStartedInterview(backend);
-    await toolExec(backend, first.id, { call_id: "call_shared_1", tool: "get_interview_state" });
+    await toolExec(backend, first.id, { call_id: "call_shared_1", tool: "get_current_interview" });
     const cross = await backend.app.inject({
       method: "GET",
       url: `/api/interviews/${second.id}/tool-results/call_shared_1`,

@@ -1,9 +1,8 @@
 import type { InterviewId, ProblemId } from "./ids.js";
-import { asProblemId, asSubmissionId } from "./ids.js";
+import { asProblemId } from "./ids.js";
 import type { Evaluation, EvaluationRecommendation } from "./evaluation.js";
 import type {
   InterviewService,
-  InterviewStateSnapshot,
 } from "./interview-service.js";
 import type { InterviewConfiguration, InterviewStatus } from "./interview.js";
 import type { Problem } from "./problem.js";
@@ -19,8 +18,6 @@ import type { SubmissionService } from "./submission-service.js";
 import type { Clock } from "./interview-service.js";
 import { systemClock } from "./interview-service.js";
 import { buildEvent } from "./interview-event.js";
-import { buildHint, nextHintLevel, parseHintLevel } from "./hints.js";
-import type { HintLevel } from "./hints.js";
 import { domainError } from "./errors.js";
 import type { Result } from "./result.js";
 import { err, ok } from "./result.js";
@@ -44,16 +41,15 @@ import { err, ok } from "./result.js";
 // get_candidate_performance meanwhile.
 //
 // Phase 8 (ADR-002 decision 11, roadmap micro-item 1) collapses the surface to
-// four canonical tools. New code/docs use only these:
+// five canonical tools. New code/docs use only these:
 //   - get_current_interview: interview + configuration + candidate context
 //   - get_current_problem
+//   - get_last_submission
 //   - submit_interview_data: candidate answers/notes + code submissions
 //   - end_interview
-// The pre-Phase-8 names stay accepted as DEPRECATED ALIASES (CLI-harness
-// compatibility) and keep their original result shapes; they are never
-// advertised to the web model. Hints are model-driven conversation (no
-// get_problem_hint tool) and code execution stays the client HTTP path, but
-// the legacy aliases keep working for the harness.
+// V1.1-3 retired the pre-Phase-8 deprecated aliases outright (no
+// compatibility cases in dispatch). Hints are model-driven conversation (no
+// hint tool) and code execution stays the client HTTP path.
 export type CanonicalToolName =
   | "get_current_interview"
   | "get_current_problem"
@@ -61,16 +57,7 @@ export type CanonicalToolName =
   | "submit_interview_data"
   | "end_interview";
 
-export type DeprecatedToolAlias =
-  | "get_interview_state"
-  | "get_candidate_performance"
-  | "get_interview_configuration"
-  | "get_problem_hint"
-  | "record_candidate_answer"
-  | "submit_solution"
-  | "run_code";
-
-export type ToolName = CanonicalToolName | DeprecatedToolAlias;
+export type ToolName = CanonicalToolName;
 
 export const CANONICAL_TOOL_NAMES: readonly CanonicalToolName[] = [
   "get_current_interview",
@@ -80,23 +67,8 @@ export const CANONICAL_TOOL_NAMES: readonly CanonicalToolName[] = [
   "end_interview",
 ];
 
-export const DEPRECATED_TOOL_ALIASES: readonly DeprecatedToolAlias[] = [
-  "get_interview_state",
-  "get_candidate_performance",
-  "get_interview_configuration",
-  "get_problem_hint",
-  "record_candidate_answer",
-  "submit_solution",
-  "run_code",
-];
-
-export const TOOL_NAMES: readonly ToolName[] = [
-  ...CANONICAL_TOOL_NAMES,
-  ...DEPRECATED_TOOL_ALIASES,
-];
-
 export function isToolName(raw: string): raw is ToolName {
-  return (TOOL_NAMES as readonly string[]).includes(raw);
+  return (CANONICAL_TOOL_NAMES as readonly string[]).includes(raw);
 }
 
 export interface ToolContext {
@@ -109,15 +81,6 @@ export type ToolArgs = Record<string, unknown>;
 
 export interface CurrentProblemResult {
   readonly problem: Problem | null;
-}
-
-export interface InterviewStateResult {
-  readonly status: InterviewStatus;
-  readonly currentProblemId: string | null;
-  readonly problemCount: number;
-  readonly responseCount: number;
-  readonly startedAt: string | null;
-  readonly updatedAt: string;
 }
 
 export interface CandidatePerformanceResult {
@@ -136,20 +99,6 @@ export interface EndInterviewResult {
   readonly transitioned: boolean;
 }
 
-export interface InterviewConfigurationResult {
-  readonly configuration: InterviewConfiguration;
-  readonly status: InterviewStatus;
-  readonly problemCount: number;
-  readonly currentProblemId: string | null;
-}
-
-export interface ProblemHintResult {
-  readonly level: HintLevel;
-  readonly hint: string;
-  readonly revealsSolution: false;
-  readonly hintsUsed: number;
-}
-
 export interface RecordAnswerResult {
   readonly recorded: boolean;
   readonly kind: ResponseKind;
@@ -163,17 +112,8 @@ export interface SubmitSolutionResult {
   readonly submissionCount: number;
 }
 
-export interface RunCodeResult {
-  readonly runId: string;
-  readonly submissionId: string;
-  readonly status: RunStatus;
-  readonly passedCount: number;
-  readonly totalCount: number;
-}
-
 // Phase 8 canonical read: interview + configuration + candidate context in one
-// round-trip (folds get_interview_state / get_interview_configuration /
-// get_candidate_performance).
+// round-trip.
 export interface CurrentInterviewResult {
   readonly interview: {
     readonly id: string;
@@ -228,14 +168,10 @@ export type LastSubmissionResult =
 
 export type ToolResult =
   | CurrentProblemResult
-  | InterviewStateResult
   | CandidatePerformanceResult
   | EndInterviewResult
-  | InterviewConfigurationResult
-  | ProblemHintResult
   | RecordAnswerResult
   | SubmitSolutionResult
-  | RunCodeResult
   | CurrentInterviewResult
   | LastSubmissionResult
   | SubmitInterviewDataResult;
@@ -248,11 +184,6 @@ export interface ToolServiceDeps {
   readonly submissions: SubmissionService;
   readonly clock?: Clock;
 }
-
-// F6-4: a run started from the model tool path must finish before the browser
-// forwarder's 8s request timeout, so its timeout is capped below that window.
-// The HTTP runs route keeps the full 100ms..30s range.
-const TOOL_RUN_MAX_TIMEOUT_MS = 6000;
 
 // get_last_submission returns persisted code to the model: bound it like
 // the live editor snapshot (client CANDIDATE_CODE_MAX_CHARS) so a 50k
@@ -295,29 +226,8 @@ export class ToolService {
       case "get_last_submission":
         result = await this.getLastSubmission(ctx);
         break;
-      case "get_interview_state":
-        result = await this.getInterviewState(ctx);
-        break;
-      case "get_candidate_performance":
-        result = await this.getCandidatePerformance(ctx);
-        break;
       case "end_interview":
         result = await this.endInterview(ctx);
-        break;
-      case "get_interview_configuration":
-        result = await this.getInterviewConfiguration(ctx);
-        break;
-      case "get_problem_hint":
-        result = await this.getProblemHint(ctx, args);
-        break;
-      case "record_candidate_answer":
-        result = await this.recordCandidateAnswer(ctx, args);
-        break;
-      case "submit_solution":
-        result = await this.submitSolution(ctx, args);
-        break;
-      case "run_code":
-        result = await this.runCode(ctx, args);
         break;
       // Phase 8 canonical tools.
       case "get_current_interview":
@@ -365,14 +275,6 @@ export class ToolService {
     return ok({ problem: state.value.currentProblem });
   }
 
-  async getInterviewState(
-    ctx: ToolContext,
-  ): Promise<Result<InterviewStateResult>> {
-    const state = await this.interviews.getState(ctx.interviewId);
-    if (!state.ok) return state;
-    return ok(toStateResult(state.value));
-  }
-
   async getLastSubmission(
     ctx: ToolContext,
   ): Promise<Result<LastSubmissionResult>> {
@@ -398,16 +300,7 @@ export class ToolService {
     });
   }
 
-  async getCandidatePerformance(
-    ctx: ToolContext,
-  ): Promise<Result<CandidatePerformanceResult>> {
-    const state = await this.interviews.getState(ctx.interviewId);
-    if (!state.ok) return state;
-    return this.performanceSummary(ctx, state.value.evaluation);
-  }
-
-  // Shared performance assembly for the legacy get_candidate_performance alias
-  // and the canonical get_current_interview tool.
+  // Shared performance assembly for the canonical get_current_interview tool.
   private async performanceSummary(
     ctx: ToolContext,
     evaluation: Evaluation | null,
@@ -443,8 +336,7 @@ export class ToolService {
   }
 
   // Phase 8 canonical read: interview + configuration + candidate context in
-  // one round-trip. Folds the legacy get_interview_state,
-  // get_interview_configuration, and get_candidate_performance results.
+  // one round-trip.
   async getCurrentInterview(
     ctx: ToolContext,
   ): Promise<Result<CurrentInterviewResult>> {
@@ -496,66 +388,9 @@ export class ToolService {
     return ok({ status: next.value.status, transitioned: true });
   }
 
-  // Structured context (HLD 5.2): the model reads backend-owned
-  // configuration instead of inventing interview rules.
-  async getInterviewConfiguration(
-    ctx: ToolContext,
-  ): Promise<Result<InterviewConfigurationResult>> {
-    const state = await this.interviews.getState(ctx.interviewId);
-    if (!state.ok) return state;
-    return ok({
-      configuration: state.value.interview.configuration,
-      status: state.value.interview.status,
-      problemCount: state.value.interview.problems.length,
-      currentProblemId: state.value.currentProblem?.id ?? null,
-    });
-  }
-
-  // Controlled hints (HLD 5.4): tiered guidance, never the solution.
-  // Optional args.level 1..3; defaults to nextHintLevel(hintsUsed).
-  // Every issued hint increments hintsUsed (visible to evaluation).
-  async getProblemHint(
-    ctx: ToolContext,
-    args?: ToolArgs,
-  ): Promise<Result<ProblemHintResult>> {
-    const rawLevel = args?.["level"];
-    let requested: HintLevel | null = null;
-    if (rawLevel !== undefined) {
-      requested = parseHintLevel(rawLevel);
-      if (requested === null) {
-        return err(
-          domainError("VALIDATION_ERROR", "hint level must be 1, 2, or 3", {
-            level: rawLevel,
-          }),
-        );
-      }
-    }
-    const state = await this.interviews.getState(ctx.interviewId);
-    if (!state.ok) return state;
-    if (state.value.currentProblem === null) {
-      return err(
-        domainError(
-          "NO_CURRENT_PROBLEM",
-          `Interview ${ctx.interviewId} has no active problem`,
-          { interviewId: ctx.interviewId },
-        ),
-      );
-    }
-    const hintsUsedSoFar = state.value.evaluation?.hintsUsed ?? 0;
-    const level = requested ?? nextHintLevel(hintsUsedSoFar);
-    const built = buildHint(state.value.currentProblem, level);
-    const recorded = await this.interviews.recordHint(ctx.interviewId, level);
-    if (!recorded.ok) return recorded;
-    return ok({
-      level: built.level,
-      hint: built.hint,
-      revealsSolution: false,
-      hintsUsed: recorded.value,
-    });
-  }
-
   // Model-observed answers become persisted candidate responses (backend
   // owns them from here on). Args: { kind?, content (required), problemId? }.
+  // Reached only through the canonical submit_interview_data write.
   async recordCandidateAnswer(
     ctx: ToolContext,
     args?: ToolArgs,
@@ -610,7 +445,9 @@ export class ToolService {
 
   // Candidate code becomes backend-owned state (HLD 6.1). Args:
   // { language (required: javascript|python), code (required),
-  //   problemId? }. Returns the persisted submission id for run_code.
+  //   problemId? }. Returns the persisted submission id.
+  // Reached only through the canonical submit_interview_data write;
+  // execution stays the client HTTP path (no tool-run entry point).
   async submitSolution(
     ctx: ToolContext,
     args?: ToolArgs,
@@ -655,60 +492,6 @@ export class ToolService {
     });
   }
 
-  // Execute code against caller-supplied cases (HLD 6.2/6.3). Args:
-  // { submissionId? (defaults to latest), testCases (required),
-  //   timeoutMs? }. Timeout/error outcomes are results, not dispatch
-  // failures, so the model can react to them conversationally.
-  async runCode(
-    ctx: ToolContext,
-    args?: ToolArgs,
-  ): Promise<Result<RunCodeResult>> {
-    const rawSubmissionId = args?.["submissionId"];
-    let submissionId = "";
-    if (rawSubmissionId !== undefined) {
-      if (typeof rawSubmissionId !== "string" || rawSubmissionId.trim() === "") {
-        return err(
-          domainError(
-            "VALIDATION_ERROR",
-            "submissionId must be a non-empty string",
-          ),
-        );
-      }
-      submissionId = rawSubmissionId;
-    } else {
-      const latest = await this.submissions.latestSubmission(ctx.interviewId);
-      if (!latest.ok) return latest;
-      if (latest.value === null) {
-        return err(
-          domainError(
-            "NOT_FOUND",
-            `Interview ${ctx.interviewId} has no submissions yet`,
-            { interviewId: ctx.interviewId },
-          ),
-        );
-      }
-      submissionId = latest.value.id;
-    }
-    const rawTimeout = args?.["timeoutMs"];
-    const timeoutMs =
-      typeof rawTimeout === "number" && rawTimeout > TOOL_RUN_MAX_TIMEOUT_MS
-        ? TOOL_RUN_MAX_TIMEOUT_MS
-        : rawTimeout;
-    const run = await this.submissions.runTests(
-      asSubmissionId(submissionId),
-      args?.["testCases"],
-      timeoutMs,
-    );
-    if (!run.ok) return run;
-    return ok({
-      runId: run.value.id,
-      submissionId: run.value.submissionId,
-      status: run.value.status,
-      passedCount: run.value.passedCount,
-      totalCount: run.value.totalCount,
-    });
-  }
-
   // Phase 8 canonical write (folds record_candidate_answer + submit_solution).
   // Args are a discriminated shape by presence:
   //   - { language, code, problemId? }  -> persist a code submission
@@ -740,16 +523,4 @@ export class ToolService {
       responseCount: recorded.value.responseCount,
     });
   }
-}
-
-function toStateResult(snapshot: InterviewStateSnapshot): InterviewStateResult {
-  const interview = snapshot.interview;
-  return {
-    status: interview.status,
-    currentProblemId: snapshot.currentProblem?.id ?? null,
-    problemCount: interview.problems.length,
-    responseCount: snapshot.responseCount,
-    startedAt: interview.startedAt?.toISOString() ?? null,
-    updatedAt: interview.updatedAt.toISOString(),
-  };
 }

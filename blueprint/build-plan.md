@@ -68,7 +68,7 @@ the next unchecked item.
   CI) / `test:e2e` (compose boot + probes, ported out of CI bash) via vitest
   projects + CI jobs; no `test:staging`/`test:prod` until those environments
   exist (V2-3/V2-4)
-- [ ] V1.1-3. **Retirements + drift sweep** - retire the pre-18c problem
+- [x] V1.1-3. **Retirements + drift sweep** - retire the pre-18c problem
   endpoints left byte-identical by 18c and the deprecated CLI-harness tool
   aliases (after confirming no callers); fix the `project-plan.md` §3/§7
   drift as part of this plan update

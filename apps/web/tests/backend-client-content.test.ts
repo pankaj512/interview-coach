@@ -24,6 +24,9 @@ describe("BackendClient problem content", () => {
           body: {
             ok: true,
             content: {
+              id: "prob_move-zeroes",
+              title: "Move Zeroes",
+              difficulty: "Easy",
               description: "Given an array...",
               constraints: ["1 <= n"],
               examples: [{ input: "nums = [1]", output: "[1]" }],
@@ -44,6 +47,9 @@ describe("BackendClient problem content", () => {
     const content = await client.getProblemContent("prob_move-zeroes");
     expect(seen[0]).toContain("/api/problems/prob_move-zeroes/content");
     expect(content.description).toBe("Given an array...");
+    expect(content.id).toBe("prob_move-zeroes");
+    expect(content.title).toBe("Move Zeroes");
+    expect(content.difficulty).toBe("Easy");
     expect(content.constraints).toEqual(["1 <= n"]);
     expect(content.examples).toHaveLength(1);
     expect(content.starters?.python).toBe("# p");
@@ -57,8 +63,11 @@ describe("BackendClient problem content", () => {
         status: 200,
         body: {
           ok: true,
-          content: {
-            description: null,
+            content: {
+              id: "prob_guess-the-word",
+              title: "Guess the Word",
+              difficulty: "Hard",
+              description: null,
             constraints: null,
             examples: null,
             starters: null,
@@ -68,6 +77,8 @@ describe("BackendClient problem content", () => {
       })),
     );
     const content = await client.getProblemContent("prob_guess-the-word");
+    expect(content.id).toBe("prob_guess-the-word");
+    expect(content.title).toBe("Guess the Word");
     expect(content.description).toBeNull();
     expect(content.starters).toBeNull();
     expect(content.runnerLinks).toBeNull();

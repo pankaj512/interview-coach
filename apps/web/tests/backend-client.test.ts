@@ -114,10 +114,10 @@ describe("BackendClient", () => {
       "http://localhost:3000",
       fakeFetch(() => ({
         status: 200,
-        body: { ok: true, callId: "call_1", tool: "get_interview_state", result: { status: "in_progress" }, replayed: true },
+        body: { ok: true, callId: "call_1", tool: "get_current_interview", result: { status: "in_progress" }, replayed: true },
       })),
     );
-    const outcome = await client.toolExec("int_1", "call_1", "get_interview_state");
+    const outcome = await client.toolExec("int_1", "call_1", "get_current_interview");
     expect(outcome.ok).toBe(true);
     if (outcome.ok) {
       expect(outcome.result).toMatchObject({ status: "in_progress" });
@@ -158,7 +158,7 @@ describe("BackendClient", () => {
       "http://localhost:3000",
       fakeFetch(() => ({ status: 503, body: { unexpected: true } })),
     );
-    const error = await client.toolExec("int_1", "call_1", "get_interview_state").catch((e: unknown) => e);
+    const error = await client.toolExec("int_1", "call_1", "get_current_interview").catch((e: unknown) => e);
     expect(error).toBeInstanceOf(BackendApiError);
     expect((error as BackendApiError).retryable).toBe(true);
   });

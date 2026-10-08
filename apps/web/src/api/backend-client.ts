@@ -10,7 +10,6 @@ import type {
   EvaluationStatus,
   InterviewConfiguration,
   InterviewStatus,
-  Problem,
   ProblemContent,
   ProblemList,
   ProblemListQuery,
@@ -372,14 +371,6 @@ export class BackendClient {
     return body.interview;
   }
 
-  async getProblem(id: string): Promise<Problem> {
-    const body = await this.request<{ ok: true; problem: Problem }>(
-      "GET",
-      `/api/problems/${encodeURIComponent(id)}`,
-    );
-    return body.problem;
-  }
-
   async getProblemContent(id: string): Promise<ProblemContent> {
     const body = await this.request<{ ok: true; content: ProblemContent }>(
       "GET",
@@ -482,7 +473,7 @@ export class BackendClient {
       return {
         ok: true,
         callId: typeof record.callId === "string" ? record.callId : callId,
-        tool: (record.tool as ToolName | undefined) ?? "get_interview_state",
+        tool: (record.tool as ToolName | undefined) ?? "get_current_interview",
         result: record.result ?? null,
         replayed: true,
       };
