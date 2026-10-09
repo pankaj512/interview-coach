@@ -1,9 +1,11 @@
-// @interview-coach/store - Postgres schema (HLD Phase 2 / S2).
-// Mirrors the S1 domain entities 1:1. Interviews embed their ordered
-// problem list in the domain; here it lives in `interview_problems` and is
-// reassembled on read. No FK from interviews.candidate_id to users: the S1
-// service accepts arbitrary candidate IDs (auth lands in S7), so a hard FK
-// would break service-level tests. Users table exists for future auth.
+// @interview-coach/store - Postgres schema.
+//
+// Owns: the Drizzle tables mirroring the domain entities (ordered problems
+// live in `interview_problems`, reassembled on read). Surprising: no FK
+// from interviews to users (service-level IDs must stay unconstrained);
+// the users table backs local accounts.
+//
+// History: HLD Phase 2, S2; see docs/SESSION_HANDOFF.md.
 
 import {
   index,

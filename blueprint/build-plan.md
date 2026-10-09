@@ -72,7 +72,7 @@ the next unchecked item.
   endpoints left byte-identical by 18c and the deprecated CLI-harness tool
   aliases (after confirming no callers); fix the `project-plan.md` §3/§7
   drift as part of this plan update
-- [ ] V1.1-4. **Comment readability pass + convention** - rewrite module
+- [x] V1.1-4. **Comment readability pass + convention** - rewrite module
   headers to lead with what/ownership/surprises (history compressed to one
   trailing pointer), why-only function comments where the reason is not
   visible from the signature, plus a comment-convention rule in
@@ -81,7 +81,7 @@ the next unchecked item.
     in coding-standards.md, then rewrite `packages/core/src` headers to it
   - [x] V1.1-4b. **API headers** - rewrite `apps/api/src` headers to the rule
   - [x] V1.1-4c. **Web headers** - rewrite `apps/web/src` headers to the rule
-  - [ ] V1.1-4d. **Store headers** - rewrite `packages/store/src` headers to
+  - [x] V1.1-4d. **Store headers** - rewrite `packages/store/src` headers to
     the rule
 
 ## Deferred to v2 - not next, listed so nothing is lost

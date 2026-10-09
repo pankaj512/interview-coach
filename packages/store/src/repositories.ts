@@ -1,8 +1,10 @@
-// Postgres-backed repositories behind the S1 domain interfaces
-// (packages/core/src/repositories.ts). Same async signatures, so
-// InterviewService/ToolService run unchanged on Postgres.
-// Transaction boundary: InterviewRepository.save writes the interview row +
-// its problem assignments atomically.
+// Postgres-backed repositories.
+//
+// Owns: the domain repository interfaces on Postgres (same async
+// signatures, so services run unchanged). Surprising: interview saves
+// write the row plus its problem assignments atomically.
+//
+// History: S1; see docs/SESSION_HANDOFF.md.
 
 import { and, asc, desc, eq, inArray, ne } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";

@@ -1,11 +1,10 @@
-// Seeds the canonical DSA catalog (raw_content/dsa/dsa-problem-catalog.json,
-// 59 topics / 300 problems) and the server-owned curriculum
-// (content/dsa/dsa-interview-curriculum.json: 12 modules / 59 topics / 300 problems)
-// into Postgres.
-// Idempotent: ProblemRepository.save upserts on stable slug IDs
-// (prob_<slug>), and CurriculumRepository.save replaces the curriculum tree,
-// so re-running is safe across restarts.
-// Usage: `pnpm --filter @interview-coach/store db:seed`.
+// Seeds the catalog and curriculum into Postgres.
+//
+// Owns: the idempotent one-off import (upserts on stable slug IDs, safe
+// across restarts). Surprising: run explicitly via db:seed, never
+// automatically.
+//
+// History: see docs/SESSION_HANDOFF.md.
 
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
