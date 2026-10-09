@@ -1,14 +1,10 @@
-// C++ shape-runner assembly (feature 18a.3).
+// @interview-coach/api - C++ shape-runner assembly.
 //
-// Per-problem bake of the generated `runners/shape-*.cpp` templates (or the
-// hand-written `method_sequence.cpp`): substitutes the class/entry tokens,
-// embeds per-case ops/argsets as Value literals via cppLiteral, and returns
-// the scratch-dir files {submission.cpp, main.cpp, nodes.h}. Sample inputs
-// are parsed TS-side (./samples.js); unparseable inputs become per-case
-// error rows, never dropped cases. Mirrors the Python/JS `assemble*Run`
-// precedent. The assembled main prepends the LeetCode compile environment
-// (bits/stdc++.h + using namespace std) after the Value prelude, since
-// verbatim starters use bare `vector`/`string` with no includes of their own.
+// Owns: the per-problem bake of runner templates (token substitution,
+// per-case Value literals, scratch-dir files). Surprising: unparseable
+// inputs become per-case error rows, never dropped cases.
+//
+// History: 18a.3; see docs/SESSION_HANDOFF.md.
 
 import {
   CPP_SUBMISSION_FILE,

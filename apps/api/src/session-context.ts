@@ -1,14 +1,10 @@
-// @interview-coach/api - realtime session context assembly (Phase 7).
+// @interview-coach/api - realtime session context assembly.
 //
-// The realtime interviewer must start grounded in the learner's profile, the
-// recommended topic, and prior skill state - without owning any learning logic
-// (ADR-002). This module turns the server-owned profile/curriculum/skill state
-// into short reference summaries that travel with the voice-session mint and
-// are injected into the model instructions (voice-session.ts).
+// Owns: turning server-owned profile/curriculum/skill state into short
+// summaries injected into the voice-session mint. Surprising: pure and
+// best-effort (every input optional, degrades to generic); no LLM here.
 //
-// Pure + best-effort: every input is optional, so a service/anonymous caller or
-// a missing problem degrades to the generic interview rather than failing the
-// mint. No LLM here; the realtime model is the only model on this path.
+// History: Phase 7; see docs/SESSION_HANDOFF.md.
 
 import {
   INTERVIEW_TYPE_LABELS,

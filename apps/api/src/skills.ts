@@ -1,11 +1,10 @@
-// @interview-coach/api - skill/curriculum-progress service (Phase 3).
+// @interview-coach/api - skill state storage boundary.
 //
-// Reads and persists the per-user learning state (UserSkillState +
-// UserCurriculumProgress). The mastery algorithm that turns an accepted
-// evaluation into a new level is Phase 10/11; this service is the storage
-// boundary so those phases (and recommendation) never touch repositories
-// directly. Skill state is user-scoped server state: the route resolves the
-// owner from the session, never from the body.
+// Owns: reading and persisting per-user learning state so recommendation
+// and later phases never touch repositories directly. Owner resolved
+// from the session, never the body.
+//
+// History: Phase 3; see docs/SESSION_HANDOFF.md.
 
 import {
   DSA_CURRICULUM_ID,

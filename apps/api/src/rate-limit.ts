@@ -1,16 +1,11 @@
-// @interview-coach/api - owned fixed-window rate limiter (S8a).
+// @interview-coach/api - owned fixed-window rate limiter.
 //
-// Why owned instead of @fastify/rate-limit: that plugin attaches budgets via
-// an `onRoute` hook installed when the plugin executes (deferred to ready()),
-// but buildApp adds every route synchronously before ready() - so a
-// fire-and-forget `void app.register(rateLimit)` silently limited zero routes
-// (S8a audit finding, proven by a max-2 budget that never fired). A root
-// `onRequest` hook installs synchronously in buildApp, so budgets provably
-// apply - every budget below is covered by `tests/hardening.test.ts`.
+// Owns: per-client-IP budgets with 429s in the shared retryable envelope.
+// Surprising: hand-rolled, not @fastify/rate-limit
+// (its deferred hook silently limited zero synchronously-added routes);
+// the root onRequest hook applies provably, covered by hardening tests.
 //
-// Shape: per-client-IP fixed windows (global + tighter budgets on the
-// expensive paths). 429s use the shared JSON envelope with retryable:true so
-// the browser forwarder backs off and retries with the same call_id.
+// History: S8a; see docs/SESSION_HANDOFF.md.
 
 export interface RateBudget {
   readonly max: number;

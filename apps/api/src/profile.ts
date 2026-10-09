@@ -1,9 +1,10 @@
-// @interview-coach/api - profile application service (Phase 2).
+// @interview-coach/api - profile application service.
 //
-// Owns the create/edit rule for a user's profile: the domain validates the
-// fields and preserves createdAt; the service picks create-vs-update and
-// persists. The route layer resolves the owning user id from the session, so
-// this service never trusts a caller-supplied user id.
+// Owns: the create-vs-update rule for a user profile (domain validates,
+// service persists). Surprising: never trusts a caller-supplied user id -
+// the route layer resolves ownership from the session.
+//
+// History: Phase 2; see docs/SESSION_HANDOFF.md.
 
 import {
   createUserProfile,

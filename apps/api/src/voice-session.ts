@@ -1,17 +1,11 @@
-// Voice session minting + session parameters (HLD 3.1/3.2, frozen section 3).
+// @interview-coach/api - voice session minting and parameters.
 //
-// Credential boundary: privileged Azure credentials never reach the client.
-// The backend mints a short-lived credential and hands the browser ONLY the
-// ephemeral credential plus public connection parameters (endpoint, model,
-// api version, voice, VAD config). Browser <-> Voice Live stays direct; no
-// backend-proxied realtime audio (frozen section 2).
+// Owns: the credential boundary (privileged Azure credentials never reach
+// the client; audio stays direct). Surprising: Entra minting
+// needs provider infra and is still parked; until then local-dev api-key
+// mode plus an explicit 503 when unconfigured.
 //
-// Voice Live auth per the 2026-04-10 API reference supports Microsoft Entra
-// (Bearer, recommended) or an api-key header/query. Entra minting (production)
-// needs Azure identity infra and lands with S7 auth; until then the server
-// supports local-dev-only api-key mode plus an explicit 503 when unconfigured.
-// No mint URLs are guessed here: the provider interface keeps the Azure REST
-// call behind one seam so S6/S7 can swap it without touching routes.
+// History: HLD 3.1/3.2; see docs/SESSION_HANDOFF.md.
 
 import type { InterviewId } from "@interview-coach/core";
 

@@ -1,14 +1,11 @@
-// @interview-coach/api - async evaluation service (Phase 10).
+// @interview-coach/api - async evaluation service.
 //
-// Turns a completed interview into a persisted, validated evaluation. `end`
-// enqueues a durable EvaluationJob; the runner assembles the context, calls
-// the server-side EvaluationModel, validates the proposal, and falls back
-// deterministically when the model is unavailable or invalid (ADR-002). The
-// interview is never lost: a failed job marks `evaluationStatus: "failed"`
-// and leaves the interview intact.
+// Owns: turning a completed interview into a persisted Evaluation (`end`
+// enqueues a durable job; the runner assembles, evaluates, validates).
+// Surprising: deterministic fallback plus failed-job marking mean an
+// interview is never lost.
 //
-// The runner is in-process for v1; tests inject `runSynchronously` so the
-// enqueue path is deterministic without timers.
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import {
   MAX_EVALUATION_JOB_ATTEMPTS,

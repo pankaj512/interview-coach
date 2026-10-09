@@ -1,17 +1,11 @@
-// @interview-coach/api - service auth gate + caller ownership (S8a/S8c).
+// @interview-coach/api - service auth gate and caller ownership.
 //
-// Two credential kinds (HLD 7.1, ADR-001):
-//   service - the shared API_AUTH_TOKEN (CLI/admin; bypasses ownership).
-//   user    - an opaque session token from /api/auth/* (ownership enforced).
-// Open local-dev mode (no API_AUTH_TOKEN) allows anonymous callers with
-// client-supplied candidate IDs, exactly like S7 and earlier; user sessions
-// still resolve there when presented.
+// Owns: the two credential kinds (shared API_AUTH_TOKEN vs user session
+// tokens) and per-user interview ownership (foreign reads 404, no oracle).
+// Surprising: open local-dev mode allows anonymous callers; the model
+// never calls auth routes.
 //
-// Per-user ownership (HLD 7.2): any caller authenticated as a user may only
-// touch interviews whose candidateId is their own user id. Foreign or missing
-// interviews both read 404 (no existence oracle). The model never calls
-// auth routes; per-interview authz for OIDC/social (S8d) reuses the same
-// session rows, so no route changes are needed then.
+// History: S8a/S8c; see docs/SESSION_HANDOFF.md.
 
 import { createHash, timingSafeEqual as nodeTimingSafeEqual } from "node:crypto";
 import type { FastifyInstance, FastifyRequest } from "fastify";

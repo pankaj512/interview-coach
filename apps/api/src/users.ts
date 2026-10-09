@@ -1,14 +1,11 @@
-// @interview-coach/api - local account service (HLD 7.1, S8c).
+// @interview-coach/api - local account service.
 //
-// Self-registered email+password accounts with opaque bearer sessions.
-// Cryptography: scrypt for passwords (N=16384, r=8, p=1), 32-byte random
-// session tokens stored as SHA-256 hex (the raw token is shown once at
-// login/register and never persisted). Timing-safe comparisons throughout.
+// Owns: self-registered email+password accounts with opaque bearer sessions
+// (scrypt passwords, SHA-256 token hashes, timing-safe compares).
+// Surprising: owns the *local* credential path only; a second OIDC issuer
+// can later mint the same session rows with no route changes.
 //
-// Seams for S8d (social sign-in): this module owns the *local* credential
-// path only. OIDC/Social arrives as a second issuer that mints the same
-// UserSession rows - routes resolve a session, never an issuer - so no route
-// changes are needed when Google/GitHub/Microsoft land.
+// History: HLD 7.1, S8c; see docs/SESSION_HANDOFF.md.
 
 import { createHash, randomBytes, scrypt, timingSafeEqual } from "node:crypto";
 import {

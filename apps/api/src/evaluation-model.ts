@@ -1,13 +1,11 @@
-// @interview-coach/api - server-side evaluation model (Phase 10).
+// @interview-coach/api - server-side evaluation model.
 //
-// The third LLM surface (ADR-002): server-side only, never a realtime tool.
-// It reads the assembled interview context (transcript, code, runs, topic,
-// skill) and proposes a structured evaluation. The model is advisory: the
-// service validates the proposal against the domain contract and falls back
-// deterministically on any failure, so an interview is never lost.
+// Owns: the advisory LLM surface proposing structured evaluations,
+// validated with deterministic fallback so no interview is lost.
+// Surprising: failures are data, not exceptions - every failure mode
+// yields `{ proposal: null, error }`.
 //
-// Failures are data, not exceptions: timeout/HTTP/unparseable/invalid all
-// yield `{ proposal: null, error }`.
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import {
   validateEvaluationProposal,

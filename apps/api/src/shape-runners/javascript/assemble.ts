@@ -1,15 +1,11 @@
-// @interview-coach/api - JavaScript shape-runner assembly (feature 18a.2).
+// @interview-coach/api - JavaScript shape-runner assembly.
 //
-// Builds the per-run files for a linked problem: the verbatim candidate
-// starter (a free function or a constructor + prototype methods) plus an
-// appended export shim so the runner can reach it as `subject`, plus the
-// baked shape runner and the shared `nodes.js` / `samples.js` helpers. The
-// caller writes `cases.json` from the dataset examples (raw input/output
-// strings) and executes `runner.js` with `node`; each stdout line is
-// `{"name","actual"}` or `{"name","error"}`. The shim mirrors the
-// `JS_EXPORT_SHIM` precedent in `docker-runner.ts` (typeof-guarded lookup,
-// never a crash when the subject is absent). No changes to
-// `docker-runner.ts` in this slice; 18c owns execution wiring.
+// Owns: building the per-run files for a linked problem (verbatim starter
+// plus export shim, baked shape runner, shared helpers). Surprising: the
+// shim mirrors the JS_EXPORT_SHIM precedent (typeof-guarded, never crashes
+// on an absent subject).
+//
+// History: 18a.2; see docs/SESSION_HANDOFF.md.
 
 import { readFileSync } from "node:fs";
 

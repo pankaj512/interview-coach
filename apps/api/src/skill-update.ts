@@ -1,11 +1,10 @@
-// @interview-coach/api - deterministic skill/curriculum update (Phase 11).
+// @interview-coach/api - skill update storage boundary.
 //
-// Applies a persisted ("accepted") evaluation to the user's learning state:
-// the mastery level for the evaluated topic and the curriculum pointer. The
-// decision is a pure function of persisted state (see
-// `@interview-coach/core` `skill-update.ts`); this service is the storage
-// boundary, invoked by the async evaluation job - never a realtime tool and
-// never a route (ADR-002).
+// Owns: applying a persisted evaluation to mastery and curriculum pointer
+// via the core pure function. Surprising: invoked only by the async
+// evaluation job, never a route or realtime tool.
+//
+// History: Phase 11; see docs/SESSION_HANDOFF.md.
 
 import {
   planSkillUpdate,

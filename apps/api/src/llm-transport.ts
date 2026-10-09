@@ -1,21 +1,11 @@
 // @interview-coach/api - shared server-side LLM chat transport.
 //
-// One timeout/abort/retry chat-completions call shared by the three second-AI
-// model classes (recommendation, evaluation, submit-verdict), with one request
-// entry per provider. Providers speak the OpenAI chat-completions envelope
-// both ways (`response_format: {type: "json_object"}`,
-// `choices[0].message.content`); only URL, auth, model selection, and the
-// JSON-safe temperature differ:
+// Owns: one timeout/abort/retry chat-completions call shared by the three
+// second-AI model classes, with one request entry per provider (Azure +
+// Inception behind LLM_PROVIDER). Surprising: failures are data, not
+// exceptions (`{ raw: null, error }`); Mercury needs temperature 0.7.
 //
-// - azure: `{ENDPOINT}/openai/deployments/{DEPLOYMENT}/chat/completions?api-version=...`
-//   with the `api-key` header and temperature 0.2, no `model` field.
-// - inception: `{BASE_URL}/chat/completions` with `Authorization: Bearer` and
-//   a `model` field (default mercury-2.5). Mercury resets temperatures below
-//   0.5 server-side with a warning, so this entry sends 0.7, never 0.2.
-//
-// Failures are data, not exceptions (same contract the model classes had
-// inline): `{ raw: null, error }` for timeouts, HTTP errors, and exhausted
-// retries. Parsing stays in the model classes with their own messages.
+// History: 21; see docs/SESSION_HANDOFF.md.
 
 import type { LlmConfig } from "./config.js";
 

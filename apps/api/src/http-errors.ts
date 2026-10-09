@@ -1,8 +1,11 @@
-// HTTP error envelope + domain -> HTTP mapping (S3).
-// Every error response is JSON: { ok: false, error: { code, message, retryable } }.
-// `retryable` mirrors the browser forwarder contract (frozen section 5):
-// retry only timeout/network/5xx/retryable:true. Domain failures are
-// permanent (retryable:false) and stored for replay by the idempotency store.
+// @interview-coach/api - HTTP error envelope and domain mapping.
+//
+// Owns: every error response as `{ ok: false, error: { code, message,
+// retryable } }` plus the domain-to-HTTP mapping. `retryable` mirrors the
+// browser forwarder contract: retry only timeout/network/5xx. Domain
+// failures are permanent and stored for replay.
+//
+// History: S3; see docs/SESSION_HANDOFF.md.
 
 import type { FastifyReply } from "fastify";
 import type { DomainError, DomainErrorCode } from "@interview-coach/core";

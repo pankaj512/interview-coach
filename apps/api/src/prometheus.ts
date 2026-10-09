@@ -1,10 +1,11 @@
-// @interview-coach/api - Prometheus text exposition (HLD 8.4, S8b).
+// @interview-coach/api - Prometheus text exposition.
 //
-// Renders the BackendMetrics snapshot in Prometheus text format 0.0.4 for
-// scraping (no client library - the snapshot is small integers only, so a
-// hand-rolled renderer is exact and dependency-free). Served at
-// GET /api/metrics/prometheus, auth-gated like /api/metrics. Counter names
-// are stable; S8b+ may only add new series, never rename.
+// Owns: rendering the metrics snapshot in Prometheus text format for
+// scraping at GET /api/metrics/prometheus. Surprising: hand-rolled
+// renderer, no client library (small integers only, exact and
+// dependency-free); counter names are stable, only add series.
+//
+// History: HLD 8.4, S8b; see docs/SESSION_HANDOFF.md.
 
 import type { MetricsSnapshot } from "./metrics.js";
 

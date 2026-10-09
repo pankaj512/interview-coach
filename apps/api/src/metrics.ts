@@ -1,9 +1,10 @@
-// @interview-coach/api - in-memory operational counters (HLD 8.4, S8a).
+// @interview-coach/api - in-memory operational counters.
 //
-// Single-process JSON counters behind GET /api/metrics (auth-gated like the
-// rest of /api). No Prometheus dependency in S8a; the shape is deliberately
-// trivially scrapable so S8b can swap in a real exporter without touching
-// call sites. Resets on process restart (documented, not hidden).
+// Owns: single-process JSON counters behind GET /api/metrics. Surprising:
+// resets on process restart by design; the shape is trivially scrapable so
+// a real exporter can swap in without touching call sites.
+//
+// History: HLD 8.4, S8a; see docs/SESSION_HANDOFF.md.
 
 import type { InterviewStatus } from "@interview-coach/core";
 

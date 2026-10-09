@@ -1,15 +1,11 @@
-// @interview-coach/api - server-side recommendation model (Phase 4).
+// @interview-coach/api - server-side recommendation model.
 //
-// Implements the domain `RecommendationModel` port against an Azure AI Foundry
-// (Azure OpenAI-compatible) chat-completions deployment. This is the *second*
-// LLM surface (ADR-002): separate from Azure Voice Live, server-side only, and
-// never a realtime tool. The model is advisory - it may only pick a
-// (topicId, problemId) pair from the backend-built candidate set; the service
-// validates and persists the result.
+// Owns: the advisory LLM surface proposing a (topicId, problemId) pair
+// from the backend-built candidate set; the service validates and
+// persists. Surprising: failures are data (`{ proposal: null, error }`),
+// and no credential ever leaves this process.
 //
-// Failures are data, not exceptions: a timeout, HTTP error, or unparseable
-// body yields `{ proposal: null, error }`, so `RecommendationService` falls
-// back deterministically. No credential ever leaves this process.
+// History: Phase 4; see docs/SESSION_HANDOFF.md.
 
 import type {
   RecommendationModel,

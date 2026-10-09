@@ -1,18 +1,11 @@
-// @interview-coach/api - C++ candidate harness (feature 16).
+// @interview-coach/api - C++ candidate harness.
 //
-// Candidate contract (mirrors the JS/Python "callable named solve" rule):
-// the submission defines `solve` taking/returning `Value`, e.g.
-//   Value solve(Value a, Value b) { ... }
-// `Value` is declared in the generated prelude below, so the submission
-// sees it. Do not define `main` (a duplicate definition is a compile
-// error, surfaced as an `error` run).
+// Owns: the candidate contract (submission defines `solve`, never `main`)
+// and case crossing as generated C++ literals. Surprising: verdicts print
+// as one JSON object per stdout line; NaN/infinities embed as
+// "__nonfinite__" markers so they never equal null.
 //
-// Cases cross the boundary as generated C++ literals (cppLiteral), not
-// JSON: the program prints one JSON object per stdout line
-// ({"name","actual"} or {"name","error"}), which the Docker runner parses
-// TS-side and compares with the existing canonical-compare path. NaN and
-// infinities embed as "__nonfinite__:<label>" markers so they never
-// compare equal to null (same F6-5 rule as the JS/Python harnesses).
+// History: 16; see docs/SESSION_HANDOFF.md.
 
 /** Serialize a JSON value to a C++ `Value(...)` expression. */
 export function cppLiteral(value: unknown): string {

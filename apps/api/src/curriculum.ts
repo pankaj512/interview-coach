@@ -1,9 +1,10 @@
-// @interview-coach/api - curriculum application service (Phase 3).
+// @interview-coach/api - curriculum application service.
 //
-// Reads the server-owned curriculum (static seeded config). The backend is the
-// only source: the browser never bundles the curriculum file, and the model
-// never reads it directly. v1 has a single curriculum (dsa), so topic lookup
-// scans the loaded curricula.
+// Owns: reads over the server-owned curriculum (single `dsa` curriculum in
+// v1; topic lookup scans the loaded curricula). The browser never bundles
+// the file and the model never reads it directly.
+//
+// History: Phase 3; see docs/SESSION_HANDOFF.md.
 
 import {
   DSA_CURRICULUM_ID,

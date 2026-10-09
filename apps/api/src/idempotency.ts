@@ -1,13 +1,11 @@
-// Generic call_id idempotency (frozen section 5).
-// One model function call can arrive via multiple Voice Live events, and the
-// browser forwarder retries timeouts/network/5xx with the SAME call_id.
-// This store guarantees: unseen -> execute once; executing -> singleflight
-// share one execution; completed/failed-permanent -> replay stored result.
-// Transient throws are NOT stored, so a retry re-executes.
+// @interview-coach/api - call_id idempotency store.
 //
-// MVP is an in-memory Map (cap ~2000, TTL 30 min, 60 s sweep). Promotion to
-// Postgres tool_call_records lands only when multi-instance or restart-safe
-// side effects are required (S8).
+// Owns: exactly-once execution per call_id (unseen -> run once; executing
+// -> singleflight; completed/permanent-failure -> replay). Transient throws
+// are never stored, so a retry re-executes. Surprising: in-memory Map
+// (cap ~2000, TTL 30 min); Postgres promotion only for multi-instance.
+//
+// History: frozen section 5; see docs/SESSION_HANDOFF.md.
 
 import { domainError, type DomainError } from "@interview-coach/core";
 

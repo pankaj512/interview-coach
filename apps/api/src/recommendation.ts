@@ -1,14 +1,11 @@
-// @interview-coach/api - recommendation application service (Phase 4).
+// @interview-coach/api - recommendation application service.
 //
-// Owns the recommendation rule: build a deterministic candidate set from the
-// server-owned curriculum + the user's skill/progress state, ask the
-// server-side LLM (if configured) to pick from it, validate the proposal, and
-// persist the result. If the model is unavailable, slow, or invalid, the
-// deterministic fallback guarantees a result - the loop never dead-ends.
+// Owns: the recommendation rule (deterministic candidates, optional LLM
+// pick, validation, persistence, deterministic fallback so the loop never
+// dead-ends). Surprising: user-scoped by session, never by body; only
+// backend-validated candidates persist.
 //
-// The recommendation is user-scoped server state: the route resolves the owner
-// from the session, never the body. The LLM never becomes the system of record
-// (ADR-002): only backend-validated candidates are persisted.
+// History: Phase 4; see docs/SESSION_HANDOFF.md.
 
 import {
   DSA_CURRICULUM_ID,

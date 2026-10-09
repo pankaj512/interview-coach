@@ -1,12 +1,10 @@
-// @interview-coach/api - Python shape-runner assembly (feature 18a.1).
+// @interview-coach/api - Python shape-runner assembly.
 //
-// Builds the per-run files for a linked problem: the candidate `Solution`
-// code (verbatim starter or editor content) with mechanical empty-body repair
-// so truncated stubs import, plus the baked shape runner and the shared
-// `nodes.py` / `samples.py` helpers. The caller writes `cases.json` from the
-// dataset examples (raw input/output strings) and executes `runner.py` with
-// `python3`; each stdout line is `{"name","actual"}` or `{"name","error"}`.
-// No changes to `docker-runner.ts` in this slice; 18c owns execution wiring.
+// Owns: building the per-run files for a linked problem (candidate
+// Solution code with mechanical empty-body repair, baked shape runner,
+// shared helpers).
+//
+// History: 18a.1; see docs/SESSION_HANDOFF.md.
 
 import { readFileSync } from "node:fs";
 

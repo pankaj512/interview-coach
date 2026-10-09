@@ -1,9 +1,10 @@
-// @interview-coach/api - evaluation input assembly (Phase 10).
+// @interview-coach/api - evaluation input assembly.
 //
-// Pure mapping from backend-owned state to the evaluation model's input. The
-// transcript, candidate responses, code submissions, and run verdicts are all
-// passed as evidence; the model never reads repositories directly (ADR-002).
-// No LLM here.
+// Owns: the pure mapping from backend-owned state (transcript, responses,
+// submissions, runs) to the evaluation model's input. The model never
+// reads repositories directly. No LLM here.
+//
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import type {
   CandidateResponse,

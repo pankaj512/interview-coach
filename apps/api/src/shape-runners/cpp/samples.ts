@@ -1,11 +1,11 @@
-// TS-side sample-input parsing for the C++ shape runners (feature 18a.3).
+// @interview-coach/api - TS-side sample parsing for C++ shape runners.
 //
-// Cache examples carry LeetCode `name = value, ...` text shared across
-// languages (Python-literal syntax: single quotes, True/False/None), or the
-// method-call form (a JSON op-name array followed by a JSON arg-array array).
-// Parsing happens TS-side; cases cross into C++ as embedded Value literals
-// via cppLiteral, so no C++ parsing exists. Unparseable inputs throw - the
-// assembler embeds them as per-case error rows, never drops them.
+// Owns: parsing LeetCode sample text (Python-literal or method-call form)
+// into args/ops structures. Surprising: no C++ parsing exists; cases
+// cross as embedded Value literals, and unparseable inputs throw for the
+// assembler to embed as error rows.
+//
+// History: 18a.3; see docs/SESSION_HANDOFF.md.
 
 export type ParsedSample =
   | { readonly kind: "args"; readonly args: readonly unknown[] }

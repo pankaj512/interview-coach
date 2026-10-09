@@ -1,17 +1,11 @@
-// @interview-coach/api - Docker-isolated code runner (feature 16).
+// @interview-coach/api - Docker-isolated code runner.
 //
-// Replaces the local runner (deleted) behind the domain CodeExecutor port.
-// Candidate code is untrusted input: this is the security boundary. Every
-// execution runs in a throwaway container with --network=none, memory / CPU
-// / pids caps, a read-only rootfs, a read-only submission mount, an
-// unprivileged user, dropped capabilities, and a scrubbed environment
-// (HOME/TMPDIR/NODE_OPTIONS only - never host secrets). Containers are
-// always removed, including after timeouts (kill, then rm -f), so a killed
-// run cannot linger.
+// Owns: executing untrusted candidate code in throwaway containers
+// (--network=none, caps, read-only rootfs, unprivileged user, scrubbed
+// env). Surprising: without a daemon, runs fail closed as `error`
+// outcomes; images must be pre-pulled or pullable.
 //
-// Without a reachable daemon, executions fail closed as `error` outcomes
-// (routes keep their 201-never-5xx verdict contract); images must be
-// pre-pulled or pullable (lazy ensure-once per runner instance).
+// History: 16; see docs/SESSION_HANDOFF.md.
 
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
