@@ -1,9 +1,9 @@
-// @interview-coach/web - Dashboard derivations (Phase 5).
+// @interview-coach/web - dashboard derivations.
 //
-// Pure functions over server-owned state (profile, recommendation, curriculum,
-// skill state). The Dashboard renders these; it never derives learning state
-// from browser storage. Every value here is a presentation mapping of a
-// backend response - the backend remains the system of record.
+// Owns: pure presentation mappings from server-owned state; the Dashboard
+// never derives learning state from browser storage.
+//
+// History: Phase 5; see docs/SESSION_HANDOFF.md.
 
 import type {
   MasteryLevel,

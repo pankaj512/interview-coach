@@ -1,9 +1,10 @@
-// Interview history view model (H-History / Dashboard / Progress).
+// Interview history view model.
 //
-// Phase 9: history is server-owned. The browser no longer keeps a local
-// index (localStorage authority retired); the screens render a derived view
-// model built from `GET /api/interviews` summaries. Detail views still
-// re-fetch canonical state from the backend.
+// Owns: the derived view built from `GET /api/interviews` summaries.
+// Surprising: no local index (localStorage authority retired); detail
+// views still re-fetch canonical backend state.
+//
+// History: Phase 9; see docs/SESSION_HANDOFF.md.
 
 import type { EvaluationStatus, InterviewStatus, SerializedEvaluation, SerializedInterviewSummary } from "./api/types.js";
 import type { BackendClient } from "./api/backend-client.js";

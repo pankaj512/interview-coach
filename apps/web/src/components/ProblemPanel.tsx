@@ -1,9 +1,10 @@
-// H-Live left panel (feature 17b): the canonical problem on the approved
-// prototype look. Read-only view of backend-owned problem state: title,
-// difficulty, description, constraints, and the sample test cases. The
-// client never invents problem content; empty sections say so explicitly.
-// Statement enrichment arrives via the 18c content endpoint (the `content`
-// prop); snapshot/fallback fields render immediately underneath.
+// Live-room problem pane.
+//
+// Owns: the read-only problem view (title, difficulty, statement,
+// constraints, samples). The client never invents content; empty
+// sections say so, and snapshot fields render under the content slice.
+//
+// History: 17b, 18c; see docs/SESSION_HANDOFF.md.
 
 import type { ProblemContent, SerializedStateSnapshot } from "../api/types.js";
 

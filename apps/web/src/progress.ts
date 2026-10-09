@@ -1,8 +1,9 @@
-// Progress + weak-area derivations (ux-spec §27-§29).
+// Progress and weak-area derivations.
 //
-// Pure functions over server-owned state: interview history summaries (Phase 9)
-// plus the skill snapshot/curriculum (Phase 3). No browser-local authority:
-// every value here is derived from backend responses.
+// Owns: pure functions over server-owned history summaries plus the skill
+// snapshot/curriculum. No browser-local authority.
+//
+// History: ux-spec; see docs/SESSION_HANDOFF.md.
 
 import type { HistoryEntry } from "./history.js";
 import type { SerializedCurriculum, SerializedUserSkillState } from "./api/types.js";

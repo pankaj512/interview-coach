@@ -1,9 +1,10 @@
-// @interview-coach/web - PCM audio helpers (frozen section 3).
+// @interview-coach/web - PCM audio helpers.
 //
-// Audio: PCM16 / 24 kHz / mono both directions. The browser captures at the
-// device rate (often 48 kHz stereo) and must downmix + resample before
-// sending; playback does the reverse. Env-agnostic (no AudioContext here) so
-// vitest covers conversion exactly.
+// Owns: device-rate capture downmix/resample plus playback conversion for
+// the PCM16/24kHz/mono contract. Env-agnostic (no AudioContext), so unit
+// tests cover conversion exactly.
+//
+// History: frozen section 3; see docs/SESSION_HANDOFF.md.
 
 export const TARGET_SAMPLE_RATE_HZ = 24_000;
 export const TARGET_CHANNELS = 1;

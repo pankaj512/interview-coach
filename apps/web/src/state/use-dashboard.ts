@@ -1,11 +1,11 @@
-// @interview-coach/web - Dashboard data hook (Phase 5).
+// @interview-coach/web - dashboard data hook.
 //
-// Loads the server-owned learning state the Dashboard renders: the current
-// recommendation (generating one deterministically if none exists), the
-// curriculum (for topic/module names), the per-user skill snapshot, and the
-// recommended problem. No localStorage authority - the browser only presents
-// backend state. A single in-flight load is shared so React StrictMode's
-// double effect does not generate a recommendation twice.
+// Owns: loading the server-owned learning state the Dashboard renders
+// (recommendation, curriculum, skills, recommended problem). Surprising:
+// no localStorage authority, and one shared in-flight load so StrictMode
+// double effects never generate twice.
+//
+// History: Phase 5; see docs/SESSION_HANDOFF.md.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";

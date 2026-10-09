@@ -1,9 +1,10 @@
-// @interview-coach/web - runtime config (S4).
+// @interview-coach/web - runtime config.
 //
-// Frozen section 7: the bundle reads ONLY `VITE_BACKEND_URL`. There is no
-// `VITE_AZURE_*` and no Azure SDK in the client; Voice Live credentials arrive
-// per-interview from POST /api/interviews/:id/voice-session (S3) and live
-// only in memory for the duration of that session.
+// Owns: the bundle's only server address (`VITE_BACKEND_URL`) plus the
+// local-dev service token. Surprising: no `VITE_AZURE_*` ever; voice
+// credentials arrive per-interview and live only in memory.
+//
+// History: S4; see docs/SESSION_HANDOFF.md.
 
 export interface WebClientConfig {
   readonly backendUrl: string;

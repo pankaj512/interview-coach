@@ -1,9 +1,10 @@
-// Client URL routing (feature 20): History-API sync without a router dep.
+// Client URL routing without a router dependency.
 //
-// The `nav`/`flow` state in App.tsx stays the source of truth; this module
-// owns the total, side-effect-free mapping between that state and paths, plus
-// thin guarded history helpers. Guards (same-path skips) keep StrictMode
-// double-invocation and repeated normalizations from writing dup entries.
+// Owns: the total, side-effect-free mapping between App nav/flow state and
+// paths, plus guarded history helpers. Surprising: guards keep StrictMode
+// double-invocation from writing duplicate entries.
+//
+// History: 20; see docs/SESSION_HANDOFF.md.
 
 import type { NavKey } from "../components/AppShell.js";
 

@@ -1,11 +1,11 @@
-// @interview-coach/web - browser mic/playback adapters (S4).
+// @interview-coach/web - browser mic/playback adapters.
 //
-// Thin WebAudio adapters over the tested `audio.ts` pipeline. Capture honors
-// the frozen audio contract (PCM16 / 24 kHz / mono to Voice Live); device
-// echo cancellation + noise suppression stay enabled in getUserMedia as a
-// complement to the server-side processing the session requests. These
-// adapters need a real microphone/speakers and are therefore NOT unit-tested;
-// all conversion logic they rely on is covered in tests/audio.test.ts.
+// Owns: thin WebAudio wiring over the tested audio pipeline (echo
+// cancellation stays enabled as a complement to server processing).
+// Surprising: NOT unit-tested (needs real mic/speakers); the conversion
+// logic underneath is covered instead.
+//
+// History: S4; see docs/SESSION_HANDOFF.md.
 
 import { pcm16ToBase64, pcm16ToFloat32, prepareCaptureChunk, resampleLinear } from "./audio.js";
 import type { MicCapture, PlaybackSink } from "./voice-client.js";

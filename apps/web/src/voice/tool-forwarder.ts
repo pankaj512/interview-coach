@@ -1,22 +1,11 @@
-// @interview-coach/web - tool-call forwarder (frozen section 5).
+// @interview-coach/web - tool-call forwarder.
 //
-// Tool path: Voice Live --function_call--> Browser --POST /tool-exec-->
-// Fastify --result--> Browser --function_call_output--> Voice Live.
+// Owns: the Voice Live to tool-exec path with 8s timeout, 2 retries,
+// backoff, and exactly-once output per call_id. Surprising: only
+// timeout/network/5xx retry; 4xx outcomes return as model-facing data.
+// Time and jitter are injected so tests need no timers or network.
 //
-// Locked defaults honored here:
-// - Preserve the original Voice Live `call_id` on every attempt.
-// - 8s request timeout, max 2 retries (3 attempts), same `call_id`.
-// - Backoff ~300ms -> 800ms + jitter between attempts.
-// - Retry ONLY timeout/network/502/503/504/`retryable:true`. Never retry
-//   4xx / `retryable:false` / validation / authz - those are permanent,
-//   model-facing results.
-// - Exactly-once `function_call_output` per `call_id` (submitted-set).
-// - Reconnect: queue unacked outputs (bounded 20), flush on reconnect
-//   skipping acked; reload rehydration goes through `GET tool-results`
-//   (see pending-store.ts + voice-client.ts).
-//
-// Pure logic: time, sleep, and jitter are injected so vitest covers the
-// policy without timers or the network.
+// History: frozen section 5; see docs/SESSION_HANDOFF.md.
 
 import { BackendApiError } from "../api/backend-client.js";
 import type { ToolArgs, ToolExecOutcome, ToolName } from "../api/types.js";

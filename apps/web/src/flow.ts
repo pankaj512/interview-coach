@@ -1,10 +1,9 @@
-// @interview-coach/web - interview ritual flow types (Phase 6).
+// @interview-coach/web - interview ritual flow types.
 //
-// The manual Setup screen is retired (roadmap Phase 6): the system chooses the
-// practice from the server recommendation. The Lobby is the final pre-interview
-// step and carries the recommendation + resolved problem forward to the live
-// room. These types are the shared contract between the Lobby, the LiveScreen
-// and the App router.
+// Owns: the shared contract between Lobby, LiveScreen, and the App router
+// (recommendation + resolved problem carried forward, no manual setup).
+//
+// History: Phase 6; see docs/SESSION_HANDOFF.md.
 
 import type {
   ProblemContent,

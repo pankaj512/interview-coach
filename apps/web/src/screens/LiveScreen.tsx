@@ -1,9 +1,10 @@
-// H-Live (feature 17b): the voice-only interview room on the approved
-// prototype look. Left: the problem (title + sample test case, title-only
-// until item 18). Right: the code editor with a single "Test sample cases"
-// action.
-// Conversation is voice-only - no transcript panel and no text composer.
-// All session logic, hooks, and tool wiring preserved.
+// Voice-only interview room.
+//
+// Owns: problem pane plus code editor with sample-test runs; End is the
+// only interview control. Surprising: voice-only by design (no transcript
+// panel, no text composer).
+//
+// History: 17b; see docs/SESSION_HANDOFF.md.
 
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { BackendClient } from "../api/backend-client.js";

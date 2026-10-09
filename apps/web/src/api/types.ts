@@ -1,9 +1,10 @@
-// @interview-coach/web - backend API shapes (S4).
+// @interview-coach/web - backend API shapes.
 //
-// Structural mirrors of the S3 serializers (apps/api/src/*.ts). The
-// web client deliberately does NOT depend on @interview-coach/core: domain
-// pulls `node:crypto`, which must never enter the browser bundle. Backend
-// owns truth; these types are read-only views of backend-owned state.
+// Owns: structural mirrors of the backend serializers. Surprising: never
+// imports @interview-coach/core (it pulls node:crypto into the bundle);
+// backend owns truth, these are read-only views.
+//
+// History: S4; see docs/SESSION_HANDOFF.md.
 
 export type InterviewStatus =
   | "created"

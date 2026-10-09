@@ -1,15 +1,11 @@
-// @interview-coach/web - Voice Live session wire format (S4).
+// @interview-coach/web - Voice Live session wire format.
 //
-// Mirrors the CLI regression harness
-// (/home/pankaj/dev/Projects/InterviewCoachCli/src/voice-session.ts + tools.ts)
-// so browser and CLI configure the realtime session identically. The only
-// browser-specific difference is auth transport: the CLI sets an `api-key`
-// header (node `ws`), which browsers cannot do, so the minted credential is
-// appended as a query parameter (documented Voice Live browser pattern).
+// Owns: the realtime tool definitions and session parameters the browser
+// offers the model. Surprising: parameters always come from the backend
+// mint, never hardcoded; the minted credential travels as a query
+// parameter because browsers cannot set WebSocket headers.
 //
-// Session parameters themselves always come from the backend mint
-// (POST /api/interviews/:id/voice-session, frozen section 3) - never
-// hardcoded here - so frozen-config changes land server-side only.
+// History: S4; see docs/SESSION_HANDOFF.md.
 
 import type { CodeLanguage, SerializedSubmitVerdict, ToolExecOutcome, VoiceSessionPayload } from "../api/types.js";
 

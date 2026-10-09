@@ -1,8 +1,10 @@
-// H-Evaluating (feature 17b): analyzing screen shown after End & Evaluate
-// on the approved prototype look. Honest processing stages mirror the real
-// async pipeline (capture → score → skills → recommendation); no fake
-// precision. An optional error message covers evaluation failure without
-// losing the interview (the backend fallback path).
+// Post-interview analyzing screen.
+//
+// Owns: honest processing stages mirroring the real async pipeline (no
+// fake precision), plus evaluation-failure messaging that never loses
+// the interview.
+//
+// History: 17b; see docs/SESSION_HANDOFF.md.
 
 import { GhostButton } from "../ds/buttons.js";
 import { Badge, Card } from "../ds/primitives.js";

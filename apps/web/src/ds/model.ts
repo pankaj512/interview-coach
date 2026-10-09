@@ -1,8 +1,9 @@
-// Design-system state model (ux-spec §2/§4/§46).
+// Design-system state model.
 //
-// Pure mappings from live interview state to design-system presentation.
-// State is never color-alone: every mapping yields an icon + label pair.
-// Tested in tests/ds-model.test.ts; rendered by ds/status.tsx.
+// Owns: pure mappings from live interview state to icon + label pairs
+// (state is never color-alone).
+//
+// History: ux-spec; see docs/SESSION_HANDOFF.md.
 
 import type { VoiceConnectionState } from "../voice/voice-client.js";
 

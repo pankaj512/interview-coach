@@ -1,8 +1,9 @@
-// Design-system status components (ux-spec §4/§12).
+// Design-system status components.
 //
-// chip-status, voice-state (Connecting/Listening/You're speaking/Thinking/
-// Interviewer speaking/Paused/Muted/Error), timer, caption, diff-pill,
-// score-bar. All state renders icon + label - never color-alone.
+// Owns: chips, voice-state, timer, and score visuals. State always renders
+// icon + label, never color-alone.
+//
+// History: ux-spec; see docs/SESSION_HANDOFF.md.
 
 import { chipViewFor, formatClock, timerStatus, voiceViewFor, type ChipState } from "./model.js";
 import type { VoiceConnectionState } from "../voice/voice-client.js";

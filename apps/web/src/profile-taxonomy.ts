@@ -1,9 +1,10 @@
-// @interview-coach/web - profile taxonomy mirror (Phase 2).
+// @interview-coach/web - profile taxonomy mirror.
 //
-// The client cannot import @interview-coach/core (it pulls node:crypto), so
-// this is the single client-side source for the taxonomy. Keep it in sync with
-// packages/core/src/profile.ts when the taxonomy changes. Canonical keys are
-// the wire contract (persisted + sent to the backend); labels are display-only.
+// Owns: the single client-side taxonomy source. Surprising: a mirror
+// exists because the client cannot import core (node:crypto) - keep it in
+// sync with packages/core/src/profile.ts; keys are the wire contract.
+//
+// History: Phase 2; see docs/SESSION_HANDOFF.md.
 
 export interface TaxonomyOption<T extends string = string> {
   readonly value: T;

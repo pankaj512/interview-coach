@@ -1,8 +1,10 @@
-// H-Settings (ux-spec §30): every setting performs a real action or it is
-// not here. Account identity, profile management, and data (export/refresh)
-// over the server-owned record. No local-only preference cards: the former
-// General / Voice / Interview / AI controls were write-only `ic.settings`
-// localStorage with zero readers anywhere in the client.
+// Settings with only real actions.
+//
+// Owns: account, profile, and data actions over the server-owned record.
+// Surprising: no local-only preference cards (the former write-only
+// localStorage controls had zero readers).
+//
+// History: 17d; see docs/SESSION_HANDOFF.md.
 
 import { useEffect, useState } from "react";
 import { AccountSection } from "../components/AccountSection.js";

@@ -1,10 +1,10 @@
-// @interview-coach/web - auth session store (S8c).
+// @interview-coach/web - auth session store.
 //
-// Holds the active account session ({token, email, displayName}) outside
-// React so every BackendClient (all screens, voice forwarder) shares it.
-// Persisted to localStorage for session restore; corrupt/full-storage safe
-// like the other client stores. The token is a bearer secret: it is sent on
-// API calls but never logged or rendered.
+// Owns: the active account session outside React so every client shares
+// it, persisted for restore. Surprising: the token is a bearer secret -
+// sent on calls, never logged or rendered.
+//
+// History: S8c; see docs/SESSION_HANDOFF.md.
 
 import { useSyncExternalStore } from "react";
 

@@ -1,9 +1,10 @@
-// @interview-coach/web - pending call_id persistence (frozen section 5).
+// @interview-coach/web - pending call_id persistence.
 //
-// "On reload rehydrate pending `call_id`s from sessionStorage via
-// `GET tool-results`." The ledger owns submission; this module owns the
-// reload-surviving copy. Storage is injected (`sessionStorage` in prod, a
-// Map-backed fake in tests) so the logic stays DOM-free and unit-testable.
+// Owns: the reload-surviving copy of unacked call_ids (rehydrated via GET
+// tool-results). Storage is injected so the logic stays DOM-free and
+// unit-testable.
+//
+// History: frozen section 5; see docs/SESSION_HANDOFF.md.
 
 export const PENDING_CALL_IDS_KEY = "ic.pending-tool-calls.v1";
 export const PENDING_CALL_IDS_CAP = 20;

@@ -1,8 +1,9 @@
-// App shell + interview ritual router (ux-spec §2/§3/§43).
+// App shell and interview ritual router.
 //
-// Nav views (Dashboard / History / Progress / Settings) render inside the
-// sidebar AppShell. The interview ritual (Setup → Devices → Briefing → Live →
-// Evaluating → Results → Feedback/Transcript/Weak areas) renders standalone.
+// Owns: nav views inside the sidebar AppShell plus the standalone ritual
+// flow (lobby, live, evaluating, results, feedback, history, settings).
+//
+// History: ux-spec; see docs/SESSION_HANDOFF.md.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BackendApiError, type BackendClient } from "./api/backend-client.js";

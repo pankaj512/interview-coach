@@ -1,11 +1,10 @@
-// Self-hosted Monaco workers for Vite (no CDN), following the official
-// browser-esm-vite-react sample: https://github.com/microsoft/monaco-editor/tree/main/samples/browser-esm-vite-react
+// Self-hosted Monaco workers for Vite (no CDN).
 //
-// The workers are imported via explicit relative paths because
-// monaco-editor's `exports` map does not expose the `esm/vs/*` files to
-// bundler resolution. Relative file imports bypass package exports.
-// Dynamically imported from CodeWorkspace (client-only) so unit tests never
-// load Monaco in Node.
+// Owns: the worker wiring behind the editor. Surprising: explicit relative
+// imports because monaco-editor's exports map hides the esm/vs files;
+// client-only import so unit tests never load Monaco in Node.
+//
+// History: 17b; see docs/SESSION_HANDOFF.md.
 import CssWorker from "../../node_modules/monaco-editor/esm/vs/language/css/css.worker.js?worker";
 import EditorWorker from "../../node_modules/monaco-editor/esm/vs/editor/editor.worker.js?worker";
 import HtmlWorker from "../../node_modules/monaco-editor/esm/vs/language/html/html.worker.js?worker";

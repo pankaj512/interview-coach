@@ -1,11 +1,11 @@
-// H-Results (ux-spec §22): debrief with score hero, dimension rows with
-// evidence, strengths / improvements, and the review / practice actions.
+// Interview debrief with scores and review actions.
 //
-// Phase 10: the evaluation is produced asynchronously by the backend when the
-// interview ends. This screen polls `GET /api/interviews/:id/evaluation` while
-// the interview's evaluationStatus is pending and shows "Evaluation in
-// progress" until a validated result (or a failure) arrives. Scores render in
-// canonical units: overall x/100, dimensions x/5 (ux-spec §23).
+// Owns: score hero, dimension rows, strengths, and next-practice actions.
+// Surprising: polls for the async backend evaluation (shows "in progress"
+// until a validated result or failure arrives); scores render in canonical
+// units (overall /100, dimensions /5).
+//
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import { useEffect, useState, type MouseEvent } from "react";
 import type { BackendClient } from "../api/backend-client.js";

@@ -1,8 +1,10 @@
-// H-Profile (Phase 2): account identity + server-owned profile with inline
-// editing. Identity is passed in (App owns the auth session) so this screen
-// stays presentational and testable; the profile itself is fetched and saved
-// through the backend. The form remounts after each save so its dirty
-// tracking restarts from the freshly saved profile.
+// Account identity and server-owned profile with inline editing.
+//
+// Owns: the presentational shell (identity passed in, profile via the
+// backend). Surprising: the form remounts after each save so dirty
+// tracking restarts from the fresh profile.
+//
+// History: Phase 2; see docs/SESSION_HANDOFF.md.
 
 import { useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";

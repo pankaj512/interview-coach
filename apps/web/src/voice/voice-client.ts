@@ -1,19 +1,11 @@
-// @interview-coach/web - realtime Voice Live client (S4).
+// @interview-coach/web - realtime Voice Live client.
 //
-// Media plane (frozen section 2): Browser<->Voice Live direct over WebSocket,
-// PCM16 / 24 kHz / mono both directions. Event handling mirrors the CLI
-// harness: one model function call can surface through several protocol
-// events (`conversation.item.created`, `response.function_call_arguments.done`,
-// `response.output_item.done`, `response.done`), so execution dedups by
-// `call_id` (local handled-set + backend idempotency via tool-exec).
+// Owns: the direct browser to Voice Live media plane (PCM16/24kHz/mono),
+// function-call dedup, barge-in cancel, injected collaborators for tests.
+// Surprising: one model call can surface through several protocol events;
+// execution still runs exactly once.
 //
-// Barge-in mirrors the CLI: `speech_started` while the assistant is speaking
-// (once per turn) -> `response.cancel` + local playback flush.
-//
-// Collaborators (WebSocket, mic, playback, tool execution, storage, clocks)
-// are injected so vitest covers the lifecycle with fakes - no mic or network
-// in tests. Logging is lifecycle/timing only (frozen section 3); audio
-// deltas and PCM chunks are never logged.
+// History: S4; see docs/SESSION_HANDOFF.md.
 
 import { BackendApiError, BackendClient } from "../api/backend-client.js";
 import type { ToolArgs, ToolName, VoiceSessionPayload } from "../api/types.js";

@@ -1,9 +1,10 @@
-// H-Live right panel (ux-spec §9): a minimal code workspace.
+// Live-room code workspace.
 //
-// Language + editor + "Test code" (runs the candidate's code against the
-// problem's sample test case) and "Submit" (asks the AI judge for a
-// correctness/optimality verdict, persisted nowhere). No test-case editor:
-// the sample case comes from the problem.
+// Owns: the editor plus Test (sample cases via the sandbox) and Submit
+// (AI-judge verdict, persisted nowhere). No test-case editor: samples
+// come from the problem.
+//
+// History: 17b; see docs/SESSION_HANDOFF.md.
 
 import { useEffect, useRef, useState } from "react";
 import type * as monaco from "monaco-editor";

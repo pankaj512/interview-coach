@@ -1,9 +1,10 @@
 // @interview-coach/web - interview lifecycle hooks.
 //
-// UI state only. Authoritative state lives in the backend; these hooks poll
-// `GET .../state` for display and drive transitions through the control-plane
-// client. Voice media stays in VoiceInterviewClient (media plane, frozen
-// section 2).
+// Owns: UI state only (polling display snapshots, driving transitions
+// through the control-plane client). Authority stays backend-side; voice
+// media stays in the VoiceInterviewClient.
+//
+// History: see docs/SESSION_HANDOFF.md.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { BackendApiError, BackendClient } from "../api/backend-client.js";

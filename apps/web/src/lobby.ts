@@ -1,10 +1,9 @@
-// @interview-coach/web - Lobby readiness + gating (Phase 6).
+// @interview-coach/web - lobby readiness and gating.
 //
-// Pure presentation logic for the final pre-interview step. The Lobby shows
-// server-owned state (the recommendation) and gates "Begin interview" on two
-// independent readiness signals: the microphone permission and the server's
-// voice readiness (GET /api/ready → voiceMode). Keeping the decision here makes
-// the gating rule testable without a browser or a live backend.
+// Owns: the pure "Begin interview" gating rule (mic permission plus server
+// voice readiness), kept here so it tests without a browser or backend.
+//
+// History: Phase 6; see docs/SESSION_HANDOFF.md.
 
 export type MicState = "checking" | "ready" | "denied" | "unsupported";
 

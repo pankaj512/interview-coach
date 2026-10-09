@@ -1,10 +1,10 @@
-// Candidate editor-language preference (interview room > Editor).
+// Candidate editor-language preference.
 //
-// Mirrors `voice/voice-prefs.ts`: the language set is closed
-// (`CodeLanguage` in `api/types.ts`), so unknown or empty stored values read
-// back as null and Python stays the default. The stored preference never
-// leaves the client as its own value - it only seeds the editor's initial
-// language; every Test submission still carries the live selector value.
+// Owns: persisting the room editor language (closed CodeLanguage set;
+// unknown values read back as null, Python default). Surprising: mirrors
+// voice-prefs; the stored value only seeds the editor, never submits.
+//
+// History: room hardening; see docs/SESSION_HANDOFF.md.
 
 import type { CodeLanguage } from "../api/types.js";
 

@@ -1,10 +1,10 @@
-// HLD 6.4 - code execution results on the debrief screen (S7b).
+// Code execution results on the debrief screen.
 //
-// Read-only view of backend-owned sandbox state: submission count plus the
-// latest persisted run with per-case verdicts. Mounted above the finalize
-// form so evaluators score with execution evidence in view. Hidden cases
-// arrive masked (pass/fail only) - the panel renders what the server
-// returns and can leak nothing more.
+// Owns: the read-only view of backend-owned sandbox state (submission
+// count plus latest run). Surprising: renders exactly what the server
+// returns, so masked hidden cases can leak nothing more.
+//
+// History: HLD 6.4, S7b; see docs/SESSION_HANDOFF.md.
 
 import { useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";

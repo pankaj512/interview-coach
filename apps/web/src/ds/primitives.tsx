@@ -1,10 +1,9 @@
-// Design-system primitives (ux-spec §3/§4/§5/§8 + v1.1 Stitch → code).
+// Design-system primitives.
 //
-// Presentational building blocks used by the redesigned screens: Card,
-// Badge, Pill, ChipList, VoiceRail, FormCard, Wave, Dialog, Field.
-// Pure UI - no data fetching. Visual language (landed v1.1 Stitch → code):
-// white cards, 1px #E2E8F0 borders, 8px card radius, 4px controls,
-// Space Grotesk headings + Public Sans body + JetBrains Mono telemetry.
+// Owns: presentational building blocks for the screens (cards, badges,
+// voice rail, dialogs, fields). Pure UI, no data fetching.
+//
+// History: ux-spec, Stitch v1.1; see docs/SESSION_HANDOFF.md.
 
 import type { ReactNode } from "react";
 

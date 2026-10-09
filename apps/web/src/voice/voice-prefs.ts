@@ -1,11 +1,11 @@
-// Interviewer-voice preference (Settings > Voice).
+// Interviewer-voice preference.
 //
-// The Azure realtime voice set is closed: the backend documents the same
-// list next to `AZURE_VOICE_VOICE` and rejects anything else on
-// session.voice. The stored preference never leaves the client as its own
-// value - it only overrides `session.voice` in the client-built
-// session.update, with the server mint as the default. Unknown or empty
-// stored values read back as null so they can never reach the wire.
+// Owns: persisting the Settings voice choice (closed voice set; unknown
+// values read back as null so they never reach the wire). Surprising: the
+// stored value only overrides session.voice in the client-built update,
+// with the server mint as the default.
+//
+// History: Settings; see docs/SESSION_HANDOFF.md.
 
 export const REALTIME_VOICES: readonly string[] = [
   "alloy",

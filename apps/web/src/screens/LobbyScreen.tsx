@@ -1,11 +1,10 @@
-// H-Lobby (feature 17b): the final pre-interview step on the approved
-// prototype look.
+// Final pre-interview step.
 //
-// The system chooses the practice - the Lobby shows the server recommendation
-// (type/topic/problem/difficulty/objective) and prepares the session. There is
-// no topic/difficulty/problem selection here: "Begin interview" is gated on
-// the microphone check AND the server's voice readiness, so a session that
-// would 503 on mint can never start.
+// Owns: showing the server recommendation and gating "Begin interview" on
+// the mic check plus server voice readiness (a session that would 503
+// on mint can never start). No manual topic/difficulty selection.
+//
+// History: 17b; see docs/SESSION_HANDOFF.md.
 
 import { useCallback, useEffect, useState } from "react";
 import type { BackendClient } from "../api/backend-client.js";

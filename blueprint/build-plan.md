@@ -80,7 +80,7 @@ the next unchecked item.
   - [x] V1.1-4a. **Convention + core headers** - land the header-shape rule
     in coding-standards.md, then rewrite `packages/core/src` headers to it
   - [x] V1.1-4b. **API headers** - rewrite `apps/api/src` headers to the rule
-  - [ ] V1.1-4c. **Web headers** - rewrite `apps/web/src` headers to the rule
+  - [x] V1.1-4c. **Web headers** - rewrite `apps/web/src` headers to the rule
   - [ ] V1.1-4d. **Store headers** - rewrite `packages/store/src` headers to
     the rule
 
