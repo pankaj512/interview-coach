@@ -1,14 +1,10 @@
-// @interview-coach/core - per-user skill + curriculum state (Phase 3).
+// @interview-coach/core - per-user skill and curriculum state.
 //
-// UserSkillState is the persisted, per-topic mastery record the learning loop
-// reads and updates; UserCurriculumProgress is the pointer into the curriculum
-// (current topic + mastered topics). Both are backend-owned server state:
-// the browser never writes them directly and the LLM never becomes the system
-// of record (ADR-002).
+// Owns: the mastery scale and its thresholds, plus the persistence shapes
+// for UserSkillState and UserCurriculumProgress. The mastery algorithm
+// lives in skill-update.ts, not here.
 //
-// This module owns the mastery *scale* and its configurable thresholds. The
-// mastery *algorithm* (turning an accepted evaluation into a new level) is
-// Phase 10/11 and deliberately absent here - Phase 3 only persists and reads.
+// History: Phase 3; see docs/SESSION_HANDOFF.md.
 
 import type { CurriculumId, EvaluationId, TopicId, UserId } from "./ids.js";
 import { domainError } from "./errors.js";

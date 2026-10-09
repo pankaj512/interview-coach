@@ -1,12 +1,10 @@
-// @interview-coach/core - evaluation model port + proposal validation +
-// deterministic fallback (learning-loop Phase 10).
+// @interview-coach/core - evaluation model port and proposal validation.
 //
-// Mirrors the Phase 4 recommendation model: the backend assembles the input,
-// the (server-side) LLM proposes a structured evaluation, and the backend
-// validates it. When the model is unconfigured, errors, or returns an invalid
-// shape, the deterministic fallback produces a grounded evaluation from
-// persisted signals (hints, responses, code, runs) so the learning loop stays
-// functional without an LLM (ADR-002).
+// Owns: assembling the evaluation input, validating the server-side model
+// proposal, and the deterministic fallback from persisted signals (hints,
+// responses, code, runs) so the loop stays functional without an LLM.
+//
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import type {
   EvaluationDimension,

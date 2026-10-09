@@ -1,10 +1,11 @@
-// @interview-coach/core - controlled hint policy (HLD 5.4 / S5).
+// @interview-coach/core - controlled hint policy.
 //
-// Three deterministic tiers; the interviewer guides without revealing the
-// solution. Hints never contain final code. Level defaults to
-// nextHintLevel(hintsUsed): first hint is conceptual, then approach scaffold,
-// then a detailed plan - capped at 3 so heavy hinting degrades gracefully
-// and is visible in evaluation (hintsUsed).
+// Owns: three deterministic tiers (conceptual, approach scaffold, detailed
+// plan, capped at 3) built without revealing the solution. Level defaults
+// to nextHintLevel(hintsUsed), and heavy hinting stays visible to
+// evaluation via hintsUsed.
+//
+// History: HLD 5.4, S5; see docs/SESSION_HANDOFF.md.
 
 import type { Problem } from "./problem.js";
 

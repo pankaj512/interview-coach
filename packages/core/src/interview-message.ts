@@ -1,13 +1,11 @@
-// @interview-coach/core - InterviewMessage (learning-loop Phase 9).
+// @interview-coach/core - structured interview transcript.
 //
-// Structured transcript of the realtime conversation. The browser forwards the
-// relevant Voice Live transcript events to the backend, which validates and
-// persists them (roadmap locked decision 6): the backend is canonical, and the
-// model never owns the transcript. Structured text only - no raw audio.
+// Owns: the persisted conversation record (candidate/interviewer/system
+// roles, trimmed and length-capped at the domain boundary). Surprising:
+// structured text only, no raw audio - the browser forwards transcript
+// events and the backend validates and persists them.
 //
-// Roles are deliberately small: "candidate", "interviewer", and "system"
-// (lifecycle notices). Content is trimmed and length-capped at the domain
-// boundary so a direct HTTP append and any future path share one guard.
+// History: Phase 9; see docs/SESSION_HANDOFF.md.
 
 import type { InterviewId, MessageId, ProblemId } from "./ids.js";
 import { newMessageId } from "./ids.js";

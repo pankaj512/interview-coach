@@ -1,10 +1,11 @@
-// @interview-coach/core - deterministic problem selection (HLD 5.1 / S5).
+// @interview-coach/core - deterministic problem selection.
 //
-// Pure function over backend-owned problems. No I/O, no randomness: the same
-// catalog + configuration always yields the same ordered selection, so
-// auto-select is replay-safe and testable. Curriculum order is an optional
-// pedagogical bias (content/dsa/dsa-interview-curriculum.json title order); unknown
-// titles fall back to a stable (difficulty, title) sort.
+// Owns: the pure catalog-to-selection mapping (same input yields the same
+// ordered selection, so auto-select is replay-safe). Curriculum order is an
+// optional pedagogical bias; unknown titles fall back to a stable
+// (difficulty, title) sort.
+//
+// History: HLD 5.1, S5; see docs/SESSION_HANDOFF.md.
 
 import type { ProblemId } from "./ids.js";
 import type { InterviewDifficulty } from "./interview.js";

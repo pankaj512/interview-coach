@@ -1,9 +1,11 @@
-// @interview-coach/core - AI-only Submit verdict contract (feature 18d).
+// @interview-coach/core - AI-only Submit verdict contract.
 //
-// The backend assembles the input (problem context + candidate code), a
-// server-side LLM proposes a structured verdict, and the backend validates
-// it. There is no deterministic fallback: a missing or invalid proposal is
-// surfaced as an error, never an invented verdict. Nothing is persisted.
+// Owns: the validated verdict shape for AI-judged submissions. The backend
+// assembles input and validates the server-side proposal. Surprising: no
+// deterministic fallback exists (missing/invalid proposals surface as
+// errors, never invented verdicts) and nothing is persisted.
+//
+// History: 18d; see docs/SESSION_HANDOFF.md.
 
 import {
   CODE_LANGUAGES,

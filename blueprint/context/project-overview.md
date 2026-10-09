@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 805c9571dcaa49f1ca4f3b1f9b6824501ff67fd64a335c55da7a26b82c44c054 -->
+<!-- blueprint:source-hash 20967035f21b745a036bbd1ddfeb83e63165468a30e0b6a7b0650c64e5b93fa4 -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
@@ -61,10 +61,11 @@ Shipped (1-21, V1.1-1, V1.1-2, in build-plan order):
 22. **Provider-switchable LLM transport (21)** - one shared chat-completions transport with per-provider entries (Azure AI Foundry + Inception Mercury) behind `LLM_PROVIDER`; recommendation, evaluation, and submit-verdict keep their prompts/parsers/ports and gain live LLM coverage once keys set.
 23. **Apps/packages layout + rename (V1.1-1)** - `apps/api` (`@interview-coach/api`), `apps/web` (`@interview-coach/web`), `packages/core` (`@interview-coach/core`), `packages/store` (`@interview-coach/store`); all specifiers, filters, Dockerfiles, compose, CI, and live docs updated in one pass.
 24. **Test kind-split (V1.1-2)** - `test:unit` (pure, no infra) / `test:integration` (needs Postgres/Docker; warn-and-pass locally, live in CI) / `test:e2e` (compose boot + probes) via vitest projects + CI jobs.
+25. **Retirements + drift sweep (V1.1-3)** - pre-18c problem endpoint deleted (content endpoint is the only per-problem read), deprecated tool aliases removed end to end, dashboard migrated to the content view.
 
-Next - v1.1 refactoring tail (no behavior change; `v1.0` = current main tagged, `v1.1` tagged on the milestone merge):
+Next - v1.1 tail (no behavior change; `v1.0` = current main tagged, `v1.1` tagged on the milestone merge):
 
-- **V1.1-3. Retirements + drift sweep** - retire pre-18c problem endpoints and deprecated CLI-harness tool aliases after confirming no callers.
+- **V1.1-4. Comment readability pass + convention** - module headers lead with what/ownership/surprises, why-only function comments, plus a comment-convention rule in coding standards.
 
 Deferred to v2: security/observability hardening, testing consolidation,
 final integration, prod identity + voice, multi-track expansion.

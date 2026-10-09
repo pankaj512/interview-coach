@@ -1,14 +1,11 @@
-// @interview-coach/core - recommendation (learning-loop Phase 4).
+// @interview-coach/core - practice recommendation.
 //
-// The product loop starts with a recommendation: given the user's profile,
-// curriculum, per-topic skill state, and progress pointer, decide what to
-// practice next. The LLM may *propose* topic + problem, but it may only choose
-// from a backend-built candidate set and the backend validates, canonicalizes,
-// and persists the result (ADR-002: the LLM is not the system of record).
+// Owns: deciding what to practice next from profile, curriculum, skill
+// state, and progress. The LLM may only propose from a backend-built
+// candidate set; the backend validates, canonicalizes, and persists.
+// Surprising: the deterministic builder doubles as the guaranteed fallback.
 //
-// Everything here is pure: the candidate builder is deterministic (same input
-// -> same ordered candidates), so it doubles as the guaranteed fallback when
-// the model is unavailable, slow, or returns something invalid. No I/O.
+// History: Phase 4; see docs/SESSION_HANDOFF.md.
 
 import type {
   CurriculumId,

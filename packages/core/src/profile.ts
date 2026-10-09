@@ -1,15 +1,11 @@
-// @interview-coach/core - UserProfile (learning-loop Phase 2).
+// @interview-coach/core - UserProfile and taxonomy.
 //
-// The profile is the starting context for recommendation + evaluation: what
-// the candidate is preparing for (interview types), their role and level, and
-// optional free-text goals. It is backend-owned server state (ADR-002): the
-// browser reads/writes it through /api/profile, never localStorage.
+// Owns: UserProfile context (types, role, level, goals) plus the canonical
+// taxonomy: snake_case keys are the wire contract, labels presentation-only.
+// Surprising: the web client mirrors this taxonomy (it cannot import this
+// package) - keep the two in sync.
 //
-// Taxonomy is domain configuration (roadmap locked decision 8), not scattered
-// UI constants. Canonical snake_case keys are the persisted/wire contract;
-// labels are presentation-only and may change without a migration. The web
-// client mirrors this taxonomy in one module because it cannot import this
-// package (node:crypto); keep the two in sync when the taxonomy changes.
+// History: Phase 2; see docs/SESSION_HANDOFF.md.
 
 import type { UserId } from "./ids.js";
 import { domainError } from "./errors.js";

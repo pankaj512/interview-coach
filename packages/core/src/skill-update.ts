@@ -1,18 +1,11 @@
-// @interview-coach/core - deterministic skill/curriculum update (Phase 11).
+// @interview-coach/core - deterministic skill and curriculum update.
 //
-// Once an evaluation is persisted ("accepted"), the learning loop updates the
-// user's mastery state and curriculum pointer as a *pure function of persisted
-// state* - no further LLM call (roadmap "The learning loop"). The LLM proposes
-// the evaluation; the backend decides what it means for mastery (ADR-002).
+// Owns: the rules turning an accepted evaluation into mastery and pointer
+// changes (outcomes, thresholds, continue/revisit/advance). Pure: identical
+// inputs yield identical plans; re-applying a recorded evaluation is a
+// no-op. The LLM proposes; the backend decides what it means.
 //
-// This module owns the configurable decision rules:
-//   * how an evaluation maps to an attempt outcome (success/partial/failure),
-//   * how many successful attempts raise the mastery level (thresholds),
-//   * when to `continue`, `revisit`, or `advance` to the next curriculum topic.
-//
-// The planning function is deterministic and side-effect free: identical
-// inputs always yield an identical plan, and re-applying an evaluation that is
-// already recorded on the skill state (`lastEvaluationId`) is a no-op.
+// History: Phase 11; see docs/SESSION_HANDOFF.md.
 
 import type { Evaluation } from "./evaluation.js";
 import type { Curriculum } from "./curriculum.js";

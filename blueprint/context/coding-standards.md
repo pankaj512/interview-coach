@@ -154,6 +154,18 @@ Over-commenting is a common AI tell, so resist it.
   plenty; don't write JSDoc that just repeats the signature.
 - When in doubt, leave the comment out.
 
+## Module headers
+
+- Every source file opens with one short header, max ~8 lines, no banners
+  or dividers beyond it. Shape: `// <package> - <what lives here>, one
+  line.` then `// Owns: <state or decisions this module is responsible
+  for>.` then an optional `// Surprising: <non-obvious behavior a reader
+  must know>.` then one trailing `// History: <items>; see
+  docs/SESSION_HANDOFF.md.`
+- Lead with the job, end with the history. Session-by-session narration
+  belongs in `docs/SESSION_HANDOFF.md` and `blueprint/history/`, not in
+  the file. Never let the history lines outnumber the what/owns lines.
+
 ## Writing
 
 - No em dashes (U+2014) in generated content: docs, comments, commit messages,

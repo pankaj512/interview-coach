@@ -1,14 +1,10 @@
-// @interview-coach/core - server-owned curriculum (learning-loop Phase 3).
+// @interview-coach/core - server-owned curriculum over the problem catalog.
 //
-// The curriculum is the pedagogical ordering over the canonical problem
-// catalog (content/dsa/dsa-interview-curriculum.json: 12 modules / 59 topics / 300
-// problems). It is backend-owned static configuration, not browser state:
-// recommendation reads it server-side and the client never bundles it.
+// Owns: the pedagogical ordering (12 modules / 59 topics / 300 problems) and
+// the pure, deterministic catalog import (stable slug IDs, idempotent seed).
+// Surprising: backend-owned static configuration, never bundled to the browser.
 //
-// Import is pure and deterministic: problem references are resolved from
-// titles to the same stable slug IDs the catalog seed uses
-// (`problemIdForTitle`), and topic/module IDs are stable slugs, so re-running
-// the import produces byte-identical rows (idempotent seed). No I/O here.
+// History: Phase 3; see docs/SESSION_HANDOFF.md.
 
 import type {
   CurriculumId,

@@ -1,13 +1,11 @@
-// @interview-coach/core - EvaluationJob (learning-loop Phase 10).
+// @interview-coach/core - async evaluation job.
 //
-// The async unit of work that turns a finished interview into a persisted,
-// validated Evaluation. The job row is the durable hand-off: `end` completes
-// the interview immediately and enqueues a job; the runner claims it, calls
-// the (server-side) evaluation model or the deterministic fallback, persists
-// the evaluation, and marks the job + interview status.
+// Owns: the durable hand-off turning a finished interview into a persisted
+// Evaluation. `end` completes the interview immediately and enqueues a job;
+// the runner claims it, evaluates, persists, and marks job + interview.
+// Surprising: in-process runner for v1; the job row keeps worker extraction compatible.
 //
-// The runner is in-process for v1 (ADR-002: no separate worker service); the
-// job row is what makes that extractable later without changing the contract.
+// History: Phase 10; see docs/SESSION_HANDOFF.md.
 
 import type { EvaluationJobId, InterviewId } from "./ids.js";
 import { newEvaluationJobId } from "./ids.js";

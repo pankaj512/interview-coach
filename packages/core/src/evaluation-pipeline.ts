@@ -1,10 +1,11 @@
-// @interview-coach/core - structured evaluation pipeline (HLD 5.5/5.8, S5).
+// @interview-coach/core - deterministic evaluation scoring.
 //
-// Deterministic post-interview scoring. The backend (never the model)
-// computes overallScore from dimension scores and derives a recommendation,
-// with a one-tier downgrade for heavy hinting (>=3 hints). Explicit inputs
-// always win: callers may pin overallScore/recommendation and the pipeline
-// keeps them.
+// Owns: computing overallScore from dimension scores and deriving a
+// recommendation, with a one-tier downgrade for heavy hinting (>=3 hints).
+// Explicit caller inputs always win: pinned overallScore/recommendation
+// values are kept.
+//
+// History: HLD 5.5/5.8, S5; see docs/SESSION_HANDOFF.md.
 
 import type {
   EvaluationDimension,
