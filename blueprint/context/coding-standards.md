@@ -13,11 +13,11 @@
 
 ## Monorepo
 
-- `pnpm`-only (never npm/yarn), `pnpm@12.3.4`, `node >= 20`, workspace `packages/*`
-- `packages/domain`: pure, no I/O/HTTP/DB; entities, lifecycle state machine, services, repo interfaces + in-memory impls
-- `packages/db`: Drizzle ORM + `postgres` driver; schema in `src/schema.ts`, migrations in `drizzle/`, seed via `tsx src/seed.ts`
-- `packages/backend`: Fastify 5 product service built by `buildApp({repos, config, voiceProvider})`; routes in `src/app.ts`, services per concern
-- `packages/web-client`: Vite + React 19, structural API mirrors only (never imports `@interview-coach/domain`, which pulls `node:crypto`)
+- `pnpm`-only (never npm/yarn), `pnpm@12.3.4`, `node >= 20`, workspace `packages/*`, `apps/*`
+- `packages/core`: pure, no I/O/HTTP/DB; entities, lifecycle state machine, services, repo interfaces + in-memory impls
+- `packages/store`: Drizzle ORM + `postgres` driver; schema in `src/schema.ts`, migrations in `drizzle/`, seed via `tsx src/seed.ts`
+- `apps/api`: Fastify 5 product service built by `buildApp({repos, config, voiceProvider})`; routes in `src/app.ts`, services per concern
+- `apps/web`: Vite + React 19, structural API mirrors only (never imports `@interview-coach/core`, which pulls `node:crypto`)
 - Async repos/services from day one so Postgres swaps impls without signature churn
 
 ## Backend
@@ -52,7 +52,7 @@
 
 ## Naming
 
-- Packages: `@interview-coach/<domain|backend|db|web-client>`
+- Packages: `@interview-coach/<core|api|store|web>`
 - Domain files: kebab-case per concern (`interview-service.ts`, `skill-update.ts`, `tool-service.ts`)
 - Backend files: kebab-case per concern (`voice-session.ts`, `code-runner.ts`, `rate-limit.ts`)
 - Client: `screens/*Screen.tsx`, `components/*`, `state/use-*.ts`, pure helpers beside usage (`dashboard.ts`, `lobby.ts`, `flow.ts`)

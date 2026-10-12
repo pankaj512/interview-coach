@@ -119,10 +119,10 @@
 **Suggested fix:** Replace prose em dashes with hyphens or commas; keep the deliberate placeholder glyph only if the user confirms it.
 **Resolution:** Fixed on `fix/remove-em-dashes`: 242 replacements (194 em, 3 en, 45 ellipsis) across 112 files under `packages/`; placeholders and prose both use `-`/`...` per user call; 7 line-wrapped breaks rephrased; `docs/` and `blueprint/history/` untouched as immutable logs. One intentional U+2014 remains in the `render-smoke` guard assertion that enforces the rule. Full suite green. Full-project re-review 2026-09-29: an em-dash scan of `packages/` (excluding node_modules/dist) finds only that guard assertion in `web-client/tests/render-smoke.test.tsx`. Closed.
 
-### F-15 [P3] open - coding-standards.md Monorepo map still names the pre-rename packages
+### F-15 [P3] fixed - coding-standards.md Monorepo map still names the pre-rename packages
 
 **File:** blueprint/context/coding-standards.md:16-20
 **Found:** 2026-10-07 by independent review of V1.1-1 (target 1d45364; scope: current; lenses: quality)
 **Why it matters:** The live standards file agents read before changing code still maps the stack to `packages/domain`, `packages/db`, `packages/backend`, `packages/web-client` (and `workspace packages/*`, plus a never-import-`@interview-coach/domain` rule for the client). Following it literally sends an agent to directories that no longer exist. The feature spec scoped live-doc updates to AGENTS.md plus two docs files, so this was left behind by design scope, not by accident - but it is live workflow context, not immutable history.
 **Suggested fix:** Update the five bullets to `packages/core`, `packages/store`, `apps/api`, `apps/web` (and `workspace packages/*, apps/*`, `@interview-coach/core` in the client rule). Leave `blueprint/history/*`, `docs/audit/*`, `docs/SESSION_HANDOFF.md`, and `docs/implementation-roadmap.md` untouched as immutable/archival.
-**Resolution:**
+**Resolution:** Fixed on `fix/coding-standards-monorepo-map`: Monorepo bullets updated to the post-rename paths plus the Naming `Packages:` line (`@interview-coach/<core|api|store|web>`); stale-name grep over the file returns zero matches; `pnpm typecheck` green. Awaiting `/audit` re-review to close.
