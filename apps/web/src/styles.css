@@ -2119,15 +2119,47 @@ button:focus-visible {
 
 /* Draggable problem/editor split: the editor basis is the session-only
  * --editor-pct (default 55%, ≈ the old 5fr/6fr ratio); both panes keep a
- * 300px floor while dragging (clamped in LiveScreen). */
+ * 300px floor while dragging (clamped in LiveScreen). Each pane scrolls as
+ * one side container; inner parts wrap instead of scrolling on their own. */
 .live-grid > .live-column {
   flex: 1 1 0;
   min-width: min(300px, 100%);
+  overflow-x: auto;
+}
+
+.live-grid .card {
+  min-width: 0;
+}
+
+.live-grid pre {
+  overflow-x: visible;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.live-grid table.cases {
+  table-layout: fixed;
+}
+
+.live-grid table.cases th,
+.live-grid table.cases td {
+  overflow-wrap: anywhere;
+}
+
+.live-grid .transcript-list {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .live-grid > .card {
   flex: 0 1 var(--editor-pct, 55%);
   min-width: min(300px, 100%);
+  overflow-x: auto;
+}
+
+.live-grid .event-log {
+  max-height: none;
+  overflow-y: visible;
 }
 
 .split-divider {

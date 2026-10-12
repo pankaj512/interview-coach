@@ -254,6 +254,9 @@ export function CodeWorkspace({
         wordBasedSuggestions: "currentDocument",
         minimap: { enabled: false },
         scrollBeyondLastLine: false,
+        // Narrowing the room wraps code instead of opening the editor's
+        // horizontal scrollbar; the pane keeps its own vertical scroll.
+        wordWrap: "on",
         fontSize: 13,
         automaticLayout: true,
       });

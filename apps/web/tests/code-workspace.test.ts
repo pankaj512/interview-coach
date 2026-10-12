@@ -12,7 +12,7 @@ import {
   starterForLanguage,
   switchLanguageCode,
 } from "../src/components/CodeWorkspace.js";
-import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
+import { SPLIT_PANE_MIN, clampSplitPct, isRoomVisible, pauseAvailability, shouldFollowTranscript, shouldNotifyFinished } from "../src/screens/LiveScreen.js";
 import { nextOpenDimension } from "../src/screens/ResultsScreen.js";
 import { AUTO_FINISH_DELAY_MS, shouldAutoFinish, shouldRefreshOnClose } from "../src/state/use-interview.js";
 import type { Problem, ProblemStarterSet, SerializedRun, TestCaseInput } from "../src/api/types.js";
@@ -134,6 +134,21 @@ describe("clampSplitPct", () => {
 
   it("settles at the middle when the room is narrower than both floors", () => {
     expect(clampSplitPct(55, 400)).toBe(50);
+  });
+});
+
+describe("shouldFollowTranscript", () => {
+  it("follows new turns when the reader is at the page bottom", () => {
+    expect(shouldFollowTranscript(1000, 800, 1800)).toBe(true);
+  });
+
+  it("leaves the page alone when the reader is up at the problem", () => {
+    expect(shouldFollowTranscript(0, 800, 1800)).toBe(false);
+  });
+
+  it("treats near-bottom within the threshold as following", () => {
+    expect(shouldFollowTranscript(700, 800, 1700, 200)).toBe(true);
+    expect(shouldFollowTranscript(699, 800, 1700, 200)).toBe(false);
   });
 });
 

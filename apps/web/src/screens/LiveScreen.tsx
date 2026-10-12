@@ -53,6 +53,18 @@ export function isRoomVisible(connection: VoiceConnectionState, hasJoined: boole
   return false;
 }
 
+/** Follow new transcript turns only when the reader is already near the
+ *  page bottom: the transcript has no scroll container of its own, so a
+ *  blind jump would yank the page while the candidate reads the problem. */
+export function shouldFollowTranscript(
+  scrollY: number,
+  innerHeight: number,
+  scrollHeight: number,
+  threshold: number = 200,
+): boolean {
+  return scrollY + innerHeight >= scrollHeight - threshold;
+}
+
 /** Notify the app exactly once when the interview finishes. The manual End
  *  button notifies directly, so this predicate covers the auto-finish path
  *  (model-ended interview), which flips `finished` without touching the
@@ -182,7 +194,13 @@ export function LiveScreen({
   const transcriptRef = useRef<HTMLOListElement | null>(null);
   useEffect(() => {
     const list = transcriptRef.current;
-    if (list !== null) list.scrollTop = list.scrollHeight;
+    if (list === null) return;
+    // The transcript no longer has its own scroll container (single-scroll
+    // side), so follow new turns through the page, and only when the reader
+    // is already near the bottom.
+    if (shouldFollowTranscript(window.scrollY, window.innerHeight, document.documentElement.scrollHeight)) {
+      list.scrollIntoView({ block: "end" });
+    }
   }, [live.events]);
 
   // Draggable problem/editor split: editor width as a flex-basis percent,
