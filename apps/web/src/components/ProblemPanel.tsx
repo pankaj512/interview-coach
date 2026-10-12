@@ -7,6 +7,8 @@
 // History: 17b, 18c; see docs/SESSION_HANDOFF.md.
 
 import type { ProblemContent, SerializedStateSnapshot } from "../api/types.js";
+import { Fragment } from "react";
+import { splitStatement } from "./problem-statement.js";
 
 export function ProblemPanel({
   snapshot,
@@ -42,7 +44,15 @@ export function ProblemPanel({
       <span className="chip">{problem.difficulty}</span>
       <h2>{problem.title}</h2>
       {description !== undefined && description !== null && description !== "" ? (
-        <p>{description}</p>
+        splitStatement(description).map((block, i) =>
+          block.kind === "code" ? (
+            <pre key={i}>
+              <code>{block.text}</code>
+            </pre>
+          ) : (
+            <p key={i}>{block.text}</p>
+          ),
+        )
       ) : (
         <p className="note">
           {loadingContent ? "Loading full statement..." : "No description available for this problem yet."}
@@ -70,11 +80,20 @@ export function ProblemPanel({
           </thead>
           <tbody>
             {examples.map((example, i) => (
-              <tr key={i}>
-                <td>{`sample ${i + 1}`}</td>
-                <td>{example.input}</td>
-                <td>{example.output}</td>
-              </tr>
+              <Fragment key={i}>
+                <tr>
+                  <td>{`sample ${i + 1}`}</td>
+                  <td>{example.input}</td>
+                  <td>{example.output}</td>
+                </tr>
+                {example.explanation !== undefined && example.explanation !== "" && (
+                  <tr>
+                    <td colSpan={3} className="note">
+                      {`Sample ${i + 1}: ${example.explanation}`}
+                    </td>
+                  </tr>
+                )}
+              </Fragment>
             ))}
           </tbody>
         </table>

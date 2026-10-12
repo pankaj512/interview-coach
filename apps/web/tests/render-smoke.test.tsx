@@ -273,6 +273,33 @@ describe("screen render smoke", () => {
     );
     expect(loading).toContain("Loading full statement...");
   });
+  it("ProblemPanel splits statement paragraphs, blocks judge code, and shows explanations", () => {
+    const html = renderToString(
+      <ProblemPanel
+        snapshot={null}
+        fallbackProblem={dashboardProblem}
+        content={{
+          id: "prob_remove-duplicates",
+          title: "Remove Duplicates from Sorted Array",
+          difficulty: "Easy",
+          description:
+            "First paragraph.\n\nSecond paragraph.\n\nint k = removeDuplicates(nums); // Calls it\nassert k == 2;",
+          constraints: ["1 <= n <= 10^4"],
+          examples: [
+            { input: "nums = [1,1,2]", output: "2", explanation: "It does not matter what you leave beyond k." },
+            { input: "nums = [0]", output: "[0]" },
+          ],
+          starters: null,
+          runnerLinks: null,
+        }}
+      />,
+    );
+    expect(html).toContain("<p>First paragraph.</p>");
+    expect(html).toContain("<p>Second paragraph.</p>");
+    expect(html).toContain("<pre>");
+    expect(html).toContain("Sample 1: It does not matter what you leave beyond k.");
+    expect(html).not.toContain("Sample 2:");
+  });
   it("EvaluatingScreen renders", () => {
     const html = renderToString(<EvaluatingScreen />);
     expect(html).toContain("Analyzing your interview");
