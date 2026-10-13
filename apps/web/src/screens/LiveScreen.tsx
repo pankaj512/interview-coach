@@ -185,23 +185,31 @@ export function LiveScreen({
     onFinished(live.snapshot, live.events, live.elapsedSec);
   }, [live.finished, live.snapshot, live.events, live.elapsedSec, onFinished]);
 
+  // The chip only earns header space when it explains something actionable
+  // (connecting / reconnecting / failed / mic blocked). Steady and terminal
+  // states (connected, closed, idle) stay unshown: the candidate cannot act
+  // on our connection plumbing.
+  const showStatusChip =
+    micBlocked ||
+    live.connection === "connecting" ||
+    live.connection === "reconnecting" ||
+    live.connection === "failed";
   const statusChip = micBlocked ? (
     <StatusChip connection={live.connection} micBlocked />
   ) : (
     <StatusChip connection={live.connection} />
   );
-  const transcriptTurns = live.events.filter((e) => e.kind === "assistant" || e.kind === "candidate").slice(-6);
+  const transcriptTurns = live.events.filter((e) => e.kind === "assistant" || e.kind === "candidate");
   const transcriptRef = useRef<HTMLOListElement | null>(null);
-  const columnRef = useRef<HTMLDivElement | null>(null);
+  const bandRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
-    const list = transcriptRef.current;
-    const column = columnRef.current;
-    if (list === null || column === null) return;
-    // The left pane is the transcript's scroll container (the room pins to
-    // the viewport), so follow new turns through the column, and only when
+    const band = bandRef.current;
+    if (band === null) return;
+    // The band is a fixed-height inner scroller (approved exception to the
+    // single-scroll sides), so follow new turns through it, and only when
     // the reader is already near its bottom.
-    if (shouldFollowTranscript(column.scrollTop, column.clientHeight, column.scrollHeight)) {
-      list.scrollIntoView({ block: "end" });
+    if (shouldFollowTranscript(band.scrollTop, band.clientHeight, band.scrollHeight)) {
+      band.scrollTop = band.scrollHeight;
     }
   }, [live.events]);
 
@@ -237,20 +245,52 @@ export function LiveScreen({
   return (
     <div className="room">
       <header className="live-topbar">
-        <span className="brand">Interview Coach</span>
-        <h1>
-          {interviewKind} Interview · {interview.configuration.difficulty ?? "Medium"}
-        </h1>
-        <Timer secondsLeft={secondsLeft} elapsedSec={live.elapsedSec} />
-        {statusChip}
-        {live.snapshot?.interview.status === "completing" && (
-          <span className="live-badge" role="status">
-            Wrapping up
-          </span>
-        )}
-        <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy || !inRoom}>
-          End interview
-        </DangerButton>
+        <div className="live-topbar-row">
+          <span className="brand">Interview Coach</span>
+          <h1>
+            {interviewKind} Interview · {interview.configuration.difficulty ?? "Medium"}
+          </h1>
+          {inRoom && (
+            <VoiceRail
+              state={
+                <VoiceState
+                  assistantSpeaking={live.assistantSpeaking}
+                  candidateSpeaking={live.candidateSpeaking}
+                  connection={live.connection}
+                  micBlocked={micBlocked}
+                  muted={live.muted}
+                  paused={live.paused}
+                />
+              }
+              waveform={<Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />}
+              controls={
+                <>
+                  <GhostButton onClick={live.toggleMute} disabled={live.paused}>
+                    {live.muted ? "Unmute" : "Mute"}
+                  </GhostButton>
+                  <GhostButton onClick={() => void live.togglePause()} disabled={pauseDisabled}>
+                    {live.paused ? "Resume" : "Pause"}
+                  </GhostButton>
+                  {pauseDisabled && !live.busy && (
+                    <span className="hint" role="note">
+                      Pause is unavailable in the current interview state.
+                    </span>
+                  )}
+                </>
+              }
+            />
+          )}
+          <Timer secondsLeft={secondsLeft} elapsedSec={live.elapsedSec} />
+          {showStatusChip && statusChip}
+          {live.snapshot?.interview.status === "completing" && (
+            <span className="live-badge" role="status">
+              Wrapping up
+            </span>
+          )}
+          <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy || !inRoom}>
+            End interview
+          </DangerButton>
+        </div>
       </header>
 
       {!inRoom && (
@@ -300,58 +340,26 @@ export function LiveScreen({
             </div>
           )}
 
-          <div className="rail">
-            <VoiceRail
-              state={
-                <VoiceState
-                  assistantSpeaking={live.assistantSpeaking}
-                  candidateSpeaking={live.candidateSpeaking}
-                  connection={live.connection}
-                  micBlocked={micBlocked}
-                  muted={live.muted}
-                  paused={live.paused}
-                />
-              }
-              waveform={<Wave active={live.assistantSpeaking} live={live.candidateSpeaking} />}
-              controls={
-                <>
-                  <GhostButton onClick={live.toggleMute} disabled={live.paused}>
-                    {live.muted ? "Unmute" : "Mute"}
-                  </GhostButton>
-                  <GhostButton onClick={() => void live.togglePause()} disabled={pauseDisabled}>
-                    {live.paused ? "Resume" : "Pause"}
-                  </GhostButton>
-                  {pauseDisabled && !live.busy && (
-                    <span className="hint" role="note">
-                      Pause is unavailable in the current interview state.
-                    </span>
-                  )}
-                  <DangerButton onClick={() => setConfirmEnd(true)} disabled={live.busy}>
-                    End interview
-                  </DangerButton>
-                </>
-              }
-            />
-          </div>
+          {transcriptTurns.length > 0 && (
+            <section className="transcript-band" aria-label="Conversation transcript">
+              <div className="transcript-band-scroll" ref={bandRef}>
+                <ol className="transcript-list" aria-live="polite" ref={transcriptRef}>
+                  {transcriptTurns.map((turn, i) => (
+                    <li key={`${turn.at}-${i}`} className="turn">
+                      <span className="turn-role">
+                        {turn.kind === "assistant" ? "Interviewer" : "You"}
+                      </span>
+                      <p className="turn-text">{turn.detail}</p>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            </section>
+          )}
 
           <div className="live-grid" ref={gridRef} style={gridStyle}>
-            <div className="live-column" ref={columnRef}>
+            <div className="live-column">
               <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} content={content} />
-              {transcriptTurns.length > 0 && (
-                <Card>
-                  <h3 className="section-title">Conversation</h3>
-                  <ol className="transcript-list" aria-live="polite" ref={transcriptRef}>
-                    {transcriptTurns.map((turn, i) => (
-                      <li key={`${turn.at}-${i}`} className="turn">
-                        <span className="turn-role">
-                          {turn.kind === "assistant" ? "Interviewer" : "You"}
-                        </span>
-                        <p className="turn-text">{turn.detail}</p>
-                      </li>
-                    ))}
-                  </ol>
-                </Card>
-              )}
             </div>
             <div
               className="split-divider"

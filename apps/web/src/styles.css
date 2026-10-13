@@ -2028,15 +2028,40 @@ button:focus-visible {
 
 .live-topbar {
   display: flex;
-  align-items: center;
-  gap: var(--space-md);
-  padding: 0 var(--space-lg);
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  height: 60px;
   position: sticky;
   top: 0;
   z-index: 5;
+}
+
+.live-topbar-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  flex-wrap: nowrap;
+}
+
+/* Voice rail inside the consolidated header: a chrome-less strip that takes
+ * the free middle space (waveform shrinks first), so Timer, status, and all
+ * buttons sit right-aligned in one row. */
+.live-topbar .voice-rail {
+  background: none;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-wrap: nowrap;
+}
+
+.live-topbar .voice-rail-wave {
+  min-width: 80px;
 }
 
 .live-topbar .brand {
@@ -2523,11 +2548,33 @@ textarea.code {
   color: var(--review);
 }
 
-.rail {
+/* Full-width transcript band above the grid: fixed height with its own
+ * scroll, a deliberate user-approved exception to the single-scroll sides
+ * (the transcript left the problem pane so the rail space stays useful). */
+.transcript-band {
   max-width: 1280px;
   margin: var(--space-md) auto 0;
   padding: 0 var(--space-lg);
   width: 100%;
+  flex: 0 0 auto;
+}
+
+.transcript-band-scroll {
+  height: 148px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: var(--space-sm) var(--space-md);
+}
+
+.transcript-band .transcript-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--space-sm);
+  /* No cap here either: the band scroller is the only transcript scroll. */
 }
 
 .live-grid .transcript-list {
