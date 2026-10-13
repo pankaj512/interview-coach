@@ -54,6 +54,24 @@ describe("sampleCasesFor", () => {
     expect(cases.map((c) => c.name)).toEqual(["sample 1", "sample 2"]);
     expect(cases).toHaveLength(2);
   });
+
+  it("normalizes LeetCode in-place sample outputs to numeric expected values", () => {
+    const problem: Problem = {
+      ...base,
+      examples: [{ input: "nums = [1,1,2]", output: "2, nums = [1,2,_]" }],
+    };
+    expect(sampleCasesFor(problem)).toEqual([{ name: "sample 1", args: ["nums = [1,1,2]"], expected: 2 }]);
+  });
+
+  it("keeps non-matching output strings unchanged", () => {
+    const problem: Problem = {
+      ...base,
+      examples: [{ input: "nums = [1,2,3]", output: "nums = [1,2,3]" }],
+    };
+    expect(sampleCasesFor(problem)).toEqual([
+      { name: "sample 1", args: ["nums = [1,2,3]"], expected: "nums = [1,2,3]" },
+    ]);
+  });
 });
 
 describe("switchLanguageCode", () => {

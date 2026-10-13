@@ -189,7 +189,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): BackendConfig 
       provider: str(env, "LLM_PROVIDER", "azure"),
       baseUrl: str(env, "LLM_BASE_URL", INCEPTION_DEFAULT_BASE_URL),
       model: str(env, "LLM_MODEL", INCEPTION_DEFAULT_MODEL),
-      timeoutMs: num(env, "LLM_TIMEOUT_MS", 10_000),
+      timeoutMs: num(env, "LLM_TIMEOUT_MS", 20_000),
       maxRetries: num(env, "LLM_MAX_RETRIES", 2),
     },
   };

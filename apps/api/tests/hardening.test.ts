@@ -85,6 +85,18 @@ describe("s8a auth gate", () => {
   });
 });
 
+describe("llm config defaults", () => {
+  it("uses the higher verdict timeout baseline by default and preserves overrides", () => {
+    const defaults = configWith({});
+    expect(defaults.llm.timeoutMs).toBe(20_000);
+    expect(defaults.llm.maxRetries).toBe(2);
+
+    const overridden = configWith({ LLM_TIMEOUT_MS: "45000", LLM_MAX_RETRIES: "4" });
+    expect(overridden.llm.timeoutMs).toBe(45_000);
+    expect(overridden.llm.maxRetries).toBe(4);
+  });
+});
+
 describe("s8a probes and metrics", () => {
   it("ready reports service state; metrics counts interviews/tools/voice", async () => {
     backend = buildTestBackend();

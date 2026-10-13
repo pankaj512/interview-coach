@@ -24,6 +24,12 @@ function tryJson(raw: string): unknown {
   }
 }
 
+function normalizeExampleExpected(output: string): unknown {
+  const inPlaceMatch = /^\s*(\d+)\s*,\s*nums\s*=/.exec(output);
+  if (inPlaceMatch !== null) return Number(inPlaceMatch[1]);
+  return tryJson(output);
+}
+
 /** Minimum editor height in px: the room's starting editor size. The
  *  container grows with content from here up to the measured viewport cap. */
 export const EDITOR_MIN_HEIGHT = 480;
@@ -59,7 +65,7 @@ export function sampleCasesFor(problem: Problem | ProblemContent | null): TestCa
     return {
       name: `sample ${i + 1}`,
       args: Array.isArray(args) ? args : [args],
-      expected: tryJson(example.output),
+      expected: normalizeExampleExpected(example.output),
     };
   });
 }
