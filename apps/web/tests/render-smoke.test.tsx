@@ -215,6 +215,37 @@ describe("screen render smoke", () => {
     expect(html).toContain("Curriculum progress");
     expect(html).toContain("Senior Backend Engineer");
   });
+  it("DashboardScreen mastery table carries card labels for narrow viewports", () => {
+    const html = renderToString(
+      <DashboardScreen
+        profile={profile}
+        data={{
+          ...dashboardData,
+          skills: [
+            {
+              userId: "u1",
+              curriculumId: "dsa",
+              topicId: "arrays",
+              masteryLevel: "developing",
+              successfulAttempts: 1,
+              totalAttempts: 2,
+              strengths: ["Speed"],
+              weaknesses: [],
+              createdAt: "t",
+              updatedAt: "t",
+            },
+          ],
+        }}
+        starting={false}
+        onStart={noop}
+        onProfile={noop}
+      />,
+    );
+    expect(html).toContain("Topic mastery");
+    expect(html).toContain('data-label="Topic"');
+    expect(html).toContain('data-label="Level"');
+    expect(html).toContain('data-label="Attempts"');
+  });
   it("LobbyScreen renders the recommendation and session prep", () => {
     const html = renderToString(
       <LobbyScreen backend={backend} plan={lobbyPlan} onBegin={noop} onChangeGoal={noop} onBack={noop} />,
@@ -418,6 +449,11 @@ describe("screen render smoke", () => {
     expect(html.match(/81 \/ 100/g)).toHaveLength(1);
     expect(html).not.toContain("—");
     expect(html).toContain("2 sessions");
+    expect(html).toContain('data-label="Session"');
+    expect(html).toContain('data-label="Date"');
+    expect(html).toContain('data-label="Score"');
+    expect(html).toContain('data-label="Evaluation"');
+    expect(html).toContain('data-label="Difficulty"');
   });
   it("ProgressScreen renders actions without the recommendation banner", () => {
     const html = renderToString(

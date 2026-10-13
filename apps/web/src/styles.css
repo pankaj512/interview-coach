@@ -3,6 +3,14 @@
  * Every value comes from tokens.css. Voice green (var(--voice-solid)) is
  * reserved for voice activity only; the primary CTA uses brand blue. State is
  * never color-alone - components always render icon + label.
+ *
+ * Responsive tiers (feature 22): >=1600 large desktop, 1200-1599 desktop,
+ * 900-1199 compact, 768-899 small/tablet, <=767 mobile. Existing max-width
+ * queries below map to the nearest tier edge as Steps 2-3 adopt them:
+ * 640/700/760/768 -> mobile (767), 800/900 -> compact boundary,
+ * 1024/1100 -> compact (1199). No query above 1200 exists yet; the desktop
+ * and large-desktop tiers arrive with the named containers (Step 2) and the
+ * wide session layout (Step 3).
  */
 
 @import url("https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Public+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap");
@@ -59,7 +67,7 @@ h4 {
 }
 
 .landing-topbar-inner {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: 0 var(--space-lg);
   display: flex;
@@ -105,7 +113,7 @@ h4 {
 }
 
 .landing-hero-inner {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: 64px var(--space-xl);
   display: grid;
@@ -234,7 +242,7 @@ h4 {
 }
 
 .landing-pillars-inner {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-xl);
   display: grid;
@@ -296,7 +304,7 @@ h4 {
 }
 
 .landing-section {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-xl);
 }
@@ -311,7 +319,7 @@ h4 {
 .landing-section .lede {
   color: var(--muted);
   font-size: 15px;
-  max-width: 760px;
+  max-width: var(--container-forms);
 }
 
 .landing-shell .grid3 {
@@ -416,7 +424,7 @@ h4 {
 
 .landing-final .sub {
   color: var(--muted);
-  max-width: 560px;
+  max-width: var(--container-forms);
   margin: 0 auto;
 }
 
@@ -425,7 +433,7 @@ h4 {
 }
 
 .landing-footer {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-lg) var(--space-xl);
   display: flex;
@@ -471,7 +479,7 @@ h4 {
 }
 
 .onboarding-topbar-inner {
-  max-width: 720px;
+  max-width: var(--container-forms);
   margin: 0 auto;
   padding: 0 var(--space-lg);
   display: flex;
@@ -499,7 +507,7 @@ h4 {
 }
 
 .onboarding-main {
-  max-width: 720px;
+  max-width: var(--container-forms);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
   width: 100%;
@@ -580,7 +588,7 @@ h4 {
 }
 /* ---------- Dashboard (prototype look, feature 17b) ---------- */
 .wrap {
-  max-width: 1020px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
   width: 100%;
@@ -857,7 +865,7 @@ table.mastery td {
 }
 
 .shell-topbar-inner {
-  max-width: 1020px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-sm) var(--space-lg);
   display: flex;
@@ -925,7 +933,7 @@ button.brand {
 .shell-content {
   flex: 1;
   min-width: 0;
-  max-width: 1020px;
+  max-width: var(--container-standard);
   width: 100%;
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
@@ -936,7 +944,7 @@ button.brand {
 
 .shell-content.standalone,
 .app {
-  max-width: 1180px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--s-32) var(--s-24) var(--s-48);
   width: 100%;
@@ -1746,7 +1754,7 @@ button:focus-visible {
   display: grid;
   grid-template-columns: 1fr 420px;
   gap: var(--s-32);
-  max-width: 1180px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--s-32) var(--s-24) var(--s-48);
   width: 100%;
@@ -1828,7 +1836,7 @@ button:focus-visible {
 
 /* ---------- Evaluating (prototype look, feature 17b) ---------- */
 .eval-wrap {
-  max-width: 640px;
+  max-width: var(--container-forms);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
   width: 100%;
@@ -1903,7 +1911,7 @@ button:focus-visible {
 
 /* ---------- Lobby (prototype look, feature 17b) ---------- */
 .lobby-wrap {
-  max-width: 960px;
+  max-width: var(--container-settings);
   margin: 0 auto;
   padding: var(--space-xl) var(--space-lg);
   width: 100%;
@@ -2091,7 +2099,7 @@ button:focus-visible {
 }
 
 .join-card {
-  max-width: 640px;
+  max-width: var(--container-forms);
   margin: var(--space-xl) auto;
 }
 
@@ -2111,7 +2119,7 @@ button:focus-visible {
   display: flex;
   flex-direction: column;
   gap: var(--space-sm);
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-md) var(--space-lg) 0;
   width: 100%;
@@ -2134,7 +2142,7 @@ button:focus-visible {
 }
 
 .live-grid {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: 0 auto;
   padding: var(--space-lg);
   width: 100%;
@@ -2552,7 +2560,7 @@ textarea.code {
  * scroll, a deliberate user-approved exception to the single-scroll sides
  * (the transcript left the problem pane so the rail space stays useful). */
 .transcript-band {
-  max-width: 1280px;
+  max-width: var(--container-standard);
   margin: var(--space-md) auto 0;
   padding: 0 var(--space-lg);
   width: 100%;
@@ -3604,5 +3612,85 @@ textarea.code {
   .voice-rail-wave {
     min-width: 0;
     flex-basis: 100%;
+  }
+}
+
+/* Responsive tiers (feature 22): named tier edges live in tokens.css
+ * (--bp-mobile-max 767px, --bp-tablet-max 899px, --bp-desktop-max 1599px). */
+
+/* Wide session container on large desktops: FHD/4K get the 1400-1800 width. */
+@media (min-width: 1600px) {
+  .state-strip,
+  .live-grid,
+  .transcript-band {
+    max-width: var(--container-session);
+  }
+}
+
+/* Data tables collapse to cards on narrow viewports. Row cells carry
+ * data-label attributes (HistoryScreen, DashboardScreen); the verdict
+ * case-table keeps its editor-pane scroll as a designed exception. */
+@media (max-width: 767px) {
+  table.hist-table thead,
+  table.mastery thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  table.hist-table,
+  table.mastery,
+  table.hist-table tbody,
+  table.mastery tbody,
+  table.hist-table tr,
+  table.mastery tr,
+  table.hist-table td,
+  table.mastery td {
+    display: block;
+    width: 100%;
+  }
+  table.hist-table tr,
+  table.mastery tr {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-sm);
+  }
+  table.hist-table td,
+  table.mastery td {
+    border: 0;
+    padding: 2px 0;
+  }
+  table.hist-table td[data-label]::before,
+  table.mastery td[data-label]::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+  }
+  table.hist-table td.hist-actions {
+    padding-top: var(--space-sm);
+  }
+}
+
+/* Compact nav below the compact tier: one scrollable row, no item lost. */
+@media (max-width: 899px) {
+  .shell-topbar-inner {
+    flex-wrap: nowrap;
+    gap: var(--space-sm);
+  }
+  .shell-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .shell-nav-link {
+    white-space: nowrap;
   }
 }

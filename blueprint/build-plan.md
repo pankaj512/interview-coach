@@ -84,6 +84,15 @@ the next unchecked item.
   - [x] V1.1-4d. **Store headers** - rewrite `packages/store/src` headers to
     the rule
 
+## Next - web client polish
+
+- [x] 22. **Responsive design system** - one breakpoint/container/type system
+  for every web client page (landing through results) across the five tiers
+  (>=1600 / 1200-1599 / 900-1199 / 768-899 / <768); consolidate breakpoint
+  sprawl, fluid `clamp()` type/spacing tokens, named container widths per
+  page, 1400-1800 session width, table-to-cards, compact nav; no behavior
+  change, verified at 1920x1080 / 1280x720 / 3840x2160
+
 ## Deferred to v2 - not next, listed so nothing is lost
 
 - [ ] V2-1. **Security, observability and failure handling** (roadmap Phase 14)

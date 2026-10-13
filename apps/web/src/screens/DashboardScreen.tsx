@@ -204,14 +204,14 @@ export function DashboardScreen({
                   const hot = skill.masteryLevel === "learning" || skill.masteryLevel === "developing";
                   return (
                     <tr key={skill.topicId}>
-                      <td>
+                      <td data-label="Topic">
                         {data.curriculum?.topics.find((topic) => topic.id === skill.topicId)?.name ??
                           skill.topicId}
                       </td>
-                      <td>
+                      <td data-label="Level">
                         <span className={hot ? "pill hot" : "pill"}>{level}</span>
                       </td>
-                      <td>
+                      <td data-label="Attempts">
                         {skill.successfulAttempts}/{skill.totalAttempts}
                       </td>
                     </tr>

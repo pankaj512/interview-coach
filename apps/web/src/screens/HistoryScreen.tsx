@@ -123,20 +123,20 @@ export function HistoryScreen({
             <tbody>
               {filtered.map((entry) => (
                 <tr key={entry.id}>
-                  <td>
+                  <td data-label="Session">
                     <strong>{entry.interviewType ?? "Coding"}</strong>{" "}
                     <span className="hint">{entry.status.replace(/_/g, " ")}</span>
                   </td>
-                  <td>{shortDate(entry.at)}</td>
-                  <td className="score">{entry.overallScore === undefined ? "" : `${entry.overallScore} / 100`}</td>
-                  <td>
+                  <td data-label="Date">{shortDate(entry.at)}</td>
+                  <td className="score" data-label="Score">{entry.overallScore === undefined ? "" : `${entry.overallScore} / 100`}</td>
+                  <td data-label="Evaluation">
                     {entry.recommendation === undefined || entry.recommendation === "" ? (
                       <span className="pill">{evaluationLabel(entry.evaluationStatus)}</span>
                     ) : (
                       <span className="pill hot">{formatRecommendation(entry.recommendation)}</span>
                     )}
                   </td>
-                  <td>{entry.difficulty === undefined ? <span className="hint">-</span> : <span className="pill">{entry.difficulty}</span>}</td>
+                  <td data-label="Difficulty">{entry.difficulty === undefined ? <span className="hint">-</span> : <span className="pill">{entry.difficulty}</span>}</td>
                   <td className="hist-actions">
                     <PrimaryButton onClick={() => onSelect(entry)} disabled={frozen}>
                       {busyId === entry.id || loading ? "Loading..." : "Review"}
