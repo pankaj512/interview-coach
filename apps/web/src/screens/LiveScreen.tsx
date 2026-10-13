@@ -192,13 +192,15 @@ export function LiveScreen({
   );
   const transcriptTurns = live.events.filter((e) => e.kind === "assistant" || e.kind === "candidate").slice(-6);
   const transcriptRef = useRef<HTMLOListElement | null>(null);
+  const columnRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const list = transcriptRef.current;
-    if (list === null) return;
-    // The transcript no longer has its own scroll container (single-scroll
-    // side), so follow new turns through the page, and only when the reader
-    // is already near the bottom.
-    if (shouldFollowTranscript(window.scrollY, window.innerHeight, document.documentElement.scrollHeight)) {
+    const column = columnRef.current;
+    if (list === null || column === null) return;
+    // The left pane is the transcript's scroll container (the room pins to
+    // the viewport), so follow new turns through the column, and only when
+    // the reader is already near its bottom.
+    if (shouldFollowTranscript(column.scrollTop, column.clientHeight, column.scrollHeight)) {
       list.scrollIntoView({ block: "end" });
     }
   }, [live.events]);
@@ -333,7 +335,7 @@ export function LiveScreen({
           </div>
 
           <div className="live-grid" ref={gridRef} style={gridStyle}>
-            <div className="live-column">
+            <div className="live-column" ref={columnRef}>
               <ProblemPanel snapshot={live.snapshot} fallbackProblem={fallbackProblem} content={content} />
               {transcriptTurns.length > 0 && (
                 <Card>

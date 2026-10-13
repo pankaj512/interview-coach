@@ -1,7 +1,7 @@
 // Problem statement splitter tests: paragraph and judge-code
 // classification on the stored plain-text shape. No DOM, no network.
 import { describe, expect, it } from "vitest";
-import { splitStatement } from "../src/components/problem-statement.js";
+import { isHtmlDescription, splitStatement } from "../src/components/problem-statement.js";
 
 const REMOVE_DUPLICATES =
   "Given an integer array nums sorted in non-decreasing order, remove the duplicates in-place.\n\n" +
@@ -47,5 +47,18 @@ describe("splitStatement", () => {
       { kind: "prose", text: "A." },
       { kind: "prose", text: "B." },
     ]);
+  });
+});
+
+describe("isHtmlDescription", () => {
+  it("routes fetched LeetCode HTML to the sanitized renderer", () => {
+    expect(isHtmlDescription("<p>Given an integer array <code>nums</code>.</p>")).toBe(true);
+    expect(isHtmlDescription('  <ul><li><code>1 &lt;= n</code></li></ul>')).toBe(true);
+  });
+
+  it("keeps plain-text statements (legacy rows, judge code) on the splitter", () => {
+    expect(isHtmlDescription("First paragraph.\n\nSecond paragraph.")).toBe(false);
+    expect(isHtmlDescription("int k = removeDuplicates(nums); // Calls it")).toBe(false);
+    expect(isHtmlDescription("Return a List<Integer> of results.")).toBe(false);
   });
 });

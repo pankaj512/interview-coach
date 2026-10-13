@@ -2020,7 +2020,8 @@ button:focus-visible {
 .room {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
+  height: 100vh;
+  height: 100dvh;
   background: var(--bg);
   color: var(--text);
 }
@@ -2112,9 +2113,11 @@ button:focus-visible {
   margin: 0 auto;
   padding: var(--space-lg);
   width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
   display: flex;
   gap: var(--space-sm);
-  align-items: flex-start;
+  align-items: stretch;
 }
 
 /* Draggable problem/editor split: the editor basis is the session-only
@@ -2124,7 +2127,9 @@ button:focus-visible {
 .live-grid > .live-column {
   flex: 1 1 0;
   min-width: min(300px, 100%);
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: auto;
 }
 
 .live-grid .card {
@@ -2154,7 +2159,9 @@ button:focus-visible {
 .live-grid > .card {
   flex: 0 1 var(--editor-pct, 55%);
   min-width: min(300px, 100%);
+  min-height: 0;
   overflow-x: auto;
+  overflow-y: auto;
 }
 
 .live-grid .event-log {
@@ -2191,7 +2198,12 @@ button:focus-visible {
 }
 
 @media (max-width: 900px) {
+  .room {
+    height: auto;
+    min-height: 100vh;
+  }
   .live-grid {
+    flex: 0 1 auto;
     flex-direction: column;
     align-items: stretch;
   }
@@ -2199,6 +2211,7 @@ button:focus-visible {
   .live-grid > .card {
     flex: 0 1 auto;
     width: 100%;
+    overflow-y: visible;
   }
   .split-divider {
     display: none;
@@ -2274,6 +2287,57 @@ table.cases td {
   cursor: default;
   font-size: 11px;
   padding: 1px 8px;
+}
+
+/* Injected LeetCode statement HTML: the global p reset packs paragraphs
+ * wall-to-wall, so restore vertical rhythm inside the statement only. */
+.statement-html p {
+  margin: 0 0 var(--s-12);
+}
+
+.statement-html p:last-child {
+  margin-bottom: 0;
+}
+
+.statement-html pre {
+  margin: 0 0 var(--s-12);
+}
+
+/* LeetCode-style stacked samples: Example N with Input / Output /
+ * Explanation blocks instead of the old Case table. */
+.example-list {
+  list-style: none;
+  margin: var(--s-12) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s-16);
+}
+
+.example {
+  border-top: var(--bw-1) solid var(--line-base);
+  padding-top: var(--s-12);
+}
+
+.example-title {
+  margin: 0 0 var(--s-8);
+  font-size: var(--fs-small);
+}
+
+.example-label {
+  margin: 0 0 var(--s-4);
+  font-size: var(--fs-small);
+  font-weight: 600;
+  color: var(--ink-faint);
+}
+
+.example-io {
+  margin: 0 0 var(--s-8);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.example-text {
+  margin: 0;
 }
 
 .pill.pass {
@@ -2472,8 +2536,8 @@ textarea.code {
   padding: 0;
   display: grid;
   gap: var(--space-sm);
-  max-height: 420px;
-  overflow-y: auto;
+  /* No cap here: the transcript shares the pane's single scroll (Step 1).
+   * A later max-height would beat the uncap rule above on source order. */
 }
 
 .turn {

@@ -7,8 +7,32 @@
 // History: 17b, 18c; see docs/SESSION_HANDOFF.md.
 
 import type { ProblemContent, SerializedStateSnapshot } from "../api/types.js";
-import { Fragment } from "react";
-import { splitStatement } from "./problem-statement.js";
+import DOMPurify from "isomorphic-dompurify";
+import { isHtmlDescription, splitStatement } from "./problem-statement.js";
+
+/** Sanitize third-party LeetCode HTML before injection: content tags
+ *  (incl. img) render as authored; scripts, forms, event handlers, and
+ *  LeetCode's class/style/id cruft are stripped. */
+export function sanitizeDescriptionHtml(html: string): string {
+  return DOMPurify.sanitize(html, {
+    FORBID_TAGS: [
+      "style",
+      "form",
+      "input",
+      "button",
+      "textarea",
+      "select",
+      "option",
+      "iframe",
+      "object",
+      "embed",
+      "link",
+      "meta",
+      "base",
+    ],
+    FORBID_ATTR: ["class", "style", "id"],
+  });
+}
 
 export function ProblemPanel({
   snapshot,
@@ -44,14 +68,19 @@ export function ProblemPanel({
       <span className="chip">{problem.difficulty}</span>
       <h2>{problem.title}</h2>
       {description !== undefined && description !== null && description !== "" ? (
-        splitStatement(description).map((block, i) =>
-          block.kind === "code" ? (
-            <pre key={i}>
-              <code>{block.text}</code>
-            </pre>
-          ) : (
-            <p key={i}>{block.text}</p>
-          ),
+        isHtmlDescription(description) ? (
+          // Fetched LeetCode HTML, sanitized above.
+          <div className="statement-html" dangerouslySetInnerHTML={{ __html: sanitizeDescriptionHtml(description) }} />
+        ) : (
+          splitStatement(description).map((block, i) =>
+            block.kind === "code" ? (
+              <pre key={i}>
+                <code>{block.text}</code>
+              </pre>
+            ) : (
+              <p key={i}>{block.text}</p>
+            ),
+          )
         )
       ) : (
         <p className="note">
@@ -70,33 +99,23 @@ export function ProblemPanel({
       )}
       <h3 className="subhead">Sample test cases</h3>
       {examples !== undefined && examples !== null && examples.length > 0 ? (
-        <table className="cases">
-          <thead>
-            <tr>
-              <th>Case</th>
-              <th>Input</th>
-              <th>Expected</th>
-            </tr>
-          </thead>
-          <tbody>
-            {examples.map((example, i) => (
-              <Fragment key={i}>
-                <tr>
-                  <td>{`sample ${i + 1}`}</td>
-                  <td>{example.input}</td>
-                  <td>{example.output}</td>
-                </tr>
-                {example.explanation !== undefined && example.explanation !== "" && (
-                  <tr>
-                    <td colSpan={3} className="note">
-                      {`Sample ${i + 1}: ${example.explanation}`}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+        <ol className="example-list">
+          {examples.map((example, i) => (
+            <li key={i} className="example">
+              <h4 className="example-title">{`Example ${i + 1}`}</h4>
+              <p className="example-label">Input</p>
+              <pre className="example-io">{example.input}</pre>
+              <p className="example-label">Output</p>
+              <pre className="example-io">{example.output}</pre>
+              {example.explanation !== undefined && example.explanation !== "" && (
+                <>
+                  <p className="example-label">Explanation</p>
+                  <p className="example-text">{example.explanation}</p>
+                </>
+              )}
+            </li>
+          ))}
+        </ol>
       ) : (
         <p className="note">No sample test case available for this problem yet.</p>
       )}

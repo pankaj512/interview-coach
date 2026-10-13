@@ -32,3 +32,13 @@ export function splitStatement(description: string): StatementBlock[] {
         : { kind: "prose", text: part } satisfies StatementBlock;
     });
 }
+
+/** Route a description to the sanitized-HTML renderer when it starts with
+ *  a content tag (fetched LeetCode HTML). Plain-text statements (legacy
+ *  rows, fetch failures) keep the splitter above, so judge code blocks and
+ *  gap prose render exactly as before. */
+export function isHtmlDescription(description: string): boolean {
+  return /^\s*<(p|div|ul|ol|pre|table|blockquote|h\d|strong|em|code|span|a|img|sup|sub)[\s>/]/i.test(
+    description,
+  );
+}

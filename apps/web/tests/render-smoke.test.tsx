@@ -255,8 +255,10 @@ describe("screen render smoke", () => {
     );
     expect(html).toContain("Move all zeroes to the end.");
     expect(html).toContain("1 &lt;= n");
-    expect(html).toContain("sample 1");
-    expect(html).toContain("sample 2");
+    expect(html).toContain("Example 1");
+    expect(html).toContain("Example 2");
+    expect(html).toContain("Input");
+    expect(html).toContain("Output");
   });
   it("ProblemPanel falls back to title-only for gap content and while loading", () => {
     const gap = renderToString(
@@ -297,8 +299,34 @@ describe("screen render smoke", () => {
     expect(html).toContain("<p>First paragraph.</p>");
     expect(html).toContain("<p>Second paragraph.</p>");
     expect(html).toContain("<pre>");
-    expect(html).toContain("Sample 1: It does not matter what you leave beyond k.");
-    expect(html).not.toContain("Sample 2:");
+    expect(html).toContain("Example 1");
+    expect(html).toContain("Explanation");
+    expect(html).toContain("It does not matter what you leave beyond k.");
+    expect(html.match(/Explanation/g)).toHaveLength(1);
+  });
+  it("ProblemPanel renders fetched HTML as authored and strips hostile markup", () => {
+    const html = renderToString(
+      <ProblemPanel
+        snapshot={null}
+        fallbackProblem={dashboardProblem}
+        content={{
+          id: "prob_move-zeroes",
+          title: "Move Zeroes",
+          difficulty: "Easy",
+          description:
+            '<p>Move all <code>0</code>\'s to the end.</p><p><strong>Note</strong> that you must do this in-place.</p><ul><li>swap</li><li>return</li></ul><script>alert(1)</script><p onclick="evil()">text</p>',
+          constraints: ["1 <= n <= 10^4"],
+          examples: [{ input: "nums = [0,1]", output: "[1,0]" }],
+          starters: null,
+          runnerLinks: null,
+        }}
+      />,
+    );
+    expect(html).toContain("<code>0</code>");
+    expect(html).toContain("<strong>Note</strong>");
+    expect(html).toContain("<li>swap</li>");
+    expect(html).not.toContain("<script>");
+    expect(html).not.toContain("onclick");
   });
   it("EvaluatingScreen renders", () => {
     const html = renderToString(<EvaluatingScreen />);
