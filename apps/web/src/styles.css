@@ -854,14 +854,23 @@ table.mastery td {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: #f9fcff;
+  background-image:
+    radial-gradient(circle at 50% -18%, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 48%),
+    linear-gradient(rgba(148, 184, 216, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 184, 216, 0.09) 1px, transparent 1px);
+  background-size: auto, 64px 64px, 64px 64px;
+  background-position: center top, center top, center top;
 }
 
 .shell-topbar {
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 10;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .shell-topbar-inner {
@@ -940,6 +949,14 @@ button.brand {
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.62) 0%,
+    rgba(255, 255, 255, 0.34) 30%,
+    rgba(255, 255, 255, 0.18) 100%
+  );
+  border-left: 1px solid rgba(148, 184, 216, 0.1);
+  border-right: 1px solid rgba(148, 184, 216, 0.1);
 }
 
 .shell-content.standalone,
@@ -2030,7 +2047,13 @@ button:focus-visible {
   flex-direction: column;
   height: 100vh;
   height: 100dvh;
-  background: var(--bg);
+  background-color: #f9fcff;
+  background-image:
+    radial-gradient(circle at 50% -18%, rgba(16, 185, 129, 0.08) 0%, rgba(16, 185, 129, 0) 48%),
+    linear-gradient(rgba(148, 184, 216, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 184, 216, 0.09) 1px, transparent 1px);
+  background-size: auto, 64px 64px, 64px 64px;
+  background-position: center top, center top, center top;
   color: var(--text);
 }
 
@@ -2040,11 +2063,13 @@ button:focus-visible {
   align-items: stretch;
   gap: var(--space-xs);
   padding: var(--space-sm) var(--space-lg);
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.9);
   border-bottom: 1px solid var(--border);
   position: sticky;
   top: 0;
   z-index: 5;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .live-topbar-row {
