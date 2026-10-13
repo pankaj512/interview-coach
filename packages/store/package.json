@@ -10,7 +10,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx src/migrate.ts",
     "db:seed": "tsx src/seed.ts",
-    "db:content": "tsx scripts/generate-problem-content.mts"
+    "db:content": "tsx ../../scripts/store/generate-problem-content.mts"
   },
   "dependencies": {
     "@interview-coach/core": "workspace:*",

@@ -33,7 +33,7 @@ const ENTRY_TOKEN = "__ENTRY__";
  * truncated stubs whose bodies are blank whitespace, which is a Python
  * SyntaxError; signatures and annotations are intact. Idempotent for valid
  * code: a header line followed by a deeper-indented block is never touched.
- * Comment lines are skipped. Mirrors `packages/store/scripts/census.py`.
+ * Comment lines are skipped. Mirrors `scripts/store/census.py`.
  */
 export function repairEmptyBodies(source: string): string {
   const lines = source.split("\n");
