@@ -100,7 +100,7 @@ the next unchecked item.
   manifest for Markdown prompt parts, variable interpolation, and startup-safe
   validation errors; keep all existing inline prompt behavior active in this
   step (infra only)
-- [ ] 24. **Submit-verdict prompt migration** - move
+- [x] 24. **Submit-verdict prompt migration** - move
   `submit-verdict-model.ts` prompt content to Markdown fragments + JSON
   assembly manifest; keep parser, model call shape, and route behavior
   unchanged

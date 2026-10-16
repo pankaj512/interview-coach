@@ -16,6 +16,9 @@ import {
   type SubmitVerdictModelResult,
 } from "@interview-coach/core";
 import type { LlmConfig } from "./config.js";
+import { loadPromptSet } from "./prompts/loader.js";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
   buildChatRequest,
   defaultFetch,
@@ -29,17 +32,23 @@ import {
   type LlmProviderName,
 } from "./llm-transport.js";
 
-const SYSTEM_PROMPT = [
-  "You are the code-judge engine for a DSA interview-practice coach.",
-  "Judge ONLY the provided candidate code against the given problem.",
-  "Decide correctness (correct, incorrect, or uncertain when the problem context is missing),",
-  "state the judged time/space complexity and whether it is optimal,",
-  "list break-points (inputs or conditions where the code fails or degrades),",
-  "and list edge cases worth considering.",
-  "Never invent executed runs or hidden tests; reason from the code alone.",
-  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
-  '{"correctness": "correct|incorrect|uncertain", "correctnessNotes": "<why>", "optimality": "<time/space>", "optimalityNotes": "<why>", "breakPoints": ["..."], "edgeCases": ["..."], "summary": "<one or two sentences>"}',
-].join("\n");
+// System prompt is file-owned (prompts/submit-verdict/): loaded once at
+// module scope so a broken prompt file fails fast at boot.
+const SUBMIT_VERDICT_PROMPT_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "prompts",
+  "submit-verdict",
+);
+
+function loadSubmitVerdictSystemPrompt(): string {
+  const prompt = loadPromptSet(SUBMIT_VERDICT_PROMPT_DIR, {})["submit-verdict-system"];
+  if (prompt === undefined) {
+    throw new Error(`Prompt "submit-verdict-system" missing from ${SUBMIT_VERDICT_PROMPT_DIR}`);
+  }
+  return prompt;
+}
+
+const SYSTEM_PROMPT = loadSubmitVerdictSystemPrompt();
 
 // Deterministic prompt assembly (pure, unit-tested).
 export function buildSubmitVerdictMessages(input: SubmitVerdictInput): readonly ChatMessage[] {

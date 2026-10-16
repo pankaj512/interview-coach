@@ -27,6 +27,20 @@ const input: SubmitVerdictInput = {
 const VALID_CONTENT =
   '{"correctness":"correct","correctnessNotes":"sums all items","optimality":"O(n) time, O(1) space","optimalityNotes":"optimal","breakPoints":[],"edgeCases":["empty list"],"summary":"Clean linear solution."}';
 
+// Migration lock (feature 24): the system message must stay strictly equal to
+// the approved 10-line prompt text; any drift in content or line joining fails.
+const EXPECTED_SYSTEM_PROMPT = [
+  "You are the code-judge engine for a DSA interview-practice coach.",
+  "Judge ONLY the provided candidate code against the given problem.",
+  "Decide correctness (correct, incorrect, or uncertain when the problem context is missing),",
+  "state the judged time/space complexity and whether it is optimal,",
+  "list break-points (inputs or conditions where the code fails or degrades),",
+  "and list edge cases worth considering.",
+  "Never invent executed runs or hidden tests; reason from the code alone.",
+  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
+  '{"correctness": "correct|incorrect|uncertain", "correctnessNotes": "<why>", "optimality": "<time/space>", "optimalityNotes": "<why>", "breakPoints": ["..."], "edgeCases": ["..."], "summary": "<one or two sentences>"}',
+].join("\n");
+
 function jsonResponse(status: number, content: string): { status: number; text(): Promise<string> } {
   return {
     status,
@@ -35,6 +49,12 @@ function jsonResponse(status: number, content: string): { status: number; text()
 }
 
 describe("submit-verdict prompt + parsing", () => {
+  it("keeps the file-backed system prompt byte-identical to the approved text", () => {
+    const messages = buildSubmitVerdictMessages(input);
+    expect(messages[0]?.role).toBe("system");
+    expect(messages[0]?.content).toBe(EXPECTED_SYSTEM_PROMPT);
+  });
+
   it("includes the code and asks for the JSON contract", () => {
     const messages = buildSubmitVerdictMessages(input);
     expect(messages[0]?.role).toBe("system");

@@ -1,6 +1,6 @@
 # InterviewCoach - Project Overview
 
-<!-- blueprint:source-hash 9109f52781b938181eb46d19fe7e4264639163929f18ee2791e041e9 -->
+<!-- blueprint:source-hash 01085931fccbe6f73444851697d400198266223630cb320996732a88a9474b97 -->
 
 > Voice-led DSA interview coach with a server-owned adaptive learning loop:
 > profile -> curriculum -> recommendation -> Voice Live interview ->
