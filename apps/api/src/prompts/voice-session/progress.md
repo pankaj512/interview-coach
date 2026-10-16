@@ -1,0 +1,1 @@
+Progress: {{responseCount}} recorded responses, {{hintsUsed}} hints used.

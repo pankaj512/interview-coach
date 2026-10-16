@@ -5,9 +5,12 @@
 // needs provider infra and is still parked; until then local-dev api-key
 // mode plus an explicit 503 when unconfigured.
 //
-// History: HLD 3.1/3.2; see docs/SESSION_HANDOFF.md.
+// History: HLD 3.1/3.2; 26; see docs/SESSION_HANDOFF.md.
 
 import type { InterviewId } from "@interview-coach/core";
+import { loadPromptSet } from "./prompts/loader.js";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 export type VoiceCredentialMode =
   | "entra-ephemeral"
@@ -162,14 +165,14 @@ export const FROZEN_VOICE_SESSION_CONFIG = {
   noiseReduction: "azure_deep_noise_suppression",
 } as const;
 
-const BASE_INSTRUCTIONS =
-  "You are a DSA interviewer conducting a live technical interview. " +
-  "Be concise, supportive, and rigorous. Ask one question at a time. " +
-  "The session context below is authoritative backend state: use it to ground the interview. " +
-  "Any interview information not provided there (live progress, deeper history) must be obtained through tools - never invent it. " +
-  "Use tools when the candidate asks what problem they are solving, how they performed previously, or for interview-specific context. " +
-  "After receiving tool results, reason over them and answer naturally. " +
-  "Opening behavior: when prompted to speak first at session start, greet the candidate by name if known, briefly explain this is a DSA technical interview where you will ask questions, evaluate reasoning, and ask follow-ups, tell the candidate they can think aloud and ask clarifying questions, then state the current problem from the session context in your own words (title, difficulty, and what it asks) and invite the candidate to introduce themselves and begin. If no problem is in context, ask the candidate to introduce themselves and begin.";
+// Session instructions are file-owned (prompts/voice-session/): loaded per
+// call because interpolation vars differ per mint. A broken prompt file
+// throws fail-closed instead of sending a broken prompt.
+const VOICE_SESSION_PROMPT_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "prompts",
+  "voice-session",
+);
 
 export interface SessionInstructionContext {
   readonly candidateId: string;
@@ -206,49 +209,50 @@ export function buildSessionInstructions(input: {
   skillSummary?: string;
 }): string {
   const context: SessionInstructionContext = input;
-  const lines = [
-    BASE_INSTRUCTIONS,
-    "",
-    "Interview conduct (HLD Phase 5):",
-    "- Ask one question at a time; probe reasoning before giving hints.",
-    "- Hint policy: give at most 3 escalating tiers conversationally (1 concept nudge, 2 approach scaffold, 3 detailed plan). Never reveal or dictate the final code.",
-    "- Record what the candidate says with submit_interview_data (kind: answer/approach/code/question/note plus content) so the backend persists it. Persist candidate code the same way (language javascript|python, code, problemId?).",
-    "- Read the candidate's live editor code with get_candidate_code when they ask what you can see or when discussing their implementation. It returns the current editor content, which may be newer than the last tested submission.",
-    "- After a Submit result arrives, or when the candidate refers to submitted code, fetch it fresh with get_last_submission (the live editor may have moved on). It returns found:false when nothing was submitted yet.",
-    "- Code execution stays outside the realtime tools: the candidate runs code in the app workspace - ask them to share the run outcome, then discuss it. Timeout/error outcomes are results - discuss them, don't treat them as tool failures. Hidden cases report pass/fail only; never invent their contents.",
-    "- Read interview rules and progress with get_current_interview; read the current problem with get_current_problem.",
-    "- Signal done with end_interview only when the candidate has finished; the app finalizes state.",
-    "",
-    "Session context (authoritative backend state):",
-    `Candidate: ${context.candidateId}`,
-    `Interview: ${context.interviewId}`,
-    "Anything not stated here (live progress, deeper history, problem details) is available ONLY via tools. Do not invent it.",
-  ];
+  const set = loadPromptSet(VOICE_SESSION_PROMPT_DIR, {
+    candidateId: context.candidateId,
+    interviewId: context.interviewId,
+    profileSummary: context.profileSummary ?? "",
+    configurationSummary: context.configurationSummary ?? "",
+    topicSummary: context.topicSummary ?? "",
+    objectiveSummary: context.objectiveSummary ?? "",
+    skillSummary: context.skillSummary ?? "",
+    problemSummary: context.problemSummary ?? "",
+    responseCount: String(context.responseCount ?? 0),
+    hintsUsed: String(context.hintsUsed ?? 0),
+    sandboxSummary: context.sandboxSummary ?? "",
+  });
+  const line = (name: string): string => {
+    const rendered = set[name];
+    if (rendered === undefined) {
+      throw new Error(`Prompt "${name}" missing from ${VOICE_SESSION_PROMPT_DIR}`);
+    }
+    return rendered;
+  };
+  const lines = line("session-base").split("\n");
   if (context.profileSummary !== undefined && context.profileSummary !== "") {
-    lines.push(`Learner: ${context.profileSummary}.`);
+    lines.push(line("learner-line"));
   }
   if (context.configurationSummary !== undefined && context.configurationSummary !== "") {
-    lines.push(`Configuration: ${context.configurationSummary}`);
+    lines.push(line("configuration-line"));
   }
   if (context.topicSummary !== undefined && context.topicSummary !== "") {
-    lines.push(`Focus topic: ${context.topicSummary}.`);
+    lines.push(line("focus-topic-line"));
   }
   if (context.objectiveSummary !== undefined && context.objectiveSummary !== "") {
-    lines.push(`Learning objective: ${context.objectiveSummary}.`);
+    lines.push(line("objective-line"));
   }
   if (context.skillSummary !== undefined && context.skillSummary !== "") {
-    lines.push(`Prior skill state: ${context.skillSummary}.`);
+    lines.push(line("skill-line"));
   }
   if (context.problemSummary !== undefined && context.problemSummary !== "") {
-    lines.push(`Current problem: ${context.problemSummary}`);
+    lines.push(line("problem-line"));
   }
   if (context.responseCount !== undefined || context.hintsUsed !== undefined) {
-    lines.push(
-      `Progress: ${context.responseCount ?? 0} recorded responses, ${context.hintsUsed ?? 0} hints used.`,
-    );
+    lines.push(line("progress-line"));
   }
   if (context.sandboxSummary !== undefined && context.sandboxSummary !== "") {
-    lines.push(`Code: ${context.sandboxSummary}.`);
+    lines.push(line("code-line"));
   }
   return lines.join("\n");
 }

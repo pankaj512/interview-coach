@@ -1,0 +1,1 @@
+Prior skill state: {{skillSummary}}.
