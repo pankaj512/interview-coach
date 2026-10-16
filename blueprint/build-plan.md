@@ -104,7 +104,7 @@ the next unchecked item.
   `submit-verdict-model.ts` prompt content to Markdown fragments + JSON
   assembly manifest; keep parser, model call shape, and route behavior
   unchanged
-- [ ] 25. **Evaluation prompt migration** - move
+- [x] 25. **Evaluation prompt migration** - move
   `evaluation-model.ts` prompt content to Markdown fragments + JSON assembly,
   reusing shared fragments where useful; keep scoring/parse behavior unchanged
 - [ ] 26. **Voice-session instruction migration** - move

@@ -15,6 +15,9 @@ import {
   type EvaluationProposal,
 } from "@interview-coach/core";
 import type { LlmConfig } from "./config.js";
+import { loadPromptSet } from "./prompts/loader.js";
+import { fileURLToPath } from "node:url";
+import { dirname, join } from "node:path";
 import {
   buildChatRequest,
   defaultFetch,
@@ -28,16 +31,23 @@ import {
   type LlmProviderName,
 } from "./llm-transport.js";
 
-const SYSTEM_PROMPT = [
-  "You are the evaluation engine for a DSA interview-practice coach.",
-  "Judge the candidate's performance from the provided transcript, responses, code, and run results.",
-  "Score ONLY these dimensions, each 0-5, and include a short evidence note per dimension:",
-  "problem_understanding, approach, communication, coding, testing_debugging, complexity_analysis, independence.",
-  "Omit a dimension you have no evidence for; never invent code or runs.",
-  "Independence reflects how much the candidate needed hints (more hints -> lower).",
-  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
-  '{"dimensions": {"<dimension>": {"score": <0-5>, "notes": "<evidence>"}}, "strengths": ["..."], "weaknesses": ["..."]}',
-].join("\n");
+// System prompt is file-owned (prompts/evaluation/): loaded once at
+// module scope so a broken prompt file fails fast at boot.
+const EVALUATION_PROMPT_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "prompts",
+  "evaluation",
+);
+
+function loadEvaluationSystemPrompt(): string {
+  const prompt = loadPromptSet(EVALUATION_PROMPT_DIR, {})["evaluation-system"];
+  if (prompt === undefined) {
+    throw new Error(`Prompt "evaluation-system" missing from ${EVALUATION_PROMPT_DIR}`);
+  }
+  return prompt;
+}
+
+const SYSTEM_PROMPT = loadEvaluationSystemPrompt();
 
 // Deterministic prompt assembly (pure, unit-tested).
 export function buildEvaluationMessages(input: EvaluationModelInput): readonly ChatMessage[] {
