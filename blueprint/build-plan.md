@@ -95,7 +95,7 @@ the next unchecked item.
 
 ## Next - prompt externalization (server, no behavior change)
 
-- [ ] 23. **Prompt file infrastructure (Markdown + JSON assembly)** - add
+- [x] 23. **Prompt file infrastructure (Markdown + JSON assembly)** - add
   `apps/api/src/prompts/` with a loader and schema-validated JSON assembly
   manifest for Markdown prompt parts, variable interpolation, and startup-safe
   validation errors; keep all existing inline prompt behavior active in this
