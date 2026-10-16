@@ -294,7 +294,7 @@ describe("voice-session sandbox context", () => {
     const session = (res.json() as { session: Record<string, unknown> }).session;
     const instructions = session["instructions"] as string;
     expect(instructions).toContain("submit_interview_data");
-    expect(instructions).toContain("Code execution stays outside the realtime tools");
+    expect(instructions).toContain("outside the realtime interview tools");
     expect(instructions).toContain("1 submission, not run yet");
   });
 });

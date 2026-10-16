@@ -1,6 +1,7 @@
 // S3 voice-session: mint (credential boundary), auto-start, cleanup.
 
 import { afterEach, describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import { buildApp } from "../src/app.js";
 import { loadConfig } from "../src/config.js";
 import {
@@ -15,6 +16,10 @@ import { buildTestBackend, createStartedInterview, seedCurriculum, seedDataAvail
 import type { TestBackend } from "./helpers.js";
 
 let backend: TestBackend | null = null;
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 afterEach(async () => {
   if (backend !== null) await backend.app.close();
   backend = null;
@@ -236,7 +241,8 @@ describe("voice-session", () => {
     expect(instructions).toContain("Learning objective: Build fluency with linear scans.");
     expect(instructions).toContain("Prior skill state: mastery Developing");
     expect(instructions).toContain("Current problem: Move Zeroes (Easy)");
-    expect(instructions).toContain("state the current problem from the session context");
+    expect(instructions).toContain("Present the current problem in your own natural words");
+    expect(instructions).toContain("Ask one question at a time.");
     // No context fields: the generic interview still renders without the lines.
     const bare = buildSessionInstructions({ candidateId: "user_1", interviewId: "int_1" });
     expect(bare).not.toContain("Learner:");
@@ -244,55 +250,28 @@ describe("voice-session", () => {
   });
 
   // Feature 26: file-backed instructions must render byte-identical output.
+  // SHA-256 pins every byte without embedding the ~300-line prompt here.
   it("renders byte-identical instructions for bare and fully-populated inputs", () => {
-    const base = [
-      "You are a DSA interviewer conducting a live technical interview. Be concise, supportive, and rigorous. Ask one question at a time. The session context below is authoritative backend state: use it to ground the interview. Any interview information not provided there (live progress, deeper history) must be obtained through tools - never invent it. Use tools when the candidate asks what problem they are solving, how they performed previously, or for interview-specific context. After receiving tool results, reason over them and answer naturally. Opening behavior: when prompted to speak first at session start, greet the candidate by name if known, briefly explain this is a DSA technical interview where you will ask questions, evaluate reasoning, and ask follow-ups, tell the candidate they can think aloud and ask clarifying questions, then state the current problem from the session context in your own words (title, difficulty, and what it asks) and invite the candidate to introduce themselves and begin. If no problem is in context, ask the candidate to introduce themselves and begin.",
-      "",
-      "Interview conduct (HLD Phase 5):",
-      "- Ask one question at a time; probe reasoning before giving hints.",
-      "- Hint policy: give at most 3 escalating tiers conversationally (1 concept nudge, 2 approach scaffold, 3 detailed plan). Never reveal or dictate the final code.",
-      "- Record what the candidate says with submit_interview_data (kind: answer/approach/code/question/note plus content) so the backend persists it. Persist candidate code the same way (language javascript|python, code, problemId?).",
-      "- Read the candidate's live editor code with get_candidate_code when they ask what you can see or when discussing their implementation. It returns the current editor content, which may be newer than the last tested submission.",
-      "- After a Submit result arrives, or when the candidate refers to submitted code, fetch it fresh with get_last_submission (the live editor may have moved on). It returns found:false when nothing was submitted yet.",
-      "- Code execution stays outside the realtime tools: the candidate runs code in the app workspace - ask them to share the run outcome, then discuss it. Timeout/error outcomes are results - discuss them, don't treat them as tool failures. Hidden cases report pass/fail only; never invent their contents.",
-      "- Read interview rules and progress with get_current_interview; read the current problem with get_current_problem.",
-      "- Signal done with end_interview only when the candidate has finished; the app finalizes state.",
-      "",
-      "Session context (authoritative backend state):",
-      "Candidate: user_1",
-      "Interview: int_1",
-      "Anything not stated here (live progress, deeper history, problem details) is available ONLY via tools. Do not invent it.",
-    ];
-    expect(buildSessionInstructions({ candidateId: "user_1", interviewId: "int_1" })).toBe(
-      base.join("\n"),
-    );
     expect(
-      buildSessionInstructions({
-        candidateId: "user_1",
-        interviewId: "int_1",
-        configurationSummary: "DSA interview",
-        problemSummary: "Move Zeroes (Easy) - two pointers",
-        responseCount: 3,
-        hintsUsed: 1,
-        sandboxSummary: "2 submissions, latest run failed (1/3)",
-        profileSummary: "Preparing for Senior Backend Engineer",
-        topicSummary: "Arrays (module: Arrays & Hashing)",
-        objectiveSummary: "Build fluency with linear scans",
-        skillSummary: "mastery Developing",
-      }),
-    ).toBe(
-      [
-        ...base,
-        "Learner: Preparing for Senior Backend Engineer.",
-        "Configuration: DSA interview",
-        "Focus topic: Arrays (module: Arrays & Hashing).",
-        "Learning objective: Build fluency with linear scans.",
-        "Prior skill state: mastery Developing.",
-        "Current problem: Move Zeroes (Easy) - two pointers",
-        "Progress: 3 recorded responses, 1 hints used.",
-        "Code: 2 submissions, latest run failed (1/3).",
-      ].join("\n"),
-    );
+      sha256Hex(buildSessionInstructions({ candidateId: "user_1", interviewId: "int_1" })),
+    ).toBe("6a23c306e52ffc5a172df0265d1aaf9483e5f079a4fba3408563dbf4b1919081");
+    expect(
+      sha256Hex(
+        buildSessionInstructions({
+          candidateId: "user_1",
+          interviewId: "int_1",
+          configurationSummary: "DSA interview",
+          problemSummary: "Move Zeroes (Easy) - two pointers",
+          responseCount: 3,
+          hintsUsed: 1,
+          sandboxSummary: "2 submissions, latest run failed (1/3)",
+          profileSummary: "Preparing for Senior Backend Engineer",
+          topicSummary: "Arrays (module: Arrays & Hashing)",
+          objectiveSummary: "Build fluency with linear scans",
+          skillSummary: "mastery Developing",
+        }),
+      ),
+    ).toBe("4b886d8b0a6663486638dff3e9c0996569cd9983d2471c238493cd16f5c37cae");
   });
 
   // Phase 7: a user-session mint loads the server-owned profile + curriculum +

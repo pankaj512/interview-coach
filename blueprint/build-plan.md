@@ -110,7 +110,7 @@ the next unchecked item.
 - [x] 26. **Voice-session instruction migration** - move
   `voice-session.ts` instruction content to Markdown fragments + JSON assembly;
   preserve dynamic session interpolation and route payload shape unchanged
-- [ ] 27. **Recommendation prompt migration** - move
+- [x] 27. **Recommendation prompt migration** - move
   `recommendation-model.ts` prompt content to Markdown fragments + JSON
   assembly; keep recommendation parser and fallback behavior unchanged
 

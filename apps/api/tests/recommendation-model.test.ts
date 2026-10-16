@@ -2,6 +2,7 @@
 // Azure Foundry adapter against a fake HTTP transport (no live LLM).
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 import {
   asCurriculumId,
   asProblemId,
@@ -41,6 +42,16 @@ const input: RecommendationModelInput = {
 const VALID_CONTENT =
   '{"recommendationType":"new_topic","topicId":"topic_arrays","problemId":"prob_two-sum","reason":"Start with Two Sum."}';
 
+// Migration lock (feature 27): the system message must stay byte-identical to
+// the approved file-backed text (SHA-256 pins every byte without embedding the
+// ~170-line prompt here); any drift in content or line joining fails.
+const EXPECTED_SYSTEM_PROMPT_SHA256 =
+  "dadca6ad49229fa89dfe6bc3b8ff7011aadc5f0d76d57446743fe29cea2bfdb9";
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
+
 function jsonResponse(status: number, content: string): { status: number; text(): Promise<string> } {
   return {
     status,
@@ -52,7 +63,7 @@ describe("recommendation prompt + parsing", () => {
   it("includes the candidate menu and asks for the JSON contract", () => {
     const messages = buildRecommendationMessages(input);
     expect(messages[0]?.role).toBe("system");
-    expect(messages[0]?.content).toContain("recommendationType");
+    expect(sha256Hex(String(messages[0]?.content))).toBe(EXPECTED_SYSTEM_PROMPT_SHA256);
     const user = messages[1]?.content ?? "";
     expect(user).toContain("prob_two-sum");
     expect(user).toContain("topic_arrays");

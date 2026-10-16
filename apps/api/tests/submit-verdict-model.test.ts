@@ -2,6 +2,7 @@
 // Azure Foundry adapter against a fake HTTP transport (no live LLM).
 
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import type { SubmitVerdictInput } from "@interview-coach/core";
 import {
   AzureFoundrySubmitVerdictModel,
@@ -11,6 +12,10 @@ import {
   UnconfiguredSubmitVerdictModel,
 } from "../src/submit-verdict-model.js";
 import type { LlmFetch } from "../src/recommendation-model.js";
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 const input: SubmitVerdictInput = {
   interviewId: "iv_1",
@@ -27,19 +32,11 @@ const input: SubmitVerdictInput = {
 const VALID_CONTENT =
   '{"correctness":"correct","correctnessNotes":"sums all items","optimality":"O(n) time, O(1) space","optimalityNotes":"optimal","breakPoints":[],"edgeCases":["empty list"],"summary":"Clean linear solution."}';
 
-// Migration lock (feature 24): the system message must stay strictly equal to
-// the approved 10-line prompt text; any drift in content or line joining fails.
-const EXPECTED_SYSTEM_PROMPT = [
-  "You are the code-judge engine for a DSA interview-practice coach.",
-  "Judge ONLY the provided candidate code against the given problem.",
-  "Decide correctness (correct, incorrect, or uncertain when the problem context is missing),",
-  "state the judged time/space complexity and whether it is optimal,",
-  "list break-points (inputs or conditions where the code fails or degrades),",
-  "and list edge cases worth considering.",
-  "Never invent executed runs or hidden tests; reason from the code alone.",
-  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
-  '{"correctness": "correct|incorrect|uncertain", "correctnessNotes": "<why>", "optimality": "<time/space>", "optimalityNotes": "<why>", "breakPoints": ["..."], "edgeCases": ["..."], "summary": "<one or two sentences>"}',
-].join("\n");
+// Prompt lock: the system message must stay byte-identical to the approved
+// file-backed text (SHA-256 pins every byte without embedding the ~200-line
+// prompt here); any drift in content or line joining fails.
+const EXPECTED_SYSTEM_PROMPT_SHA256 =
+  "15742aa18d1c41b1cecf4026802f0d88a58f9ee352b03aa349418b7f4794b31d";
 
 function jsonResponse(status: number, content: string): { status: number; text(): Promise<string> } {
   return {
@@ -52,7 +49,7 @@ describe("submit-verdict prompt + parsing", () => {
   it("keeps the file-backed system prompt byte-identical to the approved text", () => {
     const messages = buildSubmitVerdictMessages(input);
     expect(messages[0]?.role).toBe("system");
-    expect(messages[0]?.content).toBe(EXPECTED_SYSTEM_PROMPT);
+    expect(sha256Hex(String(messages[0]?.content))).toBe(EXPECTED_SYSTEM_PROMPT_SHA256);
   });
 
   it("includes the code and asks for the JSON contract", () => {

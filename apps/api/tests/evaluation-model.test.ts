@@ -3,6 +3,7 @@
 // recommendation factory test; here the factory's selection rules are pinned.
 
 import { describe, expect, it } from "vitest";
+import { createHash } from "node:crypto";
 import type { EvaluationModelInput } from "@interview-coach/core";
 import {
   AzureFoundryEvaluationModel,
@@ -79,21 +80,21 @@ const LOCK_INPUT: EvaluationModelInput = {
   hintsUsed: 0,
 };
 
-const EXPECTED_SYSTEM_PROMPT = [
-  "You are the evaluation engine for a DSA interview-practice coach.",
-  "Judge the candidate's performance from the provided transcript, responses, code, and run results.",
-  "Score ONLY these dimensions, each 0-5, and include a short evidence note per dimension:",
-  "problem_understanding, approach, communication, coding, testing_debugging, complexity_analysis, independence.",
-  "Omit a dimension you have no evidence for; never invent code or runs.",
-  "Independence reflects how much the candidate needed hints (more hints -> lower).",
-  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
-  '{"dimensions": {"<dimension>": {"score": <0-5>, "notes": "<evidence>"}}, "strengths": ["..."], "weaknesses": ["..."]}',
-].join("\n");
+// Prompt lock: the system message must stay byte-identical to the approved
+// file-backed text (SHA-256 pins every byte without embedding the ~300-line
+// prompt here); any drift in content or line joining fails.
+const EXPECTED_SYSTEM_PROMPT_SHA256 =
+  "d68c1aca10f43223bc20a3ac6b86a5a5184acda517a89ef12626ac7817517019";
+
+function sha256Hex(value: string): string {
+  return createHash("sha256").update(value, "utf8").digest("hex");
+}
 
 describe("evaluation prompt file migration", () => {
   it("keeps the file-backed system prompt byte-identical to the approved text", () => {
     const messages = buildEvaluationMessages(LOCK_INPUT);
     expect(messages[0]?.role).toBe("system");
-    expect(messages[0]?.content).toBe(EXPECTED_SYSTEM_PROMPT);
+    expect(messages[0]?.content).toBeDefined();
+    expect(sha256Hex(String(messages[0]?.content))).toBe(EXPECTED_SYSTEM_PROMPT_SHA256);
   });
 });

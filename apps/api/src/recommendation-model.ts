@@ -5,7 +5,7 @@
 // persists. Surprising: failures are data (`{ proposal: null, error }`),
 // and no credential ever leaves this process.
 //
-// History: Phase 4; see docs/SESSION_HANDOFF.md.
+// History: Phase 4; 27; see docs/SESSION_HANDOFF.md.
 
 import type {
   RecommendationModel,
@@ -14,6 +14,9 @@ import type {
   RecommendationProposal,
 } from "@interview-coach/core";
 import type { LlmConfig } from "./config.js";
+import { loadPromptSet } from "./prompts/loader.js";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   buildChatRequest,
   defaultFetch,
@@ -32,15 +35,23 @@ import {
 export type { ChatMessage, LlmFetch } from "./llm-transport.js";
 export { extractChatContent } from "./llm-transport.js";
 
-const SYSTEM_PROMPT = [
-  "You are the recommendation engine for an interview-practice coach.",
-  "Choose the single best next practice problem for the candidate from the CANDIDATE SET.",
-  "You MUST choose a (topicId, problemId) pair that appears in the candidate set; never invent or modify IDs.",
-  "Prefer reinforcing weaknesses and continuing the current topic over jumping ahead.",
-  "Reply with ONLY a JSON object, no prose and no markdown, shaped exactly as:",
-  '{"recommendationType": "<type>", "topicId": "<topicId>", "problemId": "<problemId>", "reason": "<1-2 sentences, second person>"}',
-  "recommendationType must be one of: new_topic, continue_topic, reinforce_weakness, review_topic, advance_topic.",
-].join("\n");
+// System prompt is file-owned (prompts/recommendation/): loaded once at
+// module scope so a broken prompt file fails fast at boot.
+const RECOMMENDATION_PROMPT_DIR = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "prompts",
+  "recommendation",
+);
+
+function loadRecommendationSystemPrompt(): string {
+  const prompt = loadPromptSet(RECOMMENDATION_PROMPT_DIR, {})["recommendation-system"];
+  if (prompt === undefined) {
+    throw new Error(`Prompt "recommendation-system" missing from ${RECOMMENDATION_PROMPT_DIR}`);
+  }
+  return prompt;
+}
+
+const SYSTEM_PROMPT = loadRecommendationSystemPrompt();
 
 // Deterministic prompt assembly (pure, unit-tested). The candidate set is the
 // closed menu; profile/skill/progress are context, never instructions.

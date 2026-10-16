@@ -201,6 +201,6 @@ describe("S5 structured voice instructions", () => {
     expect(instructions).toContain("get_current_interview");
     expect(instructions).not.toContain("get_problem_hint");
     expect(instructions).not.toContain("record_candidate_answer");
-    expect(instructions).toContain("Never reveal");
+    expect(instructions).toContain("do not provide the final code");
   });
 });
