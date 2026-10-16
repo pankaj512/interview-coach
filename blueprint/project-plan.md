@@ -44,9 +44,11 @@ main, UI prototype, isolated multi-language sandbox, fresh UI rebuild
 AI-only Submit (18d), loop verification (19), client URL routing (20),
 provider-switchable LLM transport (21).
 
-Next: v1.1 refactoring milestone (see `build-plan.md` V1.1-1-V1.1-3) -
-apps/packages layout + rename, test kind-split, retirements + drift sweep;
-no behavior change. The v2 items stay deferred.
+Next: prompt externalization in small server-side blocks (see
+`build-plan.md` 23-27): prompt file infrastructure first, then submit-verdict,
+evaluation, voice-session, and recommendation prompt migrations. Scope is
+content/source-of-truth relocation only (Markdown + JSON assembly), with no
+behavior change to model call/parse contracts. The v2 items stay deferred.
 
 ## 4. Data - What are we storing?
 

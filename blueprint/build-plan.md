@@ -93,6 +93,27 @@ the next unchecked item.
   page, 1400-1800 session width, table-to-cards, compact nav; no behavior
   change, verified at 1920x1080 / 1280x720 / 3840x2160
 
+## Next - prompt externalization (server, no behavior change)
+
+- [ ] 23. **Prompt file infrastructure (Markdown + JSON assembly)** - add
+  `apps/api/src/prompts/` with a loader and schema-validated JSON assembly
+  manifest for Markdown prompt parts, variable interpolation, and startup-safe
+  validation errors; keep all existing inline prompt behavior active in this
+  step (infra only)
+- [ ] 24. **Submit-verdict prompt migration** - move
+  `submit-verdict-model.ts` prompt content to Markdown fragments + JSON
+  assembly manifest; keep parser, model call shape, and route behavior
+  unchanged
+- [ ] 25. **Evaluation prompt migration** - move
+  `evaluation-model.ts` prompt content to Markdown fragments + JSON assembly,
+  reusing shared fragments where useful; keep scoring/parse behavior unchanged
+- [ ] 26. **Voice-session instruction migration** - move
+  `voice-session.ts` instruction content to Markdown fragments + JSON assembly;
+  preserve dynamic session interpolation and route payload shape unchanged
+- [ ] 27. **Recommendation prompt migration** - move
+  `recommendation-model.ts` prompt content to Markdown fragments + JSON
+  assembly; keep recommendation parser and fallback behavior unchanged
+
 ## Deferred to v2 - not next, listed so nothing is lost
 
 - [ ] V2-1. **Security, observability and failure handling** (roadmap Phase 14)
